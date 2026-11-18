@@ -21,10 +21,20 @@ them, and assigns a Pilot and a company Drone (identified by
 UID) for a date and slot. The pilot completes the job and records actual
 acres.
 
-The product is intended to be white-labelled and licensed to other
-clients. Tenant data must remain isolated, while client-specific
-branding and operational settings should be configurable rather than
-hardcoded.
+The product is a B2B agricultural operations platform that AgriAsaan will
+use itself and license to independent organizations under their own
+brands. Potential customers include private drone-spraying businesses,
+agricultural companies, FPOs/cooperatives, and government-initiated or
+government-linked agricultural organizations. Do not design the product
+exclusively around any one customer category.
+
+The default commercial model is managed, multi-tenant white-label SaaS: one
+maintained codebase and shared application/database infrastructure, with
+organization-level branding, domains, feature configuration, roles, and
+operational settings. Dedicated deployments or customer-hosted licensing
+may be offered later for enterprise or contractual requirements, but are
+not part of the MVP. Never create customer-specific code forks or separate
+applications just to change branding.
 
 A lean, team-only satellite crop-monitoring module based on Sentinel-2
 imagery and per-field NDVI/crop-health metrics is part of the MVP.
@@ -143,123 +153,159 @@ implementation is needed.
 
 4. Repository layout
 
-Keep this monorepo layout unless an ADR approved by the owner explains
-why it must change.
+Keep this npm-workspaces monorepo layout unless an ADR approved by the
+owner explains why it must change. The existing Next.js application belongs
+inside apps/web; do not create a second Next.js app at the repository
+root. The root package is the workspace orchestrator, not a second app.
 
-apps/
-  web/                       # Next.js PWA and primary application backend
-    src/
-      app/                   # routes, layouts, pages, route handlers
-      modules/               # domain modules and business logic
-      components/            # reusable UI
-      lib/                   # infrastructure, auth, config, utilities
-      types/
-services/
-  worker/                    # Python processing worker (MVP satellite work)
-    app/
-    tests/
-    Dockerfile
-    pyproject.toml
-packages/
-  shared/                    # shared TypeScript types, Zod schemas, constants
-supabase/
-  migrations/                # forward-only SQL migrations
-  tests/                     # pgTAP tests (RLS, constraints, RPCs)
-  seed.sql                   # fake local/demo data only
-docs/
-  architecture.md            # system overview and diagrams
-  data-model.md              # ERD and table notes
-  adr/                       # Architecture Decision Records
-  runbook.md                 # deploy, rollback, backups, incident steps
-  product/                   # briefs and feature documents
-.github/
-  workflows/                 # CI/CD
-  pull_request_template.md
-docker-compose.yml
-.env.example
-.dockerignore
-package.json                 # npm workspaces
-AGENTS.md
-CLAUDE.md
-README.md
-CHANGELOG.md
+agri-asaan/
+  apps/
+    web/
+      src/
+        app/                 # routes, layouts, pages, Server Actions, Route Handlers
+          (auth)/
+          (dashboard)/
+          api/
+        modules/             # domain modules and business logic
+          organizations/
+          farmers/
+          villages/
+          fields/
+          bookings/
+          pilots/
+          drones/
+          crop-monitoring/
+        components/          # reusable UI: ui/, shared/, layout/
+        lib/                 # supabase/, auth/, permissions/, tenancy/, branding/, env/, utils/
+        types/
+      public/
+      package.json
+      next.config.ts
+      tsconfig.json
+  services/
+    worker/                  # Python satellite/geospatial processing worker
+      src/
+        satellite/
+          ingestion/
+          processing/
+          indices/
+        jobs/
+        main.py
+      tests/
+      requirements.txt or pyproject.toml
+      Dockerfile
+  packages/
+    shared/                  # shared TypeScript types, Zod schemas, constants
+      src/
+      package.json
+  supabase/
+    migrations/              # forward-only SQL migrations
+    tests/                   # pgTAP tests (RLS, constraints, RPCs)
+    seed.sql                 # fake local/demo data only
+  docs/
+    architecture/
+    database/
+    decisions/               # Architecture Decision Records
+    product/
+  .github/
+    workflows/
+  AGENTS.md
+  CLAUDE.md
+  package.json               # npm workspaces root
+  package-lock.json
+  .env.example
+  .gitignore
+  README.md
+
+The root package.json must declare the workspaces (at minimum
+apps/web and packages/shared). Keep Next.js dependencies and scripts in
+apps/web/package.json; invoke them from the root with npm workspace
+commands, for example npm run dev --workspace=apps/web. Keep Python-only
+dependencies inside services/worker. Do not put a second root-level
+app/, components/, lib/, modules/, public/, or Next.js config
+beside apps/web. During migration, preserve existing application code
+and configuration; inspect before moving or deleting anything.
 
 Do not create empty directories or placeholder modules solely to match
-this tree. Add files as real functionality is implemented. Keep
-Python-only dependencies inside services/worker; keep shared
-TypeScript dependencies in the relevant npm workspace.
+this tree. Add files as real functionality is implemented. packages/shared
+should contain only code genuinely reused across workspaces; do not move
+web-only code there. The Python worker does not import TypeScript packages.
 
 ────────
 
 5. Architecture principles
 
-1. Multi-tenant from day one. Every tenant-owned table has a
-non-null tenant_id referencing organizations.id. Not every table
-is tenant-owned: global lookup tables, platform-level metadata, and
-user identity/profile records may be global where justified.
-Document each global table and how it is safely related to tenant
-membership. Never create a tenant-owned record without tenant
-ownership.
-2. Tenant isolation is enforced in Postgres. RLS policies must
-check tenant membership and then apply role, region, or village
-scope. Use composite foreign keys or equivalent database constraints
-where practical so a row cannot reference another tenant’s row.
-3. Configuration, not code, for client differences. Branding,
-supported languages, crop lists, status labels, units, and pricing
-rules belong in tenant configuration or well-defined configuration
-tables/JSON. Do not hardcode client names or tenant-specific
-behaviour into application logic.
-4. Critical state changes use database transactions. Booking and
-job transitions must go through narrowly scoped database RPCs or
-another explicitly justified transactional mechanism:
-create_booking, set_booking_status, assign_job, start_job,
-and complete_job. Each operation validates the caller, tenant,
-scope, allowed transition, and required fields, and writes status
-history in the same transaction.
-5. Invariants are enforced by the database. No double-booking of a
-pilot or drone. Enforce conflicts with database constraints/indexes
-or an exclusion constraint appropriate to the actual time-slot
-model. Do not rely only on an application-level pre-check. If
-bookings have durations or can overlap across slots, model
-timestamps/ranges and enforce actual overlap rather than assuming
-slot labels cannot overlap.
-6. Idempotent writes. Important create operations should support
-safe retries. Use client-generated UUIDs / idempotency keys where
-appropriate, including for future offline synchronization. This does
-not mean implementing offline sync in the MVP.
-7. Snapshots, not mutable references, for history. Booking lines
-copy relevant crop and acreage details at booking time so later
-field edits do not rewrite historical booking facts.
-8. Audit important actions. Status history is append-only. Record
-actor, tenant, timestamp, previous state, new state, and reason
-where applicable. Avoid logging sensitive farmer data.
-9. Auth provider is replaceable. Do not scatter provider-specific
-calls throughout the codebase. Wrap auth integration in one module
-and use profiles.id as the application identity.
-10. Keep business rules out of RLS where they become complex. RLS
+1. Separate organization, tenant, and deployment concepts. An
+organization is the customer/business entity (including AgriAsaan
+itself). A tenant is the data-isolation boundary. A deployment is the
+hosted application/database environment. For the MVP, one organization
+maps to one tenant, and multiple tenants share one managed deployment.
+Keep these concepts distinct so dedicated enterprise deployments can
+be introduced later without redesigning the domain model. Do not build
+deployment routing or dedicated-instance automation in the MVP.
+2. Multi-tenant from day one. Every tenant-owned table has a non-null
+tenant_id referencing organizations.id. Not every table is
+tenant-owned: global lookup tables, platform-level metadata, and user
+identity/profile records may be global where justified. Document each
+global table and how it is safely related to tenant membership.
+3. Tenant isolation is enforced in Postgres. RLS policies must check
+tenant membership and then apply role, region, or village scope. Use
+composite foreign keys or equivalent database constraints where
+practical so a row cannot reference another tenant’s row.
+4. Configuration, not code, for client differences. Branding,
+supported languages, crop lists, status labels, units, feature
+availability, and approved operational settings belong in
+organization/tenant configuration. Do not hardcode client names or
+tenant-specific behaviour into application logic. Branding and feature
+flags are not security controls; authorization and RLS must independently
+protect data and operations. Avoid a generic workflow engine in the MVP.
+5. Critical state changes use database transactions. Booking and job
+transitions must go through narrowly scoped database RPCs or another
+explicitly justified transactional mechanism: create_booking,
+set_booking_status, assign_job, start_job, and complete_job.
+Each operation validates caller, tenant, scope, allowed transition, and
+required fields, and writes status history in the same transaction.
+6. Invariants are enforced by the database. No double-booking of a
+pilot or drone. Enforce conflicts with database constraints/indexes or
+an exclusion constraint appropriate to the actual time-slot model. Do
+not rely only on an application-level pre-check. Model actual time
+ranges if bookings can overlap across slots.
+7. Idempotent writes. Important create operations should support safe
+retries. Use client-generated UUIDs/idempotency keys where appropriate,
+including for possible future offline synchronization. Do not implement
+offline sync in the MVP.
+8. Snapshots, not mutable references, for history. Booking lines copy
+relevant crop and acreage details at booking time so later field edits
+do not rewrite historical booking facts.
+9. Audit important actions. Status history is append-only. Record
+actor, tenant, timestamp, previous state, new state, and reason where
+applicable. Avoid logging sensitive farmer data.
+10. Auth provider is replaceable. Do not scatter provider-specific
+calls throughout the codebase. Wrap auth integration in one module and
+use profiles.id as the application identity.
+11. Keep business rules out of RLS where they become complex. RLS
 answers whether a user may access a row. Workflow rules belong in
 transactional RPCs and domain services.
-11. Design for growth, build for current demand. Add indexes for
+12. Design for growth, build for current demand. Add indexes for
 foreign keys and frequently used RLS predicates. Do not build
-microservices or a tenant-management UI until needed. Redis is never
-a source of truth.
-12. Geospatial readiness. Enable PostGIS when the database
-foundation is created. A GPS pin alone is not sufficient for
-meaningful field-level satellite analysis. For the MVP satellite
-demonstration, support a field boundary polygon (drawn, imported, or
-supplied through a controlled seed/demo workflow). Store geometry
-using an appropriate PostGIS type and SRID.
-13. Satellite time series are append-only. Store one
-observation/metric record per field, acquisition/observation time,
-source, and processing version. Do not overwrite historical
-observations. Keep imagery/raster files in object storage, not as
-large blobs in Postgres. The MVP may use a narrow observation history
-and limited processing cadence.
-14. Privacy. Farmer data is personal data. Collect only necessary
-information and consent where required. Never log phone numbers,
-exact GPS pins, authentication tokens, or sensitive farmer data in
-plain application logs.
-15. Offline is deferred. MVP may use ordinary browser/service-worker
+microservices or a tenant-management UI until needed. Redis is never a
+source of truth.
+13. Geospatial readiness. Enable PostGIS when the database foundation
+is created. A GPS pin alone is not sufficient for meaningful
+field-level satellite analysis. For the MVP satellite demonstration,
+support a field boundary polygon (drawn, imported, or supplied through
+a controlled seed/demo workflow). Store geometry using an appropriate
+PostGIS type and SRID.
+14. Satellite time series are append-only. Store one observation/metric
+record per field, acquisition/observation time, source, and processing
+version. Do not overwrite historical observations. Keep imagery/raster
+files in object storage, not as large blobs in Postgres. The MVP may use
+a narrow observation history and limited processing cadence.
+15. Privacy. Farmer data is personal data. Collect only necessary
+information and consent where required. Never log phone numbers, exact
+GPS pins, authentication tokens, or sensitive farmer data in plain
+application logs.
+16. Offline is deferred. MVP may use ordinary browser/service-worker
 caching for the app shell and static assets if useful, but must not
 promise offline writes, offline drafts, or synchronization. Preserve
 clean seams for future idempotent sync without implementing the sync
@@ -278,7 +324,8 @@ ordinary application functionality.
 • app/: routing, layouts, pages, Server Actions, and HTTP Route
 Handlers. Keep these thin.
 • modules/: domain-specific business logic, schemas, permissions,
-and persistence.
+persistence, and domain-specific UI where useful. Keep domain UI close
+to its module; use components/ for genuinely reusable UI.
 • components/: reusable UI components. Components must not own
 business rules.
 • lib/: infrastructure integrations, shared utilities, environment
@@ -292,19 +339,26 @@ Organise code by business domain, for example:
 
 modules/
   bookings/
-    booking.schema.ts
-    booking.service.ts
-    booking.repository.ts
-    booking.types.ts
+    components/             # booking-specific UI when needed
+    schemas/
+      booking.schema.ts
+    services/
+      booking.service.ts
+    repositories/
+      booking.repository.ts
+    types/
+      booking.types.ts
     booking.permissions.ts
     index.ts
-  farmers/
-  fields/
   organizations/
-  regions/
+  farmers/
   villages/
+  fields/
   pilots/
   drones/
+  crop-monitoring/
+  payments/
+  audit/
 
 Responsibilities:
 
@@ -314,10 +368,37 @@ Responsibilities:
 • types: domain-specific types when not already shared.
 • permissions: domain-specific authorization helpers.
 
-Do not create files or abstractions that add no value to a small module.
-Avoid giant service files.
+Keep each module proportionate: do not create every subdirectory or
+boilerplate file until the module needs it. Domain-specific components
+may live inside a module; components/ui, components/shared, and
+components/layout are for reusable application-wide presentation.
 
-6.3 Dependency direction
+6.3 White-label product architecture
+
+• AgriAsaan is both the platform operator’s own branded instance and the
+name of one customer-facing brand. Other organizations may license the
+same product under their own names.
+• Use one codebase and one release process. Never create a customer
+codebase, branch, or copied app merely to change its brand.
+• Resolve the organization from a verified hostname/domain mapping or an
+explicitly selected organization for authenticated multi-membership
+users. Verify membership before loading tenant data. Do not trust a
+hostname or client-supplied tenant ID as authorization by itself.
+• Store brand name, logo, colors, support details, domain mapping, and
+enabled product modules as organization-level configuration. Validate
+uploaded assets and domain ownership before activation.
+• Feature configuration controls product availability and presentation
+only. It must never replace authorization checks or RLS policies.
+• Support customer-specific roles and operational configuration only
+through explicit, validated configuration. Do not build a fully
+dynamic role/workflow engine for the MVP.
+• Default deployment is managed multi-tenant SaaS with shared
+PostgreSQL. Dedicated application/database deployments and
+self-hosted licensing are future enterprise options requiring an ADR,
+operational plan, and explicit customer requirement. They are not MVP
+deliverables.
+
+6.4 Dependency direction
 
 Use this general dependency direction:
 
@@ -336,7 +417,7 @@ Domain services must not depend on React components. Keep
 request-specific Next.js APIs at the application boundary; pass the
 required authenticated context into services explicitly.
 
-6.4 Server Components, Server Actions, and Route Handlers
+6.5 Server Components, Server Actions, and Route Handlers
 
 • Use Server Components by default.
 • Use Client Components only where browser-side interaction requires
@@ -351,7 +432,7 @@ params, form data, request bodies, and environment variables.
 • Do not use Server Actions as a substitute for a domain/service
 layer.
 
-6.5 Database access and authorization
+6.6 Database access and authorization
 
 • Use the Supabase SSR client for authenticated server-side
 operations.
@@ -372,7 +453,7 @@ requests.
 • Never expose service-role or secret keys to the browser.
 • Do not bypass or weaken RLS to make a feature work.
 
-6.6 Maintainability
+6.7 Maintainability
 
 • Prefer explicit, domain-oriented code over generic abstractions.
 • Avoid unnecessary repository interfaces, dependency-injection
@@ -646,7 +727,10 @@ prevention.
 • Pilot start/complete workflow and actual acres.
 • Admin verification.
 • Basic audit trail.
-• Per-tenant branding configuration foundation.
+• Organization-level white-label foundation: brand name, logo, theme
+configuration, and a safe tenant/domain resolution design. Full
+custom-domain self-service and advanced branding management UI may
+follow when a paying white-label customer requires them.
 • Lean, team-only satellite crop monitoring using Sentinel-2, with a
 demonstrable per-field NDVI/crop-health workflow. Clearly show
 observation date, source, cloud/quality limitations, and data
@@ -664,7 +748,10 @@ Explicitly out of scope for MVP
 • Drone owner/leasing management.
 • Push and WhatsApp automation.
 • Native mobile applications.
-• Full tenant self-service management UI.
+• Full tenant self-service management UI and automated customer
+provisioning.
+• Dedicated per-customer deployments, separate databases, and
+self-hosted/customer-managed installations.
 
 V1 and later
 
@@ -799,8 +886,8 @@ supabase start
 # Apply migrations and seed local database
 supabase db reset
 
-# Run the Next.js app
-npm run dev
+# Run the Next.js app from the monorepo root
+npm run dev --workspace=apps/web
 
 # Static checks
 npm run lint
@@ -813,7 +900,7 @@ npm test
 supabase test db
 
 # Production build
-npm run build
+npm run build --workspace=apps/web
 
 # Start worker/Redis only after those services are introduced
 docker compose up -d
