@@ -1,4 +1,6 @@
-export const organizationsModule = {
-  name: "organizations",
-  summary: "Tenant and org membership metadata",
-};
+export {
+  getAuthenticatedContext,
+  resolveActiveOrganization,
+  verifyOrganizationMembership,
+  type OrganizationMembership,
+} from "./organization.service";

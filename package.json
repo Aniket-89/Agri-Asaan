@@ -16,7 +16,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
-    "db:diff": "supabase db diff"
+    "db:diff": "supabase db diff",
+    "db:test": "supabase test db"
   },
   "packageManager": "npm@10.9.7",
   "devDependencies": {
