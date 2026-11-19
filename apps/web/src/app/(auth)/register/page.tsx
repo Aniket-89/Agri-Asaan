@@ -10,14 +10,6 @@ export default function RegisterPage() {
           <input className="w-full rounded border px-3 py-2" name="fullName" required />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm">Organization name</span>
-          <input className="w-full rounded border px-3 py-2" name="organizationName" required />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm">Organization slug</span>
-          <input className="w-full rounded border px-3 py-2" name="organizationSlug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required />
-        </label>
-        <label className="block">
           <span className="mb-1 block text-sm">Email</span>
           <input className="w-full rounded border px-3 py-2" name="email" type="email" required />
         </label>

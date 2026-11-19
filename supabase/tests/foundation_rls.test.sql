@@ -2,12 +2,13 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(9);
+select plan(19);
 
-insert into auth.users (id, aud, role, email)
+insert into auth.users (id, aud, role, email, raw_user_meta_data)
 values
-  ('11111111-1111-4111-8111-111111111111', 'authenticated', 'authenticated', 'member-a@example.test'),
-  ('22222222-2222-4222-8222-222222222222', 'authenticated', 'authenticated', 'member-b@example.test');
+  ('11111111-1111-4111-8111-111111111111', 'authenticated', 'authenticated', 'member-a@example.test', '{}'::jsonb),
+  ('22222222-2222-4222-8222-222222222222', 'authenticated', 'authenticated', 'member-b@example.test', '{}'::jsonb),
+  ('33333333-3333-4333-8333-333333333333', 'authenticated', 'authenticated', 'no-membership@example.test', '{"full_name":"Uninvited User"}'::jsonb);
 
 insert into public.organizations (id, name, slug)
 values
@@ -50,6 +51,51 @@ select is(
      and user_id = '11111111-1111-4111-8111-111111111111'),
   'admin',
   'user cannot elevate their own membership role to super_admin'
+);
+
+reset role;
+set local role authenticated;
+set local "request.jwt.claim.sub" = '33333333-3333-4333-8333-333333333333';
+select is((select count(*)::integer from public.profiles where id = auth.uid()), 1, 'auth user creation initializes exactly one profile');
+select is((select full_name from public.profiles where id = auth.uid()), 'Uninvited User', 'profile trigger copies the submitted full name');
+select is((select count(*)::integer from public.organization_members), 0, 'authenticated user without membership sees no memberships');
+select is((select count(*)::integer from public.organizations), 0, 'newly registered user has no organization');
+select is(public.is_platform_staff(), false, 'newly registered user has no platform privileges');
+select throws_ok(
+  $$select public.create_organization_for_current_user('Public Org', 'public-org')$$,
+  '42883',
+  null,
+  'self-service organization creation RPC is unavailable'
+);
+select throws_ok(
+  $$insert into public.organizations (name, slug) values ('Public Org', 'public-org')$$,
+  '42501',
+  null,
+  'newly registered user cannot create an organization directly'
+);
+select throws_ok(
+  $$insert into public.organization_members (tenant_id, organization_id, user_id, role)
+    values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      '33333333-3333-4333-8333-333333333333', 'farmer')$$,
+  '42501',
+  null,
+  'newly registered user cannot create a membership directly'
+);
+select throws_ok(
+  $$select public.add_organization_member(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    '33333333-3333-4333-8333-333333333333',
+    'farmer')$$,
+  'P0001',
+  null,
+  'newly registered user cannot add an organization member through the RPC'
+);
+select throws_ok(
+  $$insert into public.platform_staff (user_id, role)
+    values ('33333333-3333-4333-8333-333333333333', 'platform_owner')$$,
+  '42501',
+  null,
+  'newly registered user cannot grant themselves platform privileges'
 );
 
 reset role;

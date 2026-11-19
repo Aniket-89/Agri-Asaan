@@ -1,0 +1,1 @@
+drop function if exists public.create_organization_for_current_user(text, text);
