@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  transpilePackages: ["@agri/shared"],
+  agentRules: false,
   turbopack: {
     rules: {
       "*.css": {

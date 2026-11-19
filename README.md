@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgriAsaan
 
-## Getting Started
+AgriAsaan is a multi-tenant managed agricultural drone-spraying platform.
 
-First, run the development server:
+## Monorepo
+
+- `apps/web` — Next.js App Router application (`@agri/web`)
+- `packages/shared` — reusable TypeScript types, Zod schemas, and constants (`@agri/shared`)
+- `services/worker` — independent Python satellite worker when introduced
+- `supabase` — local PostgreSQL, migrations, seed, and database tests
+
+The repository uses one root `package-lock.json` and npm workspaces.
+
+## Prerequisites
+
+- Node.js and npm
+- Docker Desktop or the Docker daemon
+- npm dependencies installed from the repository root
+
+## Install
+
+```bash
+npm install
+```
+
+## Local Supabase
+
+```bash
+npm run db:start
+npm run db:reset
+npm run db:status
+```
+
+Configure `apps/web/.env.local` with the local values reported by `npm run db:status`:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-local-key
+```
+
+The publishable key is safe for browser use. Never place `SUPABASE_SERVICE_ROLE_KEY` or `sb_secret_*` values in browser code or `NEXT_PUBLIC_*` variables.
+
+Additional database documentation is in `docs/database/local-development.md`.
+
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Shared package
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```ts
+import { SUPPORTED_LOCALES, supportedLocaleSchema } from "@agri/shared";
+```
 
-## Learn More
+## Checks and build
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run typecheck
+npm run lint
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx supabase migration new migration_name
+npm run db:reset
+npx supabase migration list
+npm run db:status
+npm run db:stop
+```
 
-## Deploy on Vercel
+Do not run `supabase db push` or link this local project to a remote project in the MVP setup.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Vercel deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Root Directory:** repository root (`.`)
+- **Install Command:** `npm ci`
+- **Build Command:** `npm run build`
+- **Framework Preset:** Next.js
+- **Output Directory:** leave at the Next.js default (`.next`)
+
+Do not set `apps/web` as the Vercel Root Directory. Configure hosted Supabase public URL/key variables for the deployed environment only. Keep service-role credentials server-only.
