@@ -35,25 +35,25 @@ export default async function OrganizationDetailsPage({
     .eq("tenant_id", id);
 
   if (!organization) {
-    return <p>Organization not found or not accessible.</p>;
+    return <p className="text-neutral-400">Organization not found or not accessible.</p>;
   }
 
   return (
     <main className="space-y-6">
       <h1 className="text-3xl font-semibold">{organization.name}</h1>
-      <section className="rounded-xl border bg-white p-5">
+      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
         <p><strong>Slug:</strong> {organization.slug}</p>
         <p><strong>Type:</strong> {organization.organization_type}</p>
         <p><strong>Status:</strong> {organization.is_active ? "Active" : "Inactive"}</p>
       </section>
-      <section className="rounded-xl border bg-white p-5">
+      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
         <h2 className="text-xl font-semibold">Branding</h2>
         <p><strong>Brand:</strong> {settings?.brand_name ?? "Not set"}</p>
         <p><strong>Primary color:</strong> {settings?.brand_primary_color ?? "Not set"}</p>
         <p><strong>Locale:</strong> {settings?.default_locale}</p>
         <p><strong>Timezone:</strong> {settings?.timezone}</p>
       </section>
-      <section className="rounded-xl border bg-white p-5">
+      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-5">
         <h2 className="text-xl font-semibold">Enabled modules</h2>
         {(features ?? []).filter((feature) => feature.enabled).map((feature) => (
           <p key={feature.feature_key}>{feature.feature_key}</p>

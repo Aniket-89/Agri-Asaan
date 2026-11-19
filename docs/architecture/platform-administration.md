@@ -13,7 +13,7 @@ Organization roles remain in `organization_members`, including `organization_adm
 
 ## Initial Platform Owner bootstrap
 
-There is no public registration or API for bootstrap. The bootstrap function is revoked from `PUBLIC`, `anon`, and `authenticated` roles.
+Public user registration does not grant platform privileges. There is no public API for Platform Owner bootstrap; the bootstrap function is revoked from `PUBLIC`, `anon`, and `authenticated` roles.
 
 The initial owner must first exist as an authenticated Supabase Auth user and have a `profiles` row. Use the local PostgreSQL administration connection while connected to the local stack:
 
@@ -28,6 +28,8 @@ Subsequent staff changes must use `/platform/staff` or the `public.manage_platfo
 ## Organization provisioning
 
 Only active Platform Owners and System Admins can execute `public.provision_customer_organization`.
+Public registration cannot create organizations or organization memberships. The legacy self-service organization RPC has been removed; only the protected provisioning flow and authorized organization-administration operations can establish membership.
+The provisioning form accepts the initial administrator's email address. The RPC resolves it to an existing Auth user profile after checking the caller's platform role; it does not create or invite users. Unknown emails fail without creating the organization.
 
 The RPC transactionally creates:
 
