@@ -9,7 +9,7 @@ const provisionSchema = z.object({
   name: z.string().trim().min(2).max(120),
   slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   organizationType: z.enum(["customer", "agriasaan"]),
-  initialAdminId: z.uuid(),
+  initialAdminEmail: z.string().trim().email().max(320),
   brandName: z.string().trim().max(120).optional(),
   brandPrimaryColor: z
     .string()
@@ -27,7 +27,7 @@ export async function provisionOrganizationAction(formData: FormData) {
     name: formData.get("name"),
     slug: formData.get("slug"),
     organizationType: formData.get("organizationType"),
-    initialAdminId: formData.get("initialAdminId"),
+    initialAdminEmail: formData.get("initialAdminEmail"),
     brandName: formData.get("brandName") || undefined,
     brandPrimaryColor: formData.get("brandPrimaryColor") || "",
     enabledFeatures: formData.getAll("enabledFeatures"),
@@ -43,7 +43,7 @@ export async function provisionOrganizationAction(formData: FormData) {
       p_name: parsed.data.name,
       p_slug: parsed.data.slug,
       p_organization_type: parsed.data.organizationType,
-      p_initial_admin_id: parsed.data.initialAdminId,
+      p_initial_admin_email: parsed.data.initialAdminEmail,
       p_brand_name: parsed.data.brandName ?? null,
       p_brand_primary_color:
         parsed.data.brandPrimaryColor || null,

@@ -29,7 +29,7 @@ export default async function OrganizationsPage() {
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-semibold">Organizations</h1>
         {canProvision ? (
-          <Link className="rounded bg-black px-4 py-2 text-white" href="/platform/organizations/new">
+          <Link className="rounded bg-emerald-400 px-4 py-2 font-semibold text-neutral-950 hover:bg-emerald-300" href="/platform/organizations/new">
             Create organization
           </Link>
         ) : null}
@@ -39,14 +39,14 @@ export default async function OrganizationsPage() {
         {(organizations ?? []).map((organization) => (
           <Link
             key={organization.id}
-            className="block rounded-xl border bg-white p-4"
+            className="block rounded-lg border border-neutral-800 bg-neutral-900 p-4 hover:border-emerald-700"
             href={`/platform/organizations/${organization.id}`}
           >
             <p className="font-semibold">{organization.name}</p>
-            <p className="text-sm text-gray-600">/{organization.slug} · {organization.organization_type}</p>
+            <p className="text-sm text-neutral-400">/{organization.slug} · {organization.organization_type}</p>
           </Link>
         ))}
-        {organizations?.length === 0 ? <p>No organizations provisioned yet.</p> : null}
+        {organizations?.length === 0 ? <p className="text-neutral-400">No organizations provisioned yet.</p> : null}
       </div>
     </main>
   );

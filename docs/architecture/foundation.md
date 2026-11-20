@@ -25,7 +25,7 @@
 
 ## Security
 
-RLS is enabled on every foundation table. Membership and role checks use SECURITY DEFINER helper functions with an empty search path. Direct organization creation and membership creation are restricted to authenticated RPCs.
+RLS is enabled on every foundation table. Membership and role checks use SECURITY DEFINER helper functions with an empty search path. Public registration creates an Auth user and a profile only. Organization creation is limited to the protected platform provisioning RPC, and membership changes require an authorized provisioning or organization-admin RPC.
 
 No browser code receives or uses the service-role key.
 
@@ -34,7 +34,9 @@ The active organization is stored in an HTTP-only cookie and is always verified 
 ## Authentication UI
 
 - `/login`: password sign-in.
-- `/register`: profile and organization registration.
+- `/register`: creates an Auth user and profile without organization or membership privileges.
+- `/register/check-email`: email-verification instructions when Supabase requires confirmation.
+- `/register/pending-access`: explains that an organization administrator must invite a verified user.
 - `/dashboard`: protected organization-aware dashboard.
 - `/api/auth/signout`: session sign-out.
 - `/api/organization/select`: membership-verified organization switching.

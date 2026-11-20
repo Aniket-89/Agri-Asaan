@@ -11,6 +11,7 @@
     "build": "npm run build --workspace=@agri/web",
     "lint": "npm run lint --workspace=@agri/web",
     "typecheck": "npm run typecheck --workspace=@agri/web",
+    "test": "npm run test --workspace=@agri/web",
     "start": "npm run start --workspace=@agri/web",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
