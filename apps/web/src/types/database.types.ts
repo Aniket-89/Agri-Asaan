@@ -5,7 +5,33 @@ export type Database = {
   
   "public": {
           Tables: {
-            "organization_domains": {
+            "mitra_villages": {
+                  Row: {
+                    "created_at": string,"tenant_id": string,"user_id": string,"village_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"tenant_id": string,"user_id": string,"village_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"tenant_id"?: string,"user_id"?: string,"village_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mitra_villages_member_same_tenant"
+      columns: ["tenant_id","user_id"]
+isOneToOne: false
+      referencedRelation: "organization_members"
+      referencedColumns: ["organization_id","user_id"]
+    },{
+      foreignKeyName: "mitra_villages_village_same_tenant"
+      columns: ["tenant_id","village_id"]
+isOneToOne: false
+      referencedRelation: "villages"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"organization_domains": {
                   Row: {
                     "created_at": string,"hostname": string,"is_primary": boolean,"is_verified": boolean,"tenant_id": string,"updated_at": string
                   }
@@ -177,6 +203,72 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"regional_admin_regions": {
+                  Row: {
+                    "created_at": string,"region_id": string,"tenant_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"region_id": string,"tenant_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"region_id"?: string,"tenant_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "regional_admin_regions_member_same_tenant"
+      columns: ["tenant_id","user_id"]
+isOneToOne: false
+      referencedRelation: "organization_members"
+      referencedColumns: ["organization_id","user_id"]
+    },{
+      foreignKeyName: "regional_admin_regions_region_same_tenant"
+      columns: ["tenant_id","region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"regions": {
+                  Row: {
+                    "created_at": string,"id": string,"is_active": boolean,"name": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"name": string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "regions_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"villages": {
+                  Row: {
+                    "created_at": string,"id": string,"is_active": boolean,"latitude": number | null,"lgd_code": string | null,"location": unknown,"longitude": number | null,"name": string,"region_id": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"latitude"?: number | null,"lgd_code"?: string | null,"location"?: never,"longitude"?: number | null,"name": string,"region_id": string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"latitude"?: number | null,"lgd_code"?: string | null,"location"?: never,"longitude"?: number | null,"name"?: string,"region_id"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "villages_region_same_tenant"
+      columns: ["tenant_id","region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -189,6 +281,12 @@ isOneToOne: true
 "bootstrap_platform_owner":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
+"can_manage_region":
+{ Args: { "p_region_id": string }; Returns: boolean
+                           },
+"can_manage_village":
+{ Args: { "p_village_id": string }; Returns: boolean
+                           },
 "get_profile_phone":
 { Args: { "p_profile_id": string }; Returns: string
                            },
@@ -199,6 +297,9 @@ isOneToOne: true
                            },
 "has_organization_role":
 { Args: { "p_organization_id": string,"p_roles": (Database["public"]['Enums']["organization_role"])[] }; Returns: boolean
+                           },
+"is_mitra_for_village":
+{ Args: { "p_village_id": string }; Returns: boolean
                            },
 "is_organization_member":
 { Args: { "p_organization_id": string }; Returns: boolean

@@ -1,9 +1,53 @@
 # Data model
 
-Current schema: the identity, tenancy, and platform foundation. Farm
-operations tables (regions, villages, farmers, fields, bookings, pilots,
-drones) and satellite observations are not built yet. Add them here when
-their migrations land.
+Current schema: the identity, tenancy, and platform foundation, plus
+territory (regions, villages, and coverage, ADR 0008). Farmers, fields,
+bookings, pilots, drones, and satellite observations are not built yet. Add
+them here when their migrations land.
+
+> **Known gap (ADR 0007):** tenant admins can add existing accounts to their
+> tenant without the person's consent. Fake data only until this is fixed.
+
+## Territory
+
+```mermaid
+erDiagram
+  organizations ||--o{ regions : "tenant_id"
+  regions ||--o{ villages : "(tenant_id, region_id)"
+  regions ||--o{ regional_admin_regions : "(tenant_id, region_id)"
+  villages ||--o{ mitra_villages : "(tenant_id, village_id)"
+  organization_members ||--o{ regional_admin_regions : "(tenant_id, user_id), role regional_admin"
+  organization_members ||--o{ mitra_villages : "(tenant_id, user_id), role mitra"
+
+  regions {
+    uuid id PK
+    uuid tenant_id FK
+    text name "unique per tenant, case-insensitive"
+    boolean is_active
+  }
+  villages {
+    uuid id PK
+    uuid tenant_id FK
+    uuid region_id FK
+    text name "unique per region"
+    text lgd_code "optional, unique per tenant"
+    numeric latitude
+    numeric longitude
+    geography location "generated, Point SRID 4326, GiST"
+  }
+```
+
+| Table                    | Read                                                        | Write                                                             |
+| ------------------------ | ----------------------------------------------------------- | ----------------------------------------------------------------- |
+| `regions`                | All tenant members.                                         | Org admin.                                                        |
+| `villages`               | All tenant members.                                         | Org admin; regional admin in their regions (`can_manage_region`). |
+| `regional_admin_regions` | Org admin; the assigned regional admin.                     | Org admin (insert/delete only).                                   |
+| `mitra_villages`         | Region managers (`can_manage_village`); the assigned mitra. | Region managers (insert/delete only).                             |
+
+All four tables are tenant-owned, with composite foreign keys that make
+cross-tenant references impossible. A trigger checks the assigned member's
+role. Access helpers re-check the current role, so a role change revokes
+territory rights immediately.
 
 ## Entity relationship diagram
 
@@ -135,8 +179,11 @@ Every `SECURITY DEFINER` function uses `set search_path = ''` and has
 
 ## Spatial data
 
-PostGIS is enabled (`20261118180523_enable_postgis.sql`). No spatial columns
-exist yet. Field points and boundaries will use SRID 4326 with GiST indexes.
+PostGIS is enabled (`20261118180523_enable_postgis.sql`).
+
+- `villages.location`: `geography(Point, 4326)`, generated from
+  `latitude`/`longitude`, with GiST index `villages_location_gist`.
+- Field points and boundaries will use SRID 4326 with GiST indexes.
 
 ## Generated types
 

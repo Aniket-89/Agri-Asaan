@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(37);
+select plan(39);
 
 -- Fixtures (fake data only). Tenant A has an organization admin, a regional
 -- admin, a farmer, and a pilot. Tenant B has its own organization admin.
@@ -139,6 +139,21 @@ select lives_ok(
 );
 
 select is(public.get_profile_phone('a3333333-3333-4333-8333-333333333333'), '910000000003', 'organization admin can read a farmer phone in their tenant');
+
+select throws_ok(
+  $$update public.organization_members set user_id = 'c3333333-3333-4333-8333-333333333333'
+    where user_id = 'a3333333-3333-4333-8333-333333333333'$$,
+  '42501',
+  null,
+  'organization admin cannot repoint a membership to another user'
+);
+select throws_ok(
+  $$update public.organization_members set organization_id = 'bbbbbbbb-0000-4000-8000-000000000002', tenant_id = 'bbbbbbbb-0000-4000-8000-000000000002'
+    where user_id = 'a3333333-3333-4333-8333-333333333333'$$,
+  '42501',
+  null,
+  'organization admin cannot move a membership to another tenant'
+);
 
 -- ── Regional admin (tenant A) ──────────────────────────────────────────────
 set local "request.jwt.claim.sub" = 'a2222222-2222-4222-8222-222222222222';

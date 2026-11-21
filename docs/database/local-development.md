@@ -74,6 +74,7 @@ Do not edit migrations that have already been applied. PostGIS is enabled by `su
 - a platform owner (`owner@agriasaan.test`)
 - the AgriAsaan organization with one user per role (`orgadmin@`, `regional@`, `mitra@`, `pilot@`, `farmer@agriasaan.test`)
 - a white-label demo organization, Greenfield Agri (`admin@greenfield.test`), with the verified domain `greenfield.localhost`
+- territory: AgriAsaan has a North and a South demo region. `regional@agriasaan.test` covers North, and `mitra@agriasaan.test` covers Demo Village Alpha and Beta. South has no regional admin, so the regional admin sees it read-only.
 
 All seeded users sign in with `demo-password-123`. Open `http://greenfield.localhost:3000` to see tenant branding, and `http://localhost:3000` for the platform default. Both redirect to a language prefix (`/en` or `/hi`).
 
