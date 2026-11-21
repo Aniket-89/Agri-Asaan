@@ -67,19 +67,22 @@ village clusters; can register
 farmers/fields and book on their
 behalf
 
-admin                             Regional Admin; manages requests,
+regional_admin                    Regional Admin; manages requests,
 pilots, and assignments within
 assigned regions
 
 pilot                             Only jobs assigned to that pilot
 
-super_admin                       Tenant-wide administrator; manages that tenant’s regions, villages, users, pilots, and drones
+organization_admin                Tenant-wide administrator; manages that tenant’s regions, villages, users, pilots, and drones
 
-super_admin is tenant-scoped, not automatically a platform-wide
-administrator. If platform operations later require cross-tenant access,
-introduce a separate platform_admin concept with explicit approval,
-separate authorization rules, and audit logging. Never give a tenant
-administrator implicit cross-tenant access.
+organization_admin is tenant-scoped, not automatically a platform-wide
+administrator. The legacy enum values super_admin and admin are blocked
+by a database constraint (docs/adr/0002-organization-role-names.md).
+Platform-wide administration uses the separate platform_staff roles
+(docs/adr/0001-platform-staff-separate-from-organization-roles.md), with
+separate authorization rules; its cross-tenant access must gain durable
+audit logging before production. Never give a tenant administrator
+implicit cross-tenant access.
 
 The rule that matters most
 
@@ -163,8 +166,9 @@ agri-asaan/
     web/
       src/
         app/                 # routes, layouts, pages, Server Actions, Route Handlers
-          (auth)/
-          (dashboard)/
+          [lang]/            # every page is locale-prefixed (docs/adr/0006)
+            (auth)/
+            (dashboard)/
           api/
         modules/             # domain modules and business logic
           organizations/
@@ -205,7 +209,7 @@ agri-asaan/
   docs/
     architecture/
     database/
-    decisions/               # Architecture Decision Records
+    adr/                     # Architecture Decision Records (NNNN-title.md)
     product/
   .github/
     workflows/
@@ -883,13 +887,17 @@ npm ci
 # Start local Supabase (Docker is required)
 supabase start
 
-# Apply migrations and seed local database
-supabase db reset
+# Apply migrations and seed local database (fake users, see supabase/seed.sql)
+npm run db:reset
+
+# Regenerate database types after a migration (commit the result)
+npm run db:types
 
 # Run the Next.js app from the monorepo root
 npm run dev --workspace=apps/web
 
 # Static checks
+npm run format:check   # Prettier; npm run format to fix
 npm run lint
 npm run typecheck
 
@@ -897,7 +905,7 @@ npm run typecheck
 npm test
 
 # Database tests
-supabase test db
+npm run db:test
 
 # Production build
 npm run build --workspace=apps/web

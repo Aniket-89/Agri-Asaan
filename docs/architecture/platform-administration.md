@@ -51,4 +51,11 @@ The Next.js proxy validates authentication and active platform staff status. Ser
 
 ## Security limitations
 
-The MVP uses no public staff invitation flow and no platform audit table. Staff and organization provisioning are protected by RLS and RPC checks, but a durable audit trail should be added before production operations.
+The MVP uses no public staff invitation flow.
+
+Platform staff actions are recorded in the append-only `public.platform_audit_log`:
+
+- tenant record changes made by staff, and all `platform_staff` changes, via triggers
+- tenant views through the platform pages, via `log_platform_tenant_access`
+
+Reads made directly through the REST API, outside the platform pages, are not captured yet. See `docs/adr/0005-platform-audit-log.md`.

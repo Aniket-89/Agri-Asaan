@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules
+.next
+out
+build
+coverage
+package-lock.json
+
+# Generated files: regenerate instead of formatting (npm run db:types)
+apps/web/src/types/database.types.ts
+next-env.d.ts
+
+# Supabase CLI state
+supabase/.temp
+supabase/.branches
+
+# Owner-maintained rules files keep their own layout
+AGENTS.md
+CLAUDE.md
