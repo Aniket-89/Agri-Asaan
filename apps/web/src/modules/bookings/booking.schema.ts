@@ -25,9 +25,16 @@ export const bookingStatusChangeSchema = z.object({
   ),
 });
 
+export const assignBookingSchema = z.object({
+  bookingId: z.uuid(),
+  pilotUserId: z.uuid(),
+  droneId: z.uuid(),
+});
+
 export const bookingListFilterSchema = z.object({
   status: z.enum(BOOKING_STATUSES).optional().catch(undefined),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+export type AssignBookingInput = z.infer<typeof assignBookingSchema>;
 export type BookingStatusChangeInput = z.infer<typeof bookingStatusChangeSchema>;

@@ -222,3 +222,27 @@ values
 -- Seeded bookings hold the early-morning slot.
 update public.bookings set slot_id = 'e7000000-0000-4000-8000-000000000001'
 where tenant_id = 'e0000000-0000-4000-8000-000000000001';
+
+-- Kavita's South booking is confirmed and assigned to Demo Pilot Two with
+-- UA-DEMO-S01, so pilot2@agriasaan.test has a job under "My jobs". Mohan's
+-- confirmed North booking is left unassigned to demo the assign flow.
+update public.bookings set status = 'assigned'
+where id = 'e6000000-0000-4000-8000-000000000003';
+
+insert into public.booking_assignments (tenant_id, booking_id, pilot_user_id, drone_id, work_period, assigned_by)
+select booking.tenant_id, booking.id, 'd0000000-0000-4000-8000-000000000008', drone.id,
+  tstzrange(
+    (booking.preferred_date + slot.start_time) at time zone 'Asia/Kolkata',
+    (booking.preferred_date + slot.end_time) at time zone 'Asia/Kolkata',
+    '[)'
+  ),
+  'd0000000-0000-4000-8000-000000000002'
+from public.bookings as booking
+join public.spray_slots as slot on slot.id = booking.slot_id
+join public.drones as drone on drone.tenant_id = booking.tenant_id and drone.uid = 'UA-DEMO-S01'
+where booking.id = 'e6000000-0000-4000-8000-000000000003';
+
+insert into public.booking_status_history (tenant_id, booking_id, from_status, to_status, reason, actor_id)
+values
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000003', 'requested', 'confirmed', null, 'd0000000-0000-4000-8000-000000000002'),
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000003', 'confirmed', 'assigned', null, 'd0000000-0000-4000-8000-000000000002');

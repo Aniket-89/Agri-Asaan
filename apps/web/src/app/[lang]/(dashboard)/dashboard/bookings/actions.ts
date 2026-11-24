@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import { localizedPath } from "@/lib/i18n/request-locale";
 import {
+  assignBooking,
+  assignBookingSchema,
   bookingStatusChangeSchema,
   changeBookingStatus,
   createBooking,
@@ -76,6 +78,33 @@ export async function changeBookingStatusAction(formData: FormData) {
   redirect(
     await localizedPath(
       result.ok ? `${detailPath}?status=updated` : `${detailPath}?error=${result.error}`
+    )
+  );
+}
+
+export async function assignBookingAction(formData: FormData) {
+  const context = await getActiveMembershipContext();
+  if (!context) {
+    redirect(await localizedPath("/login"));
+  }
+
+  const bookingId = z.uuid().safeParse(formData.get("bookingId"));
+  const detailPath = bookingId.success
+    ? `/dashboard/bookings/${bookingId.data}`
+    : "/dashboard/bookings";
+  const parsed = assignBookingSchema.safeParse({
+    bookingId: formData.get("bookingId"),
+    pilotUserId: formData.get("pilotUserId"),
+    droneId: formData.get("droneId"),
+  });
+  if (!parsed.success) {
+    redirect(await localizedPath(`${detailPath}?error=invalid`));
+  }
+
+  const result = await assignBooking(context, parsed.data);
+  redirect(
+    await localizedPath(
+      result.ok ? `${detailPath}?status=assigned` : `${detailPath}?error=${result.error}`
     )
   );
 }

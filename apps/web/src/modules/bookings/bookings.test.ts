@@ -1,8 +1,17 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 
-import { availableBookingActions, bookingDateWindow, type BookingActor } from "./booking.rules";
-import { bookingStatusChangeSchema, createBookingSchema } from "./booking.schema";
+import {
+  availableBookingActions,
+  bookingDateWindow,
+  canAssignBooking,
+  type BookingActor,
+} from "./booking.rules";
+import {
+  assignBookingSchema,
+  bookingStatusChangeSchema,
+  createBookingSchema,
+} from "./booking.schema";
 import { formatSlotLabel, toBookingError } from "./booking.service";
 
 const nobody: BookingActor = { isRegionManager: false, isRequester: false, isFarmer: false };
@@ -150,5 +159,53 @@ describe("slots in bookings", () => {
       ({ code: "23514", hint, message: "", details: "" }) as PostgrestError;
     expect(toBookingError(error("slot_full"))).toBe("slot_full");
     expect(toBookingError(error("invalid_slot"))).toBe("invalid_slot");
+  });
+});
+
+describe("assignment", () => {
+  const PILOT = "d0000000-0000-4000-8000-000000000005";
+  const DRONE = "e5000000-0000-4000-8000-000000000001";
+
+  it("lets only region managers assign confirmed or reassign assigned bookings", () => {
+    expect(canAssignBooking("confirmed", true)).toBe(true);
+    expect(canAssignBooking("assigned", true)).toBe(true);
+    expect(canAssignBooking("requested", true)).toBe(false);
+    expect(canAssignBooking("cancelled", true)).toBe(false);
+    expect(canAssignBooking("confirmed", false)).toBe(false);
+  });
+
+  it("lets only a region manager cancel an assigned booking", () => {
+    expect(availableBookingActions("assigned", { ...nobody, isRegionManager: true })).toEqual([
+      "cancel",
+    ]);
+    expect(
+      availableBookingActions("assigned", { ...nobody, isRequester: true, isFarmer: true })
+    ).toEqual([]);
+  });
+
+  it("requires a booking, a pilot, and a drone", () => {
+    expect(
+      assignBookingSchema.safeParse({ bookingId: ID, pilotUserId: PILOT, droneId: DRONE }).success
+    ).toBe(true);
+    expect(assignBookingSchema.safeParse({ bookingId: ID, pilotUserId: PILOT }).success).toBe(
+      false
+    );
+    expect(
+      assignBookingSchema.safeParse({ bookingId: ID, pilotUserId: "", droneId: DRONE }).success
+    ).toBe(false);
+  });
+
+  it("maps assignment rule hints", () => {
+    const error = (hint: string) =>
+      ({ code: "23514", hint, message: "", details: "" }) as PostgrestError;
+    for (const hint of [
+      "pilot_busy",
+      "drone_busy",
+      "pilot_unavailable",
+      "drone_unavailable",
+      "slot_passed",
+    ]) {
+      expect(toBookingError(error(hint))).toBe(hint);
+    }
   });
 });

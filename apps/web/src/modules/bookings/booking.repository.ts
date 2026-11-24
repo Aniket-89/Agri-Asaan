@@ -2,7 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
 import { OPEN_BOOKING_STATUSES, type BookingStatus } from "./booking.rules";
-import type { BookingStatusChangeInput, CreateBookingInput } from "./booking.schema";
+import type {
+  AssignBookingInput,
+  BookingStatusChangeInput,
+  CreateBookingInput,
+} from "./booking.schema";
 
 type Client = SupabaseClient<Database>;
 
@@ -116,4 +120,29 @@ export async function getOwnFarmerRecord(supabase: Client, tenantId: string, use
 
 export async function listSlotAvailability(supabase: Client, farmerId: string, date: string) {
   return supabase.rpc("list_slot_availability", { p_farmer_id: farmerId, p_date: date });
+}
+
+export async function callAssignBooking(supabase: Client, input: AssignBookingInput) {
+  return supabase.rpc("assign_booking", {
+    p_booking_id: input.bookingId,
+    p_pilot_user_id: input.pilotUserId,
+    p_drone_id: input.droneId,
+  });
+}
+
+export async function listAssignmentOptions(supabase: Client, bookingId: string) {
+  return supabase.rpc("list_assignment_options", { p_booking_id: bookingId });
+}
+
+export async function getCurrentAssignment(supabase: Client, bookingId: string) {
+  return supabase
+    .from("booking_assignments")
+    .select("pilot_user_id, drone:drones!booking_assignments_drone_same_tenant(uid, model)")
+    .eq("booking_id", bookingId)
+    .eq("is_current", true)
+    .maybeSingle();
+}
+
+export async function listMyJobs(supabase: Client, tenantId: string) {
+  return supabase.rpc("list_my_jobs", { p_tenant_id: tenantId });
 }

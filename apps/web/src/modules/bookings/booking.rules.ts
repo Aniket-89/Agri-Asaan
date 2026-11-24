@@ -43,11 +43,17 @@ export function availableBookingActions(
   }
   if (
     (status === "requested" && (actor.isRegionManager || actor.isRequester || actor.isFarmer)) ||
-    (status === "confirmed" && actor.isRegionManager)
+    ((status === "confirmed" || status === "assigned") && actor.isRegionManager)
   ) {
     actions.push("cancel");
   }
   return actions;
+}
+
+// Mirrors assign_booking: region managers assign confirmed bookings and can
+// reassign while assigned.
+export function canAssignBooking(status: BookingStatus, isRegionManager: boolean): boolean {
+  return isRegionManager && (status === "confirmed" || status === "assigned");
 }
 
 export const BOOKING_WINDOW_DAYS = 60;

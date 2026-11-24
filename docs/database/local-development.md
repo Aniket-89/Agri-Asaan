@@ -92,6 +92,14 @@ day**. The seeded bookings hold the early-morning slot, so book a different
 slot (or date) to see availability change. Org admins manage slots on the
 **Spraying slots** page.
 
+## Assignment (demo data)
+
+Kavita's South booking is assigned to Demo Pilot Two with UA-DEMO-S01, so
+`pilot2@agriasaan.test` has a job under **My jobs**. Mohan's North booking is
+confirmed but unassigned: sign in as `regional@agriasaan.test`, open it from
+**Bookings**, and assign a pilot and drone; `pilot@agriasaan.test` then sees it
+under **My jobs**.
+
 ## Pilot invites (email)
 
 Inviting a pilot (Pilots & drones page, as `regional@agriasaan.test`) needs
