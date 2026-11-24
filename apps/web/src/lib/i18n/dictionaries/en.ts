@@ -17,6 +17,24 @@ export const en = {
     password: "Password",
     submit: "Sign in",
     createAccount: "Create an account",
+    errors: {
+      invalid_credentials: "Email or password is incorrect.",
+      link_invalid:
+        "This link is invalid or has expired. Ask your regional admin for a new invite.",
+    },
+  },
+  account: {
+    setPasswordTitle: "Set your password",
+    setPasswordIntro:
+      "Choose a password to finish setting up your account. Use at least 8 characters.",
+    newPassword: "New password",
+    confirmPassword: "Repeat the password",
+    savePassword: "Save password",
+    errors: {
+      mismatch: "The two passwords do not match.",
+      too_short: "Use at least 8 characters.",
+      failed: "The password could not be saved. Try again, or ask for a new invite.",
+    },
   },
   dashboard: {
     territoryLink: "Manage territory",
@@ -115,7 +133,18 @@ export const en = {
     markAvailable: "Mark available",
     markUnavailable: "Mark unavailable",
     noProfile: "No pilot profile yet.",
-    createProfile: "Create pilot profile",
+    inviteHeading: "Invite a pilot",
+    inviteIntro: "The pilot gets an email with a link to set their own password.",
+    inviteName: "Pilot's full name",
+    inviteEmail: "Pilot's email",
+    inviteSubmit: "Send invite",
+    invited: "Invite sent. The pilot appears below and can sign in after setting a password.",
+    inviteErrors: {
+      forbidden: "Only a regional admin can invite pilots into their own regions.",
+      email_in_use: "That email already has an account. Use a different email.",
+      invalid: "Please check the details and try again.",
+      invite_failed: "The invite could not be sent. Try again.",
+    },
     errors: {
       forbidden: "You don't have permission to do that.",
       duplicate: "That already exists.",

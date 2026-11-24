@@ -10,7 +10,7 @@
 --   pilot@agriasaan.test      AgriAsaan       pilot
 --   farmer@agriasaan.test     AgriAsaan       farmer
 --   admin@greenfield.test     Greenfield Agri organization_admin (white-label demo)
---   pilot2@agriasaan.test     AgriAsaan       pilot (no pilot profile yet: create it in the UI)
+--   pilot2@agriasaan.test     AgriAsaan       pilot (South)
 --
 -- White-label branding demo: http://greenfield.localhost:3000 resolves to the
 -- Greenfield brand through its verified domain; http://localhost:3000 shows
@@ -162,7 +162,7 @@ update public.fields
 set boundary = 'SRID=4326;POLYGON((77.00239 29.00146, 77.00361 29.00146, 77.00361 29.00254, 77.00239 29.00254, 77.00239 29.00146))'
 where id = 'e4000000-0000-4000-8000-000000000001';
 
--- Fleet: demo drones (fake UIDs) and a pilot profile for pilot@agriasaan.test.
+-- Fleet: demo drones (fake UIDs) and pilot profiles.
 insert into public.drones (tenant_id, uid, model, home_region_id, status)
 values
   ('e0000000-0000-4000-8000-000000000001', 'UA-DEMO-N01', 'Demo Sprayer 10L', 'e1000000-0000-4000-8000-000000000001', 'active'),
@@ -170,8 +170,12 @@ values
   ('e0000000-0000-4000-8000-000000000001', 'UA-DEMO-S01', 'Demo Sprayer 10L', 'e1000000-0000-4000-8000-000000000002', 'active'),
   ('e0000000-0000-4000-8000-000000000002', 'GF-DEMO-01', 'Demo Sprayer 10L', 'e1000000-0000-4000-8000-000000000003', 'active');
 
+-- New pilots are created by regional admins through the invite flow; these
+-- two seeded pilots stand in for already-onboarded ones.
 insert into public.pilot_profiles (tenant_id, user_id, home_region_id, license_number)
-values ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000005', 'e1000000-0000-4000-8000-000000000001', 'RPC-DEMO-0001');
+values
+  ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000005', 'e1000000-0000-4000-8000-000000000001', 'RPC-DEMO-0001'),
+  ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000008', 'e1000000-0000-4000-8000-000000000002', 'RPC-DEMO-0002');
 
 -- Bookings (seed runs without a session, so rows are written directly, with
 -- the same snapshots and history create_booking would produce).

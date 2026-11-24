@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(30);
+select plan(32);
 
 -- Fixtures (fake data only).
 -- Tenant A: org admin, regional admin (North), two pilots, a mitra.
@@ -14,7 +14,9 @@ values
   ('93333333-3333-4333-8333-333333333333', 'authenticated', 'authenticated', 'pd-pilot-north@example.test'),
   ('94444444-4444-4444-8444-444444444444', 'authenticated', 'authenticated', 'pd-pilot-south@example.test'),
   ('95555555-5555-4555-8555-555555555555', 'authenticated', 'authenticated', 'pd-mitra@example.test'),
-  ('96666666-6666-4666-8666-666666666666', 'authenticated', 'authenticated', 'pd-org-admin-b@example.test');
+  ('96666666-6666-4666-8666-666666666666', 'authenticated', 'authenticated', 'pd-org-admin-b@example.test'),
+  ('97777777-7777-4777-8777-777777777777', 'authenticated', 'authenticated', 'pd-pilot-noprofile-1@example.test'),
+  ('98888888-8888-4888-8888-888888888888', 'authenticated', 'authenticated', 'pd-pilot-noprofile-2@example.test');
 
 insert into public.organizations (id, name, slug)
 values
@@ -28,7 +30,9 @@ values
   ('9a000000-0000-4000-8000-00000000000a', '9a000000-0000-4000-8000-00000000000a', '93333333-3333-4333-8333-333333333333', 'pilot'),
   ('9a000000-0000-4000-8000-00000000000a', '9a000000-0000-4000-8000-00000000000a', '94444444-4444-4444-8444-444444444444', 'pilot'),
   ('9a000000-0000-4000-8000-00000000000a', '9a000000-0000-4000-8000-00000000000a', '95555555-5555-4555-8555-555555555555', 'mitra'),
-  ('9b000000-0000-4000-8000-00000000000b', '9b000000-0000-4000-8000-00000000000b', '96666666-6666-4666-8666-666666666666', 'organization_admin');
+  ('9b000000-0000-4000-8000-00000000000b', '9b000000-0000-4000-8000-00000000000b', '96666666-6666-4666-8666-666666666666', 'organization_admin'),
+  ('9a000000-0000-4000-8000-00000000000a', '9a000000-0000-4000-8000-00000000000a', '97777777-7777-4777-8777-777777777777', 'pilot'),
+  ('9a000000-0000-4000-8000-00000000000a', '9a000000-0000-4000-8000-00000000000a', '98888888-8888-4888-8888-888888888888', 'pilot');
 
 insert into public.regions (id, tenant_id, name)
 values
@@ -46,7 +50,9 @@ values
   ('9bd10000-0000-4000-8000-000000000001', '9b000000-0000-4000-8000-00000000000b', 'UB-01', 'Demo Sprayer 16L', null);
 
 insert into public.pilot_profiles (tenant_id, user_id, home_region_id, license_number)
-values ('9a000000-0000-4000-8000-00000000000a', '93333333-3333-4333-8333-333333333333', '9a100000-0000-4000-8000-000000000001', 'RPC-DEMO-0001');
+values
+  ('9a000000-0000-4000-8000-00000000000a', '93333333-3333-4333-8333-333333333333', '9a100000-0000-4000-8000-000000000001', 'RPC-DEMO-0001'),
+  ('9a000000-0000-4000-8000-00000000000a', '94444444-4444-4444-8444-444444444444', '9a200000-0000-4000-8000-000000000002', null);
 
 -- ── Database invariants ────────────────────────────────────────────────────
 select throws_ok(
@@ -83,9 +89,9 @@ select lives_ok(
   $$insert into public.drones (tenant_id, uid, model) values ('9a000000-0000-4000-8000-00000000000a', 'UA-SPARE-01', 'Spare, no home region')$$,
   'organization admin can add a drone without a home region'
 );
-select lives_ok(
-  $$insert into public.pilot_profiles (tenant_id, user_id, home_region_id) values ('9a000000-0000-4000-8000-00000000000a', '94444444-4444-4444-8444-444444444444', '9a200000-0000-4000-8000-000000000002')$$,
-  'organization admin can create a pilot profile in any region'
+select throws_ok(
+  $$insert into public.pilot_profiles (tenant_id, user_id, home_region_id) values ('9a000000-0000-4000-8000-00000000000a', '97777777-7777-4777-8777-777777777777', '9a100000-0000-4000-8000-000000000001')$$,
+  '42501', null, 'organization admins cannot create pilot profiles directly (invite flow only, ADR 0012)'
 );
 select throws_ok(
   $$insert into public.drones (tenant_id, uid, model) values ('9b000000-0000-4000-8000-00000000000b', 'UB-INJECT', 'X')$$,
@@ -96,6 +102,14 @@ select throws_ok(
 set local "request.jwt.claim.sub" = '92222222-2222-4222-8222-222222222222';
 select is((select count(*)::integer from public.drones), 3, 'regional admin sees the whole tenant fleet');
 select is((select count(*)::integer from public.pilot_profiles), 2, 'regional admin sees every pilot profile in the tenant');
+select throws_ok(
+  $$insert into public.pilot_profiles (tenant_id, user_id, home_region_id) values ('9a000000-0000-4000-8000-00000000000a', '97777777-7777-4777-8777-777777777777', '9a100000-0000-4000-8000-000000000001')$$,
+  '42501', null, 'regional admins cannot create pilot profiles directly either (invite flow only)'
+);
+select throws_ok(
+  $$insert into public.pilot_profiles (tenant_id, user_id, home_region_id) values ('9a000000-0000-4000-8000-00000000000a', '98888888-8888-4888-8888-888888888888', '9a200000-0000-4000-8000-000000000002')$$,
+  '42501', null, 'regional admin cannot create a pilot profile in another region'
+);
 select lives_ok(
   $$insert into public.drones (tenant_id, uid, model, home_region_id) values ('9a000000-0000-4000-8000-00000000000a', 'UA-NORTH-02', 'Demo Sprayer 10L', '9a100000-0000-4000-8000-000000000001')$$,
   'regional admin can add a drone to their region'

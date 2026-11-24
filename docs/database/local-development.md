@@ -76,12 +76,22 @@ Do not edit migrations that have already been applied. PostGIS is enabled by `su
 - a white-label demo organization, Greenfield Agri (`admin@greenfield.test`), with the verified domain `greenfield.localhost`
 - territory: AgriAsaan has a North and a South demo region. `regional@agriasaan.test` covers North, and `mitra@agriasaan.test` covers Demo Village Alpha and Beta. South has no regional admin, so the regional admin sees it read-only.
 - farmers and fields: four demo farmers with fake 90000xxxxx phone numbers and five fields. `farmer@agriasaan.test` is linked to Demo Farmer Ramesh. His "Canal-side plot" has a ~3.5-acre demo boundary for satellite work. Each tenant has a seeded crop list (English and Hindi).
-- fleet: four demo drones (UA-DEMO-N01/N02/S01 for AgriAsaan, GF-DEMO-01 for Greenfield). `pilot@agriasaan.test` has a North pilot profile. `pilot2@agriasaan.test` is a pilot member **without** a profile, so you can create one on the Pilots & drones page.
+- fleet: four demo drones (UA-DEMO-N01/N02/S01 for AgriAsaan, GF-DEMO-01 for Greenfield). `pilot@agriasaan.test` is the North pilot and `pilot2@agriasaan.test` the South pilot. New pilots are created by a regional admin with **Invite a pilot**.
 - bookings: Ramesh has a **requested** booking (both his fields, so My farm shows nothing bookable until it is cancelled), Mohan a **confirmed** one, and Kavita (South) a requested one that the North regional admin cannot see. Sunita has no booking, so she's a good farmer to book for as the mitra.
 
 All seeded users sign in with `demo-password-123`. Open `http://greenfield.localhost:3000` to see tenant branding, and `http://localhost:3000` for the platform default. Both redirect to a language prefix (`/en` or `/hi`).
 
 Never seed real farmer, customer, or production information.
+
+## Pilot invites (email)
+
+Inviting a pilot (Pilots & drones page, as `regional@agriasaan.test`) needs
+the server-only `SUPABASE_SERVICE_ROLE_KEY` in `apps/web/.env.local`. Take
+the value from `npm run db:status` and never share or commit it. Invite
+emails do not leave your machine: open the local test inbox at
+http://127.0.0.1:54324, click **Set your password**, and finish the setup.
+After changing `supabase/config.toml` or `supabase/templates/`, restart
+Supabase (`npm run db:stop` then `npm run db:start`).
 
 ## Generated types
 

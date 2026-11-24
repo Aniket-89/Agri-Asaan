@@ -319,17 +319,23 @@ isOneToOne: false
                   ]
                 },"pilot_profiles": {
                   Row: {
-                    "created_at": string,"home_region_id": string | null,"is_active": boolean,"license_number": string | null,"tenant_id": string,"updated_at": string,"user_id": string
+                    "created_at": string,"created_by": string | null,"home_region_id": string | null,"is_active": boolean,"license_number": string | null,"tenant_id": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id": string,"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"created_by"?: string | null,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"created_by"?: string | null,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "pilot_profiles_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pilot_profiles_home_region_same_tenant"
       columns: ["tenant_id","home_region_id"]
 isOneToOne: false
@@ -495,11 +501,17 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "add_organization_member":
+            "account_exists_for_email":
+{ Args: { "p_email": string }; Returns: boolean
+                           },
+"add_organization_member":
 { Args: { "p_organization_id": string,"p_role": Database["public"]['Enums']["organization_role"],"p_user_id": string }; Returns: undefined
                            },
 "bootstrap_platform_owner":
 { Args: { "p_user_id": string }; Returns: undefined
+                           },
+"can_invite_pilot":
+{ Args: { "p_home_region_id": string }; Returns: boolean
                            },
 "can_manage_farmer":
 { Args: { "p_farmer_id": string }; Returns: boolean
@@ -527,6 +539,9 @@ isOneToOne: false
                            },
 "create_booking":
 { Args: { "p_booking_id": string,"p_farmer_id": string,"p_field_ids": (string)[],"p_notes"?: string,"p_preferred_date": string }; Returns: string
+                           },
+"delete_orphaned_pilot_invite":
+{ Args: { "p_not_before": string,"p_user_id": string }; Returns: boolean
                            },
 "get_profile_phone":
 { Args: { "p_profile_id": string }; Returns: string
@@ -568,6 +583,9 @@ isOneToOne: false
                            },
 "provision_customer_organization":
 { Args: { "p_brand_name"?: string,"p_brand_primary_color"?: string,"p_enabled_features"?: (string)[],"p_initial_admin_email": string,"p_name": string,"p_organization_type": Database["public"]['Enums']["organization_type"],"p_slug": string }; Returns: string
+                           },
+"provision_invited_pilot":
+{ Args: { "p_home_region_id": string,"p_inviter_id": string,"p_license_number"?: string,"p_user_id": string }; Returns: string
                            },
 "set_booking_status":
 { Args: { "p_booking_id": string,"p_reason"?: string,"p_to_status": Database["public"]['Enums']["booking_status"] }; Returns: undefined

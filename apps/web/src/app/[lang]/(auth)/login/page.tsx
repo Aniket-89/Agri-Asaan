@@ -1,11 +1,28 @@
 import { Suspense } from "react";
+import { z } from "zod";
 
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { StatusBanner } from "@/components/shared/status-banner";
 import { getRequestBranding } from "@/lib/branding/request-branding";
 import { withLocale, format, type Dictionary } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 
 import { loginAction } from "./actions";
+
+const loginSearchSchema = z.object({
+  error: z.enum(["invalid_credentials", "link_invalid"]).optional().catch(undefined),
+});
+
+async function LoginError({
+  searchParams,
+  t,
+}: {
+  searchParams: PageProps<"/[lang]/login">["searchParams"];
+  t: Dictionary;
+}) {
+  const { error } = loginSearchSchema.parse(await searchParams);
+  return error ? <StatusBanner kind="error" text={t.login.errors[error]} /> : null;
+}
 
 async function BrandedHeading({ title }: { title: string }) {
   const branding = await getRequestBranding();
@@ -21,7 +38,7 @@ function LoginHeading({ t }: { t: Dictionary }) {
   );
 }
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: PageProps<"/[lang]/login">) {
   const { locale, t } = await getDictionary();
 
   return (
@@ -33,6 +50,9 @@ export default async function LoginPage() {
       />
       <form action={loginAction} className="w-full space-y-4 rounded-xl border p-6">
         <LoginHeading t={t} />
+        <Suspense fallback={null}>
+          <LoginError searchParams={searchParams} t={t} />
+        </Suspense>
         <label className="block">
           <span className="mb-1 block text-sm">{t.login.email}</span>
           <input className="w-full rounded border px-3 py-2" name="email" type="email" required />

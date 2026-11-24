@@ -13,11 +13,11 @@ import {
 } from "@/modules/drones";
 import { getActiveMembershipContext, type ActiveMembershipContext } from "@/modules/organizations";
 import {
-  createPilotProfile,
   pilotAvailabilityInputSchema,
-  pilotProfileInputSchema,
+  pilotInviteInputSchema,
   setPilotAvailability,
 } from "@/modules/pilots";
+import { invitePilot } from "@/modules/pilots/pilot-invite.service";
 
 const FLEET_PATH = "/dashboard/fleet";
 
@@ -55,20 +55,35 @@ export async function setDroneStatusAction(formData: FormData) {
   await runFleetAction(formData, droneStatusInputSchema, ["droneId", "status"], setDroneStatus);
 }
 
-export async function createPilotProfileAction(formData: FormData) {
-  await runFleetAction(
-    formData,
-    pilotProfileInputSchema,
-    ["userId", "homeRegionId", "licenseNumber"],
-    createPilotProfile
-  );
-}
-
 export async function setPilotAvailabilityAction(formData: FormData) {
   await runFleetAction(
     formData,
     pilotAvailabilityInputSchema,
     ["userId", "isActive"],
     setPilotAvailability
+  );
+}
+
+export async function invitePilotAction(formData: FormData) {
+  const context = await getActiveMembershipContext();
+  if (!context) {
+    redirect(await localizedPath("/login"));
+  }
+
+  const parsed = pilotInviteInputSchema.safeParse({
+    fullName: formData.get("fullName"),
+    email: formData.get("email"),
+    homeRegionId: formData.get("homeRegionId"),
+    licenseNumber: formData.get("licenseNumber"),
+  });
+  if (!parsed.success) {
+    redirect(await localizedPath(`${FLEET_PATH}?inviteError=invalid`));
+  }
+
+  const result = await invitePilot(context, parsed.data);
+  redirect(
+    await localizedPath(
+      result.ok ? `${FLEET_PATH}?status=invited` : `${FLEET_PATH}?inviteError=${result.error}`
+    )
   );
 }

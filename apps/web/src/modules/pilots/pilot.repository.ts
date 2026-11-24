@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
-import type { PilotAvailabilityInput, PilotProfileInput } from "./pilot.schema";
+import type { PilotAvailabilityInput } from "./pilot.schema";
 
 type Client = SupabaseClient<Database>;
 
@@ -22,19 +22,6 @@ export async function listPilotProfiles(supabase: Client, tenantId: string) {
 
 export async function listProfileNames(supabase: Client, profileIds: string[]) {
   return supabase.from("profiles").select("id, full_name").in("id", profileIds);
-}
-
-export async function insertPilotProfile(
-  supabase: Client,
-  tenantId: string,
-  input: PilotProfileInput
-) {
-  return supabase.from("pilot_profiles").insert({
-    tenant_id: tenantId,
-    user_id: input.userId,
-    home_region_id: input.homeRegionId ?? null,
-    license_number: input.licenseNumber ?? null,
-  });
 }
 
 export async function updatePilotAvailability(
