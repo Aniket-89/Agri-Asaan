@@ -83,6 +83,15 @@ All seeded users sign in with `demo-password-123`. Open `http://greenfield.local
 
 Never seed real farmer, customer, or production information.
 
+## Slots and capacity (demo data)
+
+AgriAsaan has three slots: Early morning 06:00–09:00, Morning 09:00–11:30,
+and Evening 16:00–18:30. North has one available pilot and one active drone
+(the second drone is in maintenance), so **each North slot has one place per
+day**. The seeded bookings hold the early-morning slot, so book a different
+slot (or date) to see availability change. Org admins manage slots on the
+**Spraying slots** page.
+
 ## Pilot invites (email)
 
 Inviting a pilot (Pilots & drones page, as `regional@agriasaan.test`) needs

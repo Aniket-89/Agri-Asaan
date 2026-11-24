@@ -17,6 +17,8 @@ const BOOKING_RULE_ERRORS = [
   "invalid_transition",
   "reason_required",
   "invalid_reason",
+  "invalid_slot",
+  "slot_full",
 ] as const;
 
 export type BookingErrorCode = DomainErrorCode | (typeof BOOKING_RULE_ERRORS)[number];
@@ -51,6 +53,7 @@ export type BookingDetail = {
   id: string;
   status: BookingStatus;
   preferredDate: string;
+  slotLabel: string | null;
   notes: string | null;
   totalAcres: number;
   createdAt: string;
@@ -201,6 +204,7 @@ export async function getBookingDetail(
     id: booking.id,
     status: booking.status,
     preferredDate: booking.preferred_date,
+    slotLabel: booking.slot ? formatSlotLabel(booking.slot, locale) : null,
     notes: booking.notes,
     totalAcres: booking.total_acres,
     createdAt: booking.created_at,
@@ -267,4 +271,38 @@ export async function changeBookingStatus(
 ): Promise<{ ok: true } | { ok: false; error: BookingErrorCode }> {
   const { error } = await repository.callSetBookingStatus(context.supabase, input);
   return error ? { ok: false, error: toBookingError(error) } : { ok: true };
+}
+
+export type SlotOption = {
+  id: string;
+  label: string;
+  available: number;
+};
+
+// "Early morning · 06:00–09:00" in the viewer's language.
+export function formatSlotLabel(
+  slot: { name_en: string; name_hi: string; start_time: string; end_time: string },
+  locale: Locale
+): string {
+  const name = locale === "hi" ? slot.name_hi : slot.name_en;
+  return `${name} · ${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`;
+}
+
+// Slots for a date with the places left in the farmer's region. The database
+// function checks that the caller may book for this farmer.
+export async function getSlotAvailability(
+  context: ActiveMembershipContext,
+  farmerId: string,
+  date: string,
+  locale: Locale
+): Promise<SlotOption[]> {
+  const { data, error } = await repository.listSlotAvailability(context.supabase, farmerId, date);
+  if (error) {
+    throw new Error("Unable to load slot availability.");
+  }
+  return data.map((slot) => ({
+    id: slot.slot_id,
+    label: formatSlotLabel(slot, locale),
+    available: slot.available,
+  }));
 }

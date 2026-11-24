@@ -15,7 +15,8 @@ values
   ('a1000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'bk-mitra@example.test'),
   ('a1000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'bk-farmer@example.test'),
   ('a1000000-0000-4000-8000-000000000006', 'authenticated', 'authenticated', 'bk-pilot@example.test'),
-  ('a1000000-0000-4000-8000-000000000007', 'authenticated', 'authenticated', 'bk-admin-b@example.test');
+  ('a1000000-0000-4000-8000-000000000007', 'authenticated', 'authenticated', 'bk-admin-b@example.test'),
+  ('a1000000-0000-4000-8000-000000000008', 'authenticated', 'authenticated', 'bk-pilot-2@example.test');
 
 insert into public.organizations (id, name, slug)
 values
@@ -30,7 +31,8 @@ values
   ('ab000000-0000-4000-8000-00000000000a', 'ab000000-0000-4000-8000-00000000000a', 'a1000000-0000-4000-8000-000000000004', 'mitra'),
   ('ab000000-0000-4000-8000-00000000000a', 'ab000000-0000-4000-8000-00000000000a', 'a1000000-0000-4000-8000-000000000005', 'farmer'),
   ('ab000000-0000-4000-8000-00000000000a', 'ab000000-0000-4000-8000-00000000000a', 'a1000000-0000-4000-8000-000000000006', 'pilot'),
-  ('ab000000-0000-4000-8000-00000000000b', 'ab000000-0000-4000-8000-00000000000b', 'a1000000-0000-4000-8000-000000000007', 'organization_admin');
+  ('ab000000-0000-4000-8000-00000000000b', 'ab000000-0000-4000-8000-00000000000b', 'a1000000-0000-4000-8000-000000000007', 'organization_admin'),
+  ('ab000000-0000-4000-8000-00000000000a', 'ab000000-0000-4000-8000-00000000000a', 'a1000000-0000-4000-8000-000000000008', 'pilot');
 
 insert into public.regions (id, tenant_id, name)
 values
@@ -50,6 +52,18 @@ values
 
 insert into public.mitra_villages (tenant_id, village_id, user_id)
 values ('ab000000-0000-4000-8000-00000000000a', 'ab110000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000004');
+
+-- Capacity for the North region: two available pilots and two active drones.
+insert into public.pilot_profiles (tenant_id, user_id, home_region_id)
+values
+  ('ab000000-0000-4000-8000-00000000000a', 'a1000000-0000-4000-8000-000000000006', 'ab100000-0000-4000-8000-000000000001'),
+  ('ab000000-0000-4000-8000-00000000000a', 'a1000000-0000-4000-8000-000000000008', 'ab100000-0000-4000-8000-000000000001');
+insert into public.drones (tenant_id, uid, model, home_region_id)
+values
+  ('ab000000-0000-4000-8000-00000000000a', 'BK-N-01', 'Demo', 'ab100000-0000-4000-8000-000000000001'),
+  ('ab000000-0000-4000-8000-00000000000a', 'BK-N-02', 'Demo', 'ab100000-0000-4000-8000-000000000001');
+insert into public.spray_slots (id, tenant_id, name_en, name_hi, start_time, end_time)
+values ('abd00000-0000-4000-8000-000000000001', 'ab000000-0000-4000-8000-00000000000a', 'Evening', 'शाम', '23:58', '23:59');
 
 insert into public.tenant_crops (id, tenant_id, code, name_en, name_hi)
 values ('abc00000-0000-4000-8000-000000000001', 'ab000000-0000-4000-8000-00000000000a', 'wheat', 'Wheat', 'गेहूँ');
@@ -82,7 +96,7 @@ set local "request.jwt.claim.sub" = 'a1000000-0000-4000-8000-000000000004';
 select lives_ok(
   $$select public.create_booking('abb00000-0000-4000-8000-000000000001', 'abf10000-0000-4000-8000-000000000001',
       array['abfa0000-0000-4000-8000-000000000001', 'abfa0000-0000-4000-8000-000000000002']::uuid[],
-      (select soon from bk_dates), '  Spray before the rain  ')$$,
+      (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001', '  Spray before the rain  ')$$,
   'mitra can book two fields for a farmer in their village'
 );
 select is(
@@ -106,54 +120,54 @@ select is(
 );
 select is(
   public.create_booking('abb00000-0000-4000-8000-000000000001', 'abf10000-0000-4000-8000-000000000001',
-    array['abfa0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates)),
+    array['abfa0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001'),
   'abb00000-0000-4000-8000-000000000001'::uuid,
   'retrying with the same booking id returns the existing booking'
 );
 select is((select count(*)::integer from public.bookings), 1, 'the retry did not create a second booking');
 select throws_ok(
   $$select public.create_booking('abb00000-0000-4000-8000-000000000001', 'abf20000-0000-4000-8000-000000000002',
-      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates))$$,
+      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23505', null, 'a booking id cannot be reused for a different farmer'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array['abfa0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates))$$,
+      array['abfa0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23514', 'a field already has an open booking', 'a field cannot have two open bookings'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf20000-0000-4000-8000-000000000002',
-      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates))$$,
+      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '42501', null, 'mitra cannot book for farmers outside their villages'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates))$$,
+      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23514', 'fields must be active fields of this farmer', 'a booking cannot include another farmer''s field'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array['abfa0000-0000-4000-8000-000000000003']::uuid[], (select soon from bk_dates))$$,
+      array['abfa0000-0000-4000-8000-000000000003']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23514', 'fields must be active fields of this farmer', 'inactive fields cannot be booked'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array['abfa0000-0000-4000-8000-000000000004']::uuid[], (select yesterday from bk_dates))$$,
+      array['abfa0000-0000-4000-8000-000000000004']::uuid[], (select yesterday from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23514', 'preferred date must be within the next 60 days', 'the preferred date cannot be in the past'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array['abfa0000-0000-4000-8000-000000000004']::uuid[], (select too_late from bk_dates))$$,
+      array['abfa0000-0000-4000-8000-000000000004']::uuid[], (select too_late from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23514', 'preferred date must be within the next 60 days', 'the preferred date is at most 60 days ahead'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array[]::uuid[], (select soon from bk_dates))$$,
+      array[]::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23514', 'choose between 1 and 20 different fields', 'a booking needs at least one field'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array['abfa0000-0000-4000-8000-000000000004', 'abfa0000-0000-4000-8000-000000000004']::uuid[], (select soon from bk_dates))$$,
+      array['abfa0000-0000-4000-8000-000000000004', 'abfa0000-0000-4000-8000-000000000004']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '23514', 'choose between 1 and 20 different fields', 'the same field cannot be listed twice'
 );
 select throws_ok(
@@ -172,12 +186,12 @@ set local "request.jwt.claim.sub" = 'a1000000-0000-4000-8000-000000000005';
 select is((select count(*)::integer from public.bookings), 1, 'a farmer sees bookings for their own fields');
 select lives_ok(
   $$select public.create_booking('abb00000-0000-4000-8000-000000000002', 'abf10000-0000-4000-8000-000000000001',
-      array['abfa0000-0000-4000-8000-000000000004']::uuid[], (select soon from bk_dates))$$,
+      array['abfa0000-0000-4000-8000-000000000004']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   'a farmer can book their own field directly'
 );
 select throws_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf20000-0000-4000-8000-000000000002',
-      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates))$$,
+      array['abfb0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   '42501', null, 'a farmer cannot book for another farmer'
 );
 select lives_ok(
@@ -262,7 +276,7 @@ select is(
 );
 select lives_ok(
   $$select public.create_booking(gen_random_uuid(), 'abf10000-0000-4000-8000-000000000001',
-      array['abfa0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates))$$,
+      array['abfa0000-0000-4000-8000-000000000001']::uuid[], (select soon from bk_dates), 'abd00000-0000-4000-8000-000000000001')$$,
   'a field can be booked again once its earlier booking is closed'
 );
 

@@ -93,7 +93,10 @@ async function BookingDetailContent({
           <dt className="text-gray-600">{t.village}</dt>
           <dd>{booking.villageName}</dd>
           <dt className="text-gray-600">{t.preferredDate}</dt>
-          <dd>{formatBookingDate(booking.preferredDate, locale)}</dd>
+          <dd>
+            {formatBookingDate(booking.preferredDate, locale)}
+            {booking.slotLabel ? ` · ${booking.slotLabel}` : ""}
+          </dd>
         </dl>
         {booking.notes ? <p className="rounded bg-gray-50 p-3 text-sm">{booking.notes}</p> : null}
       </section>

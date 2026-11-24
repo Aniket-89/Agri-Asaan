@@ -11,6 +11,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import {
   BOOKING_ERROR_CODES,
   bookingDateWindow,
+  getSlotAvailability,
   listFarmerBookings,
   listOpenBookedFieldIds,
 } from "@/modules/bookings";
@@ -28,6 +29,7 @@ const searchSchema = z.object({
   status: z.enum(["saved"]).optional().catch(undefined),
   error: z.enum(["forbidden", "duplicate", "invalid", "not_found"]).optional().catch(undefined),
   bookingError: z.enum(BOOKING_ERROR_CODES).optional().catch(undefined),
+  slotDate: z.iso.date().optional().catch(undefined),
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -71,6 +73,14 @@ async function FarmerDetailContent({
     listFarmerBookings(context, farmer.id),
     listOpenBookedFieldIds(context, farmer.id),
   ]);
+  const dateWindow = bookingDateWindow(new Date());
+  const selectedDate =
+    search.slotDate && search.slotDate >= dateWindow.min && search.slotDate <= dateWindow.max
+      ? search.slotDate
+      : dateWindow.min;
+  const slots = farmer.isActive
+    ? await getSlotAvailability(context, farmer.id, selectedDate, locale)
+    : [];
   const dateFormat = new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-IN", {
     dateStyle: "medium",
   });
@@ -219,7 +229,9 @@ async function FarmerDetailContent({
               areaAcres: field.areaAcres,
               alreadyBooked: bookedFieldIds.has(field.id),
             }))}
-          dateWindow={bookingDateWindow(new Date())}
+          dateWindow={dateWindow}
+          selectedDate={selectedDate}
+          slots={slots}
           returnTo="farmer"
           action={createBookingAction}
           locale={locale}
