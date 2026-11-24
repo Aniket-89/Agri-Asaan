@@ -77,6 +77,7 @@ Do not edit migrations that have already been applied. PostGIS is enabled by `su
 - territory: AgriAsaan has a North and a South demo region. `regional@agriasaan.test` covers North, and `mitra@agriasaan.test` covers Demo Village Alpha and Beta. South has no regional admin, so the regional admin sees it read-only.
 - farmers and fields: four demo farmers with fake 90000xxxxx phone numbers and five fields. `farmer@agriasaan.test` is linked to Demo Farmer Ramesh. His "Canal-side plot" has a ~3.5-acre demo boundary for satellite work. Each tenant has a seeded crop list (English and Hindi).
 - fleet: four demo drones (UA-DEMO-N01/N02/S01 for AgriAsaan, GF-DEMO-01 for Greenfield). `pilot@agriasaan.test` has a North pilot profile. `pilot2@agriasaan.test` is a pilot member **without** a profile, so you can create one on the Pilots & drones page.
+- bookings: Ramesh has a **requested** booking (both his fields, so My farm shows nothing bookable until it is cancelled), Mohan a **confirmed** one, and Kavita (South) a requested one that the North regional admin cannot see. Sunita has no booking, so she's a good farmer to book for as the mitra.
 
 All seeded users sign in with `demo-password-123`. Open `http://greenfield.localhost:3000` to see tenant branding, and `http://localhost:3000` for the platform default. Both redirect to a language prefix (`/en` or `/hi`).
 

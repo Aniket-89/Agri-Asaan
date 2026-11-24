@@ -5,7 +5,97 @@ export type Database = {
   
   "public": {
           Tables: {
-            "drones": {
+            "booking_fields": {
+                  Row: {
+                    "area_acres": number,"booking_id": string,"crop_code": string,"crop_name_en": string,"crop_name_hi": string,"farmer_id": string,"field_id": string,"field_name": string,"latitude": number,"longitude": number,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_acres": number,"booking_id": string,"crop_code": string,"crop_name_en": string,"crop_name_hi": string,"farmer_id": string,"field_id": string,"field_name": string,"latitude": number,"longitude": number,"tenant_id": string
+                  }
+                  Update: {
+                    "area_acres"?: number,"booking_id"?: string,"crop_code"?: string,"crop_name_en"?: string,"crop_name_hi"?: string,"farmer_id"?: string,"field_id"?: string,"field_name"?: string,"latitude"?: number,"longitude"?: number,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "booking_fields_booking_same_farmer"
+      columns: ["tenant_id","booking_id","farmer_id"]
+isOneToOne: false
+      referencedRelation: "bookings"
+      referencedColumns: ["tenant_id","id","farmer_id"]
+    },{
+      foreignKeyName: "booking_fields_field_same_farmer"
+      columns: ["tenant_id","farmer_id","field_id"]
+isOneToOne: false
+      referencedRelation: "fields"
+      referencedColumns: ["tenant_id","farmer_id","id"]
+    }
+                  ]
+                },"booking_status_history": {
+                  Row: {
+                    "actor_id": string | null,"booking_id": string,"created_at": string,"from_status": Database["public"]['Enums']["booking_status"] | null,"id": number,"reason": string | null,"tenant_id": string,"to_status": Database["public"]['Enums']["booking_status"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actor_id"?: string | null,"booking_id": string,"created_at"?: string,"from_status"?: Database["public"]['Enums']["booking_status"] | null,"id"?: never,"reason"?: string | null,"tenant_id": string,"to_status": Database["public"]['Enums']["booking_status"]
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"booking_id"?: string,"created_at"?: string,"from_status"?: Database["public"]['Enums']["booking_status"] | null,"id"?: never,"reason"?: string | null,"tenant_id"?: string,"to_status"?: Database["public"]['Enums']["booking_status"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "booking_status_history_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "booking_status_history_booking_same_tenant"
+      columns: ["tenant_id","booking_id"]
+isOneToOne: false
+      referencedRelation: "bookings"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"bookings": {
+                  Row: {
+                    "created_at": string,"farmer_id": string,"id": string,"notes": string | null,"preferred_date": string,"region_id": string,"requested_by": string | null,"status": Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at": string,"village_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"farmer_id": string,"id": string,"notes"?: string | null,"preferred_date": string,"region_id": string,"requested_by"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at"?: string,"village_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"farmer_id"?: string,"id"?: string,"notes"?: string | null,"preferred_date"?: string,"region_id"?: string,"requested_by"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id"?: string,"total_acres"?: number,"updated_at"?: string,"village_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "bookings_farmer_same_tenant"
+      columns: ["tenant_id","farmer_id"]
+isOneToOne: false
+      referencedRelation: "farmers"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "bookings_region_same_tenant"
+      columns: ["tenant_id","region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "bookings_requested_by_fkey"
+      columns: ["requested_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bookings_village_same_tenant"
+      columns: ["tenant_id","village_id"]
+isOneToOne: false
+      referencedRelation: "villages"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"drones": {
                   Row: {
                     "created_at": string,"home_region_id": string | null,"id": string,"model": string,"status": Database["public"]['Enums']["drone_status"],"tenant_id": string,"uid": string,"updated_at": string
                   }
@@ -426,11 +516,17 @@ isOneToOne: false
 "can_manage_village":
 { Args: { "p_village_id": string }; Returns: boolean
                            },
+"can_view_booking":
+{ Args: { "p_booking_id": string }; Returns: boolean
+                           },
 "can_view_farmer":
 { Args: { "p_farmer_id": string }; Returns: boolean
                            },
 "can_view_fleet":
 { Args: { "p_tenant_id": string }; Returns: boolean
+                           },
+"create_booking":
+{ Args: { "p_booking_id": string,"p_farmer_id": string,"p_field_ids": (string)[],"p_notes"?: string,"p_preferred_date": string }; Returns: string
                            },
 "get_profile_phone":
 { Args: { "p_profile_id": string }; Returns: string
@@ -473,12 +569,15 @@ isOneToOne: false
 "provision_customer_organization":
 { Args: { "p_brand_name"?: string,"p_brand_primary_color"?: string,"p_enabled_features"?: (string)[],"p_initial_admin_email": string,"p_name": string,"p_organization_type": Database["public"]['Enums']["organization_type"],"p_slug": string }; Returns: string
                            },
+"set_booking_status":
+{ Args: { "p_booking_id": string,"p_reason"?: string,"p_to_status": Database["public"]['Enums']["booking_status"] }; Returns: undefined
+                           },
 "write_platform_audit":
 { Args: { "p_action": string,"p_details": Json,"p_target_id": string,"p_target_table": string,"p_target_tenant_id": string }; Returns: undefined
                            }
           }
           Enums: {
-            "drone_status": "active"|"maintenance"|"retired","organization_role": "super_admin"|"admin"|"mitra"|"farmer"|"pilot"|"organization_admin"|"regional_admin","organization_type": "customer"|"agriasaan","platform_role": "platform_owner"|"system_admin"|"developer"|"support","platform_staff_status": "active"|"suspended"
+            "booking_status": "requested"|"confirmed"|"rejected"|"cancelled"|"assigned"|"in_progress"|"completed"|"verified","drone_status": "active"|"maintenance"|"retired","organization_role": "super_admin"|"admin"|"mitra"|"farmer"|"pilot"|"organization_admin"|"regional_admin","organization_type": "customer"|"agriasaan","platform_role": "platform_owner"|"system_admin"|"developer"|"support","platform_staff_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -594,7 +693,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "drone_status": ["active", "maintenance", "retired"],"organization_role": ["super_admin", "admin", "mitra", "farmer", "pilot", "organization_admin", "regional_admin"],"organization_type": ["customer", "agriasaan"],"platform_role": ["platform_owner", "system_admin", "developer", "support"],"platform_staff_status": ["active", "suspended"]
+            "booking_status": ["requested", "confirmed", "rejected", "cancelled", "assigned", "in_progress", "completed", "verified"],"drone_status": ["active", "maintenance", "retired"],"organization_role": ["super_admin", "admin", "mitra", "farmer", "pilot", "organization_admin", "regional_admin"],"organization_type": ["customer", "agriasaan"],"platform_role": ["platform_owner", "system_admin", "developer", "support"],"platform_staff_status": ["active", "suspended"]
           }
         }
 } as const

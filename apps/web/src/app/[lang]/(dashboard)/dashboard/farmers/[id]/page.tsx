@@ -8,10 +8,18 @@ import { StatusBanner } from "@/components/shared/status-banner";
 import { UseLocationButton } from "@/components/shared/use-location-button";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import {
+  BOOKING_ERROR_CODES,
+  bookingDateWindow,
+  listFarmerBookings,
+  listOpenBookedFieldIds,
+} from "@/modules/bookings";
+import { BookingForm, BookingList } from "@/modules/bookings/components/booking-ui";
 import { getFarmer } from "@/modules/farmers";
 import { listCropOptions, listFarmerFields } from "@/modules/fields";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
+import { createBookingAction } from "../../bookings/actions";
 import { addFieldAction } from "../actions";
 
 export const instant = false;
@@ -19,6 +27,7 @@ export const instant = false;
 const searchSchema = z.object({
   status: z.enum(["saved"]).optional().catch(undefined),
   error: z.enum(["forbidden", "duplicate", "invalid", "not_found"]).optional().catch(undefined),
+  bookingError: z.enum(BOOKING_ERROR_CODES).optional().catch(undefined),
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -55,10 +64,12 @@ async function FarmerDetailContent({
     notFound();
   }
 
-  const [fields, crops, search] = await Promise.all([
+  const [fields, crops, search, bookings, bookedFieldIds] = await Promise.all([
     listFarmerFields(context, farmer.id, locale),
     listCropOptions(context, locale),
     searchParams.then((value) => searchSchema.parse(value)),
+    listFarmerBookings(context, farmer.id),
+    listOpenBookedFieldIds(context, farmer.id),
   ]);
   const dateFormat = new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-IN", {
     dateStyle: "medium",
@@ -192,6 +203,38 @@ async function FarmerDetailContent({
           {t.fields.submit}
         </button>
       </form>
+
+      {search.bookingError ? (
+        <StatusBanner kind="error" text={t.bookings.errors[search.bookingError]} />
+      ) : null}
+      {farmer.isActive ? (
+        <BookingForm
+          farmerId={farmer.id}
+          fields={fields
+            .filter((field) => field.isActive)
+            .map((field) => ({
+              id: field.id,
+              name: field.name,
+              cropName: field.cropName,
+              areaAcres: field.areaAcres,
+              alreadyBooked: bookedFieldIds.has(field.id),
+            }))}
+          dateWindow={bookingDateWindow(new Date())}
+          returnTo="farmer"
+          action={createBookingAction}
+          locale={locale}
+          t={t.bookings}
+        />
+      ) : null}
+
+      {bookings.length > 0 ? (
+        <section className="space-y-2" aria-labelledby="farmer-bookings-heading">
+          <h2 id="farmer-bookings-heading" className="text-xl font-semibold">
+            {t.bookings.farmerBookings}
+          </h2>
+          <BookingList bookings={bookings} locale={locale} t={t.bookings} showFarmer={false} />
+        </section>
+      ) : null}
     </>
   );
 }
