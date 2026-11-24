@@ -166,7 +166,7 @@ select lives_ok(
 select throws_ok(
   $$select public.add_organization_member('aaaaaaaa-0000-4000-8000-000000000001', 'b1111111-1111-4111-8111-111111111111', 'organization_admin')$$,
   'P0001',
-  'regional admins can only add mitra, farmer, or pilot members',
+  'regional admins can only add mitra or farmer members',
   'regional admin cannot add an organization admin'
 );
 

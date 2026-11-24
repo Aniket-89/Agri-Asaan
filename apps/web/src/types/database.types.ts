@@ -317,19 +317,63 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"pilot_profiles": {
+                },"pilot_invites": {
                   Row: {
-                    "created_at": string,"home_region_id": string | null,"is_active": boolean,"license_number": string | null,"tenant_id": string,"updated_at": string,"user_id": string
+                    "created_at": string,"email": string,"failure_reason": string | null,"home_region_id": string,"id": string,"inviter_id": string | null,"status": Database["public"]['Enums']["pilot_invite_status"],"tenant_id": string,"updated_at": string,"user_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id": string,"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"email": string,"failure_reason"?: string | null,"home_region_id": string,"id"?: string,"inviter_id"?: string | null,"status": Database["public"]['Enums']["pilot_invite_status"],"tenant_id": string,"updated_at"?: string,"user_id"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"email"?: string,"failure_reason"?: string | null,"home_region_id"?: string,"id"?: string,"inviter_id"?: string | null,"status"?: Database["public"]['Enums']["pilot_invite_status"],"tenant_id"?: string,"updated_at"?: string,"user_id"?: string | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "pilot_invites_inviter_id_fkey"
+      columns: ["inviter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pilot_invites_region_same_tenant"
+      columns: ["tenant_id","home_region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "pilot_invites_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pilot_invites_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"pilot_profiles": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"home_region_id": string | null,"is_active": boolean,"license_number": string | null,"tenant_id": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "pilot_profiles_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pilot_profiles_home_region_same_tenant"
       columns: ["tenant_id","home_region_id"]
 isOneToOne: false
@@ -501,6 +545,9 @@ isOneToOne: false
 "bootstrap_platform_owner":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
+"can_invite_pilot":
+{ Args: { "p_home_region_id": string }; Returns: boolean
+                           },
 "can_manage_farmer":
 { Args: { "p_farmer_id": string }; Returns: boolean
                            },
@@ -525,8 +572,19 @@ isOneToOne: false
 "can_view_fleet":
 { Args: { "p_tenant_id": string }; Returns: boolean
                            },
+"claim_pilot_invite":
+{ Args: { "p_email": string,"p_home_region_id": string,"p_inviter_id": string }; Returns: {
+              "invite_id": string,"outcome": Database["public"]['Enums']["pilot_invite_status"]
+            }[]
+                           },
 "create_booking":
 { Args: { "p_booking_id": string,"p_farmer_id": string,"p_field_ids": (string)[],"p_notes"?: string,"p_preferred_date": string }; Returns: string
+                           },
+"delete_orphaned_pilot_invite":
+{ Args: { "p_not_before": string,"p_user_id": string }; Returns: boolean
+                           },
+"fail_pilot_invite":
+{ Args: { "p_invite_id": string,"p_reason": string }; Returns: undefined
                            },
 "get_profile_phone":
 { Args: { "p_profile_id": string }; Returns: string
@@ -563,11 +621,17 @@ isOneToOne: false
 "manage_platform_staff":
 { Args: { "p_role": Database["public"]['Enums']["platform_role"],"p_status"?: Database["public"]['Enums']["platform_staff_status"],"p_user_id": string }; Returns: undefined
                            },
+"pilot_inviter_tenant":
+{ Args: { "p_home_region_id": string,"p_inviter_id": string }; Returns: string
+                           },
 "profiles_share_organization":
 { Args: { "p_profile_id": string }; Returns: boolean
                            },
 "provision_customer_organization":
 { Args: { "p_brand_name"?: string,"p_brand_primary_color"?: string,"p_enabled_features"?: (string)[],"p_initial_admin_email": string,"p_name": string,"p_organization_type": Database["public"]['Enums']["organization_type"],"p_slug": string }; Returns: string
+                           },
+"provision_invited_pilot":
+{ Args: { "p_invite_id": string,"p_license_number"?: string,"p_user_id": string }; Returns: string
                            },
 "set_booking_status":
 { Args: { "p_booking_id": string,"p_reason"?: string,"p_to_status": Database["public"]['Enums']["booking_status"] }; Returns: undefined
@@ -577,7 +641,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "booking_status": "requested"|"confirmed"|"rejected"|"cancelled"|"assigned"|"in_progress"|"completed"|"verified","drone_status": "active"|"maintenance"|"retired","organization_role": "super_admin"|"admin"|"mitra"|"farmer"|"pilot"|"organization_admin"|"regional_admin","organization_type": "customer"|"agriasaan","platform_role": "platform_owner"|"system_admin"|"developer"|"support","platform_staff_status": "active"|"suspended"
+            "booking_status": "requested"|"confirmed"|"rejected"|"cancelled"|"assigned"|"in_progress"|"completed"|"verified","drone_status": "active"|"maintenance"|"retired","organization_role": "super_admin"|"admin"|"mitra"|"farmer"|"pilot"|"organization_admin"|"regional_admin","organization_type": "customer"|"agriasaan","pilot_invite_status": "claimed"|"provisioned"|"email_in_use"|"rate_limited"|"failed"|"expired","platform_role": "platform_owner"|"system_admin"|"developer"|"support","platform_staff_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -693,7 +757,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "booking_status": ["requested", "confirmed", "rejected", "cancelled", "assigned", "in_progress", "completed", "verified"],"drone_status": ["active", "maintenance", "retired"],"organization_role": ["super_admin", "admin", "mitra", "farmer", "pilot", "organization_admin", "regional_admin"],"organization_type": ["customer", "agriasaan"],"platform_role": ["platform_owner", "system_admin", "developer", "support"],"platform_staff_status": ["active", "suspended"]
+            "booking_status": ["requested", "confirmed", "rejected", "cancelled", "assigned", "in_progress", "completed", "verified"],"drone_status": ["active", "maintenance", "retired"],"organization_role": ["super_admin", "admin", "mitra", "farmer", "pilot", "organization_admin", "regional_admin"],"organization_type": ["customer", "agriasaan"],"pilot_invite_status": ["claimed", "provisioned", "email_in_use", "rate_limited", "failed", "expired"],"platform_role": ["platform_owner", "system_admin", "developer", "support"],"platform_staff_status": ["active", "suspended"]
           }
         }
 } as const

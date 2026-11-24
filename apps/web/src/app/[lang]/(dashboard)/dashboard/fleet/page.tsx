@@ -13,7 +13,7 @@ import { listPilots } from "@/modules/pilots";
 
 import {
   addDroneAction,
-  createPilotProfileAction,
+  invitePilotAction,
   setDroneStatusAction,
   setPilotAvailabilityAction,
 } from "./actions";
@@ -21,7 +21,11 @@ import {
 export const instant = false;
 
 const searchSchema = z.object({
-  status: z.enum(["saved"]).optional().catch(undefined),
+  status: z.enum(["saved", "invited"]).optional().catch(undefined),
+  inviteError: z
+    .enum(["forbidden", "email_in_use", "rate_limited", "invalid", "invite_failed"])
+    .optional()
+    .catch(undefined),
   error: z.enum(["forbidden", "duplicate", "invalid", "not_found"]).optional().catch(undefined),
 });
 
@@ -85,11 +89,18 @@ async function FleetContent({
     searchParams.then((value) => searchSchema.parse(value)),
   ]);
   const canAddItems = scope.manageableRegions.length > 0 || scope.canAddWithoutRegion;
+  // Pilot accounts are created only by regional admins, in their own regions,
+  // through the invite (ADR 0012); the database enforces the same rule.
+  const canCreatePilots = context.role === "regional_admin" && scope.manageableRegions.length > 0;
 
   return (
     <>
       {search.error ? <StatusBanner kind="error" text={t.errors[search.error]} /> : null}
       {search.status === "saved" ? <StatusBanner kind="success" text={t.saved} /> : null}
+      {search.status === "invited" ? <StatusBanner kind="success" text={t.invited} /> : null}
+      {search.inviteError ? (
+        <StatusBanner kind="error" text={t.inviteErrors[search.inviteError]} />
+      ) : null}
 
       <section className="space-y-3" aria-labelledby="drones-heading">
         <h2 id="drones-heading" className="text-xl font-semibold">
@@ -207,33 +218,54 @@ async function FleetContent({
                   ) : null}
                 </>
               ) : (
-                <>
-                  <p className="text-sm text-gray-600">{t.noProfile}</p>
-                  {canAddItems ? (
-                    <form action={createPilotProfileAction} className="grid gap-2 sm:grid-cols-2">
-                      <input type="hidden" name="userId" value={pilot.userId} />
-                      <label>
-                        <span className="mb-1 block text-sm">{t.homeRegion}</span>
-                        <RegionSelect
-                          regions={scope.manageableRegions}
-                          allowNone={scope.canAddWithoutRegion}
-                          t={t}
-                        />
-                      </label>
-                      <label>
-                        <span className="mb-1 block text-sm">{t.license}</span>
-                        <input name="licenseNumber" maxLength={40} className={inputClass} />
-                      </label>
-                      <button type="submit" className={`${primaryButton} sm:col-span-2`}>
-                        {t.createProfile}
-                      </button>
-                    </form>
-                  ) : null}
-                </>
+                // Every invited pilot gets a profile; this only shows for
+                // accounts created outside the invite flow.
+                <p className="text-sm text-gray-600">{t.noProfile}</p>
               )}
             </li>
           ))}
         </ul>
+        {canCreatePilots ? (
+          <form
+            action={invitePilotAction}
+            className="grid gap-2 rounded border border-dashed p-3 sm:grid-cols-2"
+          >
+            <h3 className="font-medium sm:col-span-2">{t.inviteHeading}</h3>
+            <p className="text-sm text-gray-600 sm:col-span-2">{t.inviteIntro}</p>
+            <label>
+              <span className="mb-1 block text-sm">{t.inviteName}</span>
+              <input
+                name="fullName"
+                required
+                minLength={2}
+                maxLength={120}
+                className={inputClass}
+              />
+            </label>
+            <label>
+              <span className="mb-1 block text-sm">{t.inviteEmail}</span>
+              <input
+                name="email"
+                type="email"
+                required
+                maxLength={320}
+                autoComplete="off"
+                className={inputClass}
+              />
+            </label>
+            <label>
+              <span className="mb-1 block text-sm">{t.homeRegion}</span>
+              <RegionSelect regions={scope.manageableRegions} allowNone={false} t={t} />
+            </label>
+            <label>
+              <span className="mb-1 block text-sm">{t.license}</span>
+              <input name="licenseNumber" maxLength={40} className={inputClass} />
+            </label>
+            <button type="submit" className={`${primaryButton} sm:col-span-2`}>
+              {t.inviteSubmit}
+            </button>
+          </form>
+        ) : null}
       </section>
     </>
   );

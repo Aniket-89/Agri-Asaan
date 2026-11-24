@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   pilotAvailabilityInputSchema,
-  pilotProfileInputSchema,
+  pilotInviteInputSchema,
 } from "@/modules/pilots/pilot.schema";
 import { droneInputSchema, droneStatusInputSchema } from "./drone.schema";
 import { canManageFleetItem, canViewFleet } from "./fleet.permissions";
@@ -38,21 +38,6 @@ describe("droneInputSchema", () => {
 });
 
 describe("pilot schemas", () => {
-  it("normalizes the licence number and allows it to be omitted", () => {
-    expect(
-      pilotProfileInputSchema.parse({ userId: USER, homeRegionId: REGION, licenseNumber: "rpc-01" })
-    ).toEqual({
-      userId: USER,
-      homeRegionId: REGION,
-      licenseNumber: "RPC-01",
-    });
-    expect(
-      pilotProfileInputSchema.parse({ userId: USER, homeRegionId: "", licenseNumber: "" })
-    ).toEqual({
-      userId: USER,
-    });
-  });
-
   it("parses availability from the form", () => {
     expect(pilotAvailabilityInputSchema.parse({ userId: USER, isActive: "false" })).toEqual({
       userId: USER,
@@ -79,5 +64,32 @@ describe("fleet permissions", () => {
     expect(canManageFleetItem("regional_admin", OTHER, assigned)).toBe(false);
     expect(canManageFleetItem("regional_admin", null, assigned)).toBe(false);
     expect(canManageFleetItem("organization_admin", null, new Set())).toBe(true);
+  });
+});
+
+describe("pilotInviteInputSchema", () => {
+  it("normalizes the email and certificate", () => {
+    expect(
+      pilotInviteInputSchema.parse({
+        fullName: " Demo Pilot ",
+        email: " Pilot.One@Example.TEST ",
+        homeRegionId: REGION,
+        licenseNumber: "rpc-9",
+      })
+    ).toEqual({
+      fullName: "Demo Pilot",
+      email: "pilot.one@example.test",
+      homeRegionId: REGION,
+      licenseNumber: "RPC-9",
+    });
+  });
+
+  it("requires a valid email, a name, and a home region", () => {
+    const valid = { fullName: "Demo Pilot", email: "p@example.test", homeRegionId: REGION };
+    expect(pilotInviteInputSchema.safeParse({ ...valid, email: "not-an-email" }).success).toBe(
+      false
+    );
+    expect(pilotInviteInputSchema.safeParse({ ...valid, fullName: "X" }).success).toBe(false);
+    expect(pilotInviteInputSchema.safeParse({ ...valid, homeRegionId: "" }).success).toBe(false);
   });
 });

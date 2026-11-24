@@ -250,10 +250,10 @@ erDiagram
   }
 ```
 
-| Table            | Read                                                      | Write                                                                                                    |
-| ---------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `drones`         | Org and regional admins (whole tenant, `can_view_fleet`). | Org admin; regional admin for items homed in their regions (`can_manage_fleet_item`). Delete: org admin. |
-| `pilot_profiles` | Org and regional admins; the pilot (own profile).         | Same as drones. A trigger requires the pilot role.                                                       |
+| Table            | Read                                                      | Write                                                                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `drones`         | Org and regional admins (whole tenant, `can_view_fleet`). | Org admin; regional admin for items homed in their regions (`can_manage_fleet_item`). Delete: org admin.                                                                                                                             |
+| `pilot_profiles` | Org and regional admins; the pilot (own profile).         | Insert: **no client insert at all**; profiles are created only by `provision_invited_pilot` after a regional admin's invite (ADR 0012). Update: same as drones. A trigger requires the pilot role; `created_by` records the inviter. |
 
 ## Bookings
 
@@ -302,6 +302,27 @@ erDiagram
 | `bookings`               | Region managers; mitras of the village; the requester (while a member); the farmer's linked login. | Only `create_booking` / `set_booking_status`.                           |
 | `booking_fields`         | Same as the booking.                                                                               | Only `create_booking`.                                                  |
 | `booking_status_history` | Same as the booking.                                                                               | Only the booking functions. `UPDATE`/`DELETE` are blocked by a trigger. |
+
+## Pilot invites (ADR 0012)
+
+`pilot_invites` is tenant-owned and append-mostly. It records every invite
+attempt: email, inviter, home region, status (`claimed`, `provisioned`,
+`email_in_use`, `rate_limited`, `failed`, `expired`), and the resulting
+account. A partial unique index allows only one open (`claimed`) claim per
+email. It's readable by org admins (their tenant) and by each regional admin
+(their own invites), and nobody writes it through the API.
+
+| Function                                     | Executable by     | Purpose                                                                                              |
+| -------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `can_invite_pilot(region)`                   | authenticated     | Is the caller a regional admin assigned to the region?                                               |
+| `claim_pilot_invite(...)`                    | service_role only | Per-email lock, rate limit, refuse existing accounts or open claims, record the attempt.             |
+| `provision_invited_pilot(invite, user, ...)` | service_role only | Requires the open claim and a matching fresh account, then creates the pilot membership and profile. |
+| `fail_pilot_invite(invite, reason)`          | service_role only | Releases a claim after a failure.                                                                    |
+| `delete_orphaned_pilot_invite(...)`          | service_role only | Removes a failed invite's account only if it is a fresh orphan.                                      |
+
+`add_organization_member` refuses the `pilot` role, members can't be
+updated to `pilot`, and clients can't insert `pilot_profiles`. The invite
+flow is the only way to create a pilot.
 
 ## Spatial data
 

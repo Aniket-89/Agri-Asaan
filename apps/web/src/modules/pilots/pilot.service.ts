@@ -9,7 +9,7 @@ import {
 } from "@/modules/drones";
 import type { ActiveMembershipContext } from "@/modules/organizations";
 import * as repository from "./pilot.repository";
-import type { PilotAvailabilityInput, PilotProfileInput } from "./pilot.schema";
+import type { PilotAvailabilityInput } from "./pilot.schema";
 
 export type PilotItem = {
   userId: string;
@@ -67,21 +67,6 @@ export async function listPilots(
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
-}
-
-export async function createPilotProfile(
-  context: ActiveMembershipContext,
-  input: PilotProfileInput
-): Promise<FleetResult> {
-  if (!canViewFleet(context.role)) {
-    return { ok: false, error: "forbidden" };
-  }
-  const { error } = await repository.insertPilotProfile(
-    context.supabase,
-    context.organizationId,
-    input
-  );
-  return error ? { ok: false, error: toDomainError(error) } : { ok: true };
 }
 
 export async function setPilotAvailability(

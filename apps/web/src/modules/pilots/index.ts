@@ -1,7 +1,2 @@
-export { pilotAvailabilityInputSchema, pilotProfileInputSchema } from "./pilot.schema";
-export {
-  createPilotProfile,
-  listPilots,
-  setPilotAvailability,
-  type PilotItem,
-} from "./pilot.service";
+export { pilotAvailabilityInputSchema, pilotInviteInputSchema } from "./pilot.schema";
+export { listPilots, setPilotAvailability, type PilotItem } from "./pilot.service";

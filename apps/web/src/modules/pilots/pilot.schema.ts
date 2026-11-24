@@ -2,9 +2,17 @@ import { z } from "zod";
 
 const emptyToUndefined = (value: unknown) => (value === "" || value === null ? undefined : value);
 
-export const pilotProfileInputSchema = z.object({
+export const pilotAvailabilityInputSchema = z.object({
   userId: z.uuid(),
-  homeRegionId: z.preprocess(emptyToUndefined, z.uuid().optional()),
+  isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
+});
+
+export type PilotAvailabilityInput = z.infer<typeof pilotAvailabilityInputSchema>;
+
+export const pilotInviteInputSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  email: z.string().trim().toLowerCase().pipe(z.email().max(320)),
+  homeRegionId: z.uuid(),
   licenseNumber: z.preprocess(
     emptyToUndefined,
     z
@@ -16,10 +24,4 @@ export const pilotProfileInputSchema = z.object({
   ),
 });
 
-export const pilotAvailabilityInputSchema = z.object({
-  userId: z.uuid(),
-  isActive: z.enum(["true", "false"]).transform((value) => value === "true"),
-});
-
-export type PilotProfileInput = z.infer<typeof pilotProfileInputSchema>;
-export type PilotAvailabilityInput = z.infer<typeof pilotAvailabilityInputSchema>;
+export type PilotInviteInput = z.infer<typeof pilotInviteInputSchema>;
