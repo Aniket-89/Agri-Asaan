@@ -1,9 +1,10 @@
 # Data model
 
 Current schema: the identity, tenancy, and platform foundation, territory
-(ADR 0008), farmers and fields (ADR 0009), the fleet (ADR 0010), and bookings
-with append-only status history (ADR 0011). Job assignment and satellite
-observations are not built yet. Add them here when their migrations land.
+(ADR 0008), farmers and fields (ADR 0009), the fleet (ADR 0010), bookings with
+append-only status history (ADR 0011), pilot invites (ADR 0012), and spraying
+slots with availability-aware booking (ADR 0013). Job assignment and satellite
+observations are not built yet.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -323,6 +324,16 @@ email. It's readable by org admins (their tenant) and by each regional admin
 `add_organization_member` refuses the `pilot` role, members can't be
 updated to `pilot`, and clients can't insert `pilot_profiles`. The invite
 flow is the only way to create a pilot.
+
+## Spraying slots and capacity (ADR 0013)
+
+| Table / function                              | Notes                                                                                                                                                                                |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `spray_slots`                                 | Tenant-owned: en/hi name, local start/end time, sort order, active flag. Members read; org admins insert, rename, and (de)activate. Times are immutable and slots are never deleted. |
+| `bookings.slot_id`                            | The slot a booking reserves (composite tenant FK). NULL for pre-slot bookings.                                                                                                       |
+| `slot_remaining_capacity(region, date, slot)` | Internal: min(available pilots, active drones) homed in the region, minus open bookings holding the slot.                                                                            |
+| `list_slot_availability(farmer, date)`        | For callers who may book for the farmer: active slots with places left; already-started slots today show 0.                                                                          |
+| `create_booking(..., slot, ...)`              | Reserves the slot; rejects invalid or started slots; re-checks capacity under a per (region, date, slot) advisory lock (`slot_full`).                                                |
 
 ## Spatial data
 

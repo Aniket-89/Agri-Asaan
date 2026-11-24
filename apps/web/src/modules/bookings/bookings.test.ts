@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import { availableBookingActions, bookingDateWindow, type BookingActor } from "./booking.rules";
 import { bookingStatusChangeSchema, createBookingSchema } from "./booking.schema";
-import { toBookingError } from "./booking.service";
+import { formatSlotLabel, toBookingError } from "./booking.service";
 
 const nobody: BookingActor = { isRegionManager: false, isRequester: false, isFarmer: false };
 const ID = "e6000000-0000-4000-8000-000000000009";
 const FARMER = "e3000000-0000-4000-8000-000000000001";
 const FIELD = "e4000000-0000-4000-8000-000000000001";
+const SLOT = "e7000000-0000-4000-8000-000000000001";
 
 describe("availableBookingActions (mirrors set_booking_status)", () => {
   it("lets a region manager confirm, reject, or cancel a requested booking", () => {
@@ -63,6 +64,7 @@ describe("createBookingSchema", () => {
     farmerId: FARMER,
     fieldIds: [FIELD],
     preferredDate: "2026-11-27",
+    slotId: SLOT,
     notes: "  ",
   };
 
@@ -72,6 +74,7 @@ describe("createBookingSchema", () => {
       farmerId: FARMER,
       fieldIds: [FIELD],
       preferredDate: "2026-11-27",
+      slotId: SLOT,
     });
   });
 
@@ -116,5 +119,36 @@ describe("toBookingError", () => {
     expect(toBookingError(error("42501"))).toBe("forbidden");
     expect(toBookingError(error("P0002"))).toBe("not_found");
     expect(() => toBookingError(error("08006"))).toThrow();
+  });
+});
+
+describe("slots in bookings", () => {
+  it("requires a slot", () => {
+    expect(
+      createBookingSchema.safeParse({
+        id: ID,
+        farmerId: FARMER,
+        fieldIds: [FIELD],
+        preferredDate: "2026-11-27",
+      }).success
+    ).toBe(false);
+  });
+
+  it("formats a slot label in the viewer's language", () => {
+    const slot = {
+      name_en: "Morning",
+      name_hi: "सुबह",
+      start_time: "09:00:00",
+      end_time: "11:30:00",
+    };
+    expect(formatSlotLabel(slot, "en")).toBe("Morning · 09:00–11:30");
+    expect(formatSlotLabel(slot, "hi")).toBe("सुबह · 09:00–11:30");
+  });
+
+  it("maps slot rule hints", () => {
+    const error = (hint: string) =>
+      ({ code: "23514", hint, message: "", details: "" }) as PostgrestError;
+    expect(toBookingError(error("slot_full"))).toBe("slot_full");
+    expect(toBookingError(error("invalid_slot"))).toBe("invalid_slot");
   });
 });

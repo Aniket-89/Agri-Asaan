@@ -16,7 +16,9 @@ export {
   canUseBookingInbox,
   changeBookingStatus,
   createBooking,
+  formatSlotLabel,
   getBookingDetail,
+  getSlotAvailability,
   getOwnFarmerId,
   listBookings,
   listFarmerBookings,
@@ -25,4 +27,5 @@ export {
   type BookingDetail,
   type BookingErrorCode,
   type BookingListItem,
+  type SlotOption,
 } from "./booking.service";

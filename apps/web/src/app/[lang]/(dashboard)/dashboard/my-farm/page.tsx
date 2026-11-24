@@ -11,6 +11,7 @@ import {
   BOOKING_ERROR_CODES,
   bookingDateWindow,
   getOwnFarmerId,
+  getSlotAvailability,
   listFarmerBookings,
   listOpenBookedFieldIds,
 } from "@/modules/bookings";
@@ -24,6 +25,7 @@ export const instant = false;
 
 const searchSchema = z.object({
   bookingError: z.enum(BOOKING_ERROR_CODES).optional().catch(undefined),
+  slotDate: z.iso.date().optional().catch(undefined),
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -62,6 +64,12 @@ async function MyFarmContent({
     listOpenBookedFieldIds(context, farmerId),
     searchParams.then((value) => searchSchema.parse(value)),
   ]);
+  const dateWindow = bookingDateWindow(new Date());
+  const selectedDate =
+    search.slotDate && search.slotDate >= dateWindow.min && search.slotDate <= dateWindow.max
+      ? search.slotDate
+      : dateWindow.min;
+  const slots = await getSlotAvailability(context, farmerId, selectedDate, locale);
 
   return (
     <>
@@ -97,7 +105,9 @@ async function MyFarmContent({
             areaAcres: field.areaAcres,
             alreadyBooked: bookedFieldIds.has(field.id),
           }))}
-        dateWindow={bookingDateWindow(new Date())}
+        dateWindow={dateWindow}
+        selectedDate={selectedDate}
+        slots={slots}
         returnTo="my-farm"
         action={createBookingAction}
         locale={locale}

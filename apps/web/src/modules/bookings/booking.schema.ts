@@ -8,6 +8,8 @@ export const createBookingSchema = z.object({
   farmerId: z.uuid(),
   fieldIds: z.array(z.uuid()).min(1).max(20),
   preferredDate: z.iso.date(),
+  // The slot reserved for that date (see list_slot_availability).
+  slotId: z.uuid(),
   notes: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
     z.string().trim().max(500).optional()

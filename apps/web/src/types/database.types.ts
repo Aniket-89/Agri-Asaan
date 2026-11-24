@@ -59,14 +59,14 @@ isOneToOne: false
                   ]
                 },"bookings": {
                   Row: {
-                    "created_at": string,"farmer_id": string,"id": string,"notes": string | null,"preferred_date": string,"region_id": string,"requested_by": string | null,"status": Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at": string,"village_id": string
+                    "created_at": string,"farmer_id": string,"id": string,"notes": string | null,"preferred_date": string,"region_id": string,"requested_by": string | null,"slot_id": string | null,"status": Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at": string,"village_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"farmer_id": string,"id": string,"notes"?: string | null,"preferred_date": string,"region_id": string,"requested_by"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at"?: string,"village_id": string
+                    "created_at"?: string,"farmer_id": string,"id": string,"notes"?: string | null,"preferred_date": string,"region_id": string,"requested_by"?: string | null,"slot_id"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at"?: string,"village_id": string
                   }
                   Update: {
-                    "created_at"?: string,"farmer_id"?: string,"id"?: string,"notes"?: string | null,"preferred_date"?: string,"region_id"?: string,"requested_by"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id"?: string,"total_acres"?: number,"updated_at"?: string,"village_id"?: string
+                    "created_at"?: string,"farmer_id"?: string,"id"?: string,"notes"?: string | null,"preferred_date"?: string,"region_id"?: string,"requested_by"?: string | null,"slot_id"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id"?: string,"total_acres"?: number,"updated_at"?: string,"village_id"?: string
                   }
                   Relationships: [
                     {
@@ -87,6 +87,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bookings_slot_same_tenant"
+      columns: ["tenant_id","slot_id"]
+isOneToOne: false
+      referencedRelation: "spray_slots"
+      referencedColumns: ["tenant_id","id"]
     },{
       foreignKeyName: "bookings_village_same_tenant"
       columns: ["tenant_id","village_id"]
@@ -493,6 +499,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"spray_slots": {
+                  Row: {
+                    "created_at": string,"end_time": string,"id": string,"is_active": boolean,"name_en": string,"name_hi": string,"sort_order": number,"start_time": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"end_time": string,"id"?: string,"is_active"?: boolean,"name_en": string,"name_hi": string,"sort_order"?: number,"start_time": string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"end_time"?: string,"id"?: string,"is_active"?: boolean,"name_en"?: string,"name_hi"?: string,"sort_order"?: number,"start_time"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "spray_slots_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"tenant_crops": {
                   Row: {
                     "code": string,"created_at": string,"id": string,"is_active": boolean,"name_en": string,"name_hi": string,"sort_order": number,"tenant_id": string,"updated_at": string
@@ -545,6 +571,9 @@ isOneToOne: false
 "bootstrap_platform_owner":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
+"can_book_for_farmer":
+{ Args: { "p_farmer_id": string }; Returns: boolean
+                           },
 "can_invite_pilot":
 { Args: { "p_home_region_id": string }; Returns: boolean
                            },
@@ -578,7 +607,7 @@ isOneToOne: false
             }[]
                            },
 "create_booking":
-{ Args: { "p_booking_id": string,"p_farmer_id": string,"p_field_ids": (string)[],"p_notes"?: string,"p_preferred_date": string }; Returns: string
+{ Args: { "p_booking_id": string,"p_farmer_id": string,"p_field_ids": (string)[],"p_notes"?: string,"p_preferred_date": string,"p_slot_id": string }; Returns: string
                            },
 "delete_orphaned_pilot_invite":
 { Args: { "p_not_before": string,"p_user_id": string }; Returns: boolean
@@ -615,6 +644,11 @@ isOneToOne: false
 "is_system_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"list_slot_availability":
+{ Args: { "p_date": string,"p_farmer_id": string }; Returns: {
+              "available": number,"end_time": string,"name_en": string,"name_hi": string,"slot_id": string,"start_time": string
+            }[]
+                           },
 "log_platform_tenant_access":
 { Args: { "p_context": string,"p_tenant_id": string }; Returns: undefined
                            },
@@ -635,6 +669,12 @@ isOneToOne: false
                            },
 "set_booking_status":
 { Args: { "p_booking_id": string,"p_reason"?: string,"p_to_status": Database["public"]['Enums']["booking_status"] }; Returns: undefined
+                           },
+"slot_remaining_capacity":
+{ Args: { "p_date": string,"p_region_id": string,"p_slot_id": string }; Returns: number
+                           },
+"tenant_local_now":
+{ Args: { "p_tenant_id": string }; Returns: string
                            },
 "write_platform_audit":
 { Args: { "p_action": string,"p_details": Json,"p_target_id": string,"p_target_table": string,"p_target_tenant_id": string }; Returns: undefined

@@ -7,6 +7,7 @@ import { getOrganizationBranding, PLATFORM_DEFAULT_BRANDING } from "@/modules/br
 import { resolveActiveOrganization } from "@/modules/organizations";
 import { canUseBookingInbox } from "@/modules/bookings";
 import { canViewFleet } from "@/modules/drones";
+import { canManageSlots } from "@/modules/slots";
 import { canWorkWithFarmers } from "@/modules/farmers";
 import { canViewTerritoryAdmin } from "@/modules/villages";
 
@@ -31,6 +32,7 @@ async function DashboardContent() {
   const territoryHref = await localizedHref("/dashboard/territory");
   const farmersHref = await localizedHref("/dashboard/farmers");
   const fleetHref = await localizedHref("/dashboard/fleet");
+  const slotsHref = await localizedHref("/dashboard/slots");
   const bookingsHref = await localizedHref("/dashboard/bookings");
   const myFarmHref = await localizedHref("/dashboard/my-farm");
   const branding = active
@@ -104,6 +106,11 @@ async function DashboardContent() {
             {canViewFleet(active.role) ? (
               <a className="inline-block min-h-11 rounded border px-4 py-3" href={fleetHref}>
                 {t.dashboard.fleetLink}
+              </a>
+            ) : null}
+            {canManageSlots(active.role) ? (
+              <a className="inline-block min-h-11 rounded border px-4 py-3" href={slotsHref}>
+                {t.dashboard.slotsLink}
               </a>
             ) : null}
             {canViewTerritoryAdmin(active.role) ? (

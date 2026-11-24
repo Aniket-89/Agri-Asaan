@@ -35,6 +35,7 @@ export async function createBookingAction(formData: FormData) {
     farmerId: formData.get("farmerId"),
     fieldIds: formData.getAll("fieldIds"),
     preferredDate: formData.get("preferredDate"),
+    slotId: formData.get("slotId"),
     notes: formData.get("notes") ?? undefined,
   });
   if (!parsed.success) {
