@@ -1,7 +1,9 @@
 export {
+  getActiveMembershipContext,
   getAuthenticatedContext,
   resolveActiveOrganization,
   verifyOrganizationMembership,
+  type ActiveMembershipContext,
   type OrganizationMembership,
 } from "./organization.service";
 export {
