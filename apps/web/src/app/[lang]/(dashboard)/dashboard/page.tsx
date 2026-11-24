@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { getDictionary, localizedHref } from "@/lib/i18n/dictionary";
 import { getOrganizationBranding, PLATFORM_DEFAULT_BRANDING } from "@/modules/branding";
 import { resolveActiveOrganization } from "@/modules/organizations";
+import { canWorkWithFarmers } from "@/modules/farmers";
 import { canViewTerritoryAdmin } from "@/modules/villages";
 
 export const instant = false;
@@ -26,6 +27,7 @@ async function DashboardContent() {
   const active = context.membership;
   const { t } = await getDictionary();
   const territoryHref = await localizedHref("/dashboard/territory");
+  const farmersHref = await localizedHref("/dashboard/farmers");
   const branding = active
     ? await getOrganizationBranding(context.supabase, active.organization_id)
     : PLATFORM_DEFAULT_BRANDING;
@@ -72,14 +74,21 @@ async function DashboardContent() {
           <p className="mt-4 text-sm text-gray-600">Active organization</p>
           <p className="font-medium">{active.organization.name}</p>
           <p className="text-sm">Role: {active.role}</p>
-          {canViewTerritoryAdmin(active.role) ? (
-            <a
-              className="mt-4 inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
-              href={territoryHref}
-            >
-              {t.dashboard.territoryLink}
-            </a>
-          ) : null}
+          <div className="mt-4 flex flex-wrap gap-3">
+            {canWorkWithFarmers(active.role) ? (
+              <a
+                className="inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
+                href={farmersHref}
+              >
+                {t.dashboard.farmersLink}
+              </a>
+            ) : null}
+            {canViewTerritoryAdmin(active.role) ? (
+              <a className="inline-block min-h-11 rounded border px-4 py-3" href={territoryHref}>
+                {t.dashboard.territoryLink}
+              </a>
+            ) : null}
+          </div>
         </section>
       ) : (
         <section className="rounded-xl border p-5">

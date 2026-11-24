@@ -5,7 +5,65 @@ export type Database = {
   
   "public": {
           Tables: {
-            "mitra_villages": {
+            "farmers": {
+                  Row: {
+                    "consent_recorded_at": string,"created_at": string,"full_name": string,"id": string,"is_active": boolean,"phone": string,"profile_id": string | null,"registered_by": string | null,"tenant_id": string,"updated_at": string,"village_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consent_recorded_at": string,"created_at"?: string,"full_name": string,"id"?: string,"is_active"?: boolean,"phone": string,"profile_id"?: string | null,"registered_by"?: string | null,"tenant_id": string,"updated_at"?: string,"village_id": string
+                  }
+                  Update: {
+                    "consent_recorded_at"?: string,"created_at"?: string,"full_name"?: string,"id"?: string,"is_active"?: boolean,"phone"?: string,"profile_id"?: string | null,"registered_by"?: string | null,"tenant_id"?: string,"updated_at"?: string,"village_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "farmers_profile_member_same_tenant"
+      columns: ["tenant_id","profile_id"]
+isOneToOne: false
+      referencedRelation: "organization_members"
+      referencedColumns: ["organization_id","user_id"]
+    },{
+      foreignKeyName: "farmers_registered_by_fkey"
+      columns: ["registered_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "farmers_village_same_tenant"
+      columns: ["tenant_id","village_id"]
+isOneToOne: false
+      referencedRelation: "villages"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"fields": {
+                  Row: {
+                    "area_acres": number,"boundary": unknown,"created_at": string,"crop_id": string,"farmer_id": string,"id": string,"is_active": boolean,"latitude": number,"location": unknown,"longitude": number,"name": string,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "area_acres": number,"boundary"?: unknown,"created_at"?: string,"crop_id": string,"farmer_id": string,"id"?: string,"is_active"?: boolean,"latitude": number,"location"?: never,"longitude": number,"name": string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "area_acres"?: number,"boundary"?: unknown,"created_at"?: string,"crop_id"?: string,"farmer_id"?: string,"id"?: string,"is_active"?: boolean,"latitude"?: number,"location"?: never,"longitude"?: number,"name"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "fields_crop_same_tenant"
+      columns: ["tenant_id","crop_id"]
+isOneToOne: false
+      referencedRelation: "tenant_crops"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "fields_farmer_same_tenant"
+      columns: ["tenant_id","farmer_id"]
+isOneToOne: false
+      referencedRelation: "farmers"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"mitra_villages": {
                   Row: {
                     "created_at": string,"tenant_id": string,"user_id": string,"village_id": string
                   }
@@ -249,6 +307,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"tenant_crops": {
+                  Row: {
+                    "code": string,"created_at": string,"id": string,"is_active": boolean,"name_en": string,"name_hi": string,"sort_order": number,"tenant_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name_en": string,"name_hi": string,"sort_order"?: number,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"id"?: string,"is_active"?: boolean,"name_en"?: string,"name_hi"?: string,"sort_order"?: number,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tenant_crops_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"villages": {
                   Row: {
                     "created_at": string,"id": string,"is_active": boolean,"latitude": number | null,"lgd_code": string | null,"location": unknown,"longitude": number | null,"name": string,"region_id": string,"tenant_id": string,"updated_at": string
@@ -281,11 +359,20 @@ isOneToOne: false
 "bootstrap_platform_owner":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
+"can_manage_farmer":
+{ Args: { "p_farmer_id": string }; Returns: boolean
+                           },
+"can_manage_farmers_in_village":
+{ Args: { "p_village_id": string }; Returns: boolean
+                           },
 "can_manage_region":
 { Args: { "p_region_id": string }; Returns: boolean
                            },
 "can_manage_village":
 { Args: { "p_village_id": string }; Returns: boolean
+                           },
+"can_view_farmer":
+{ Args: { "p_farmer_id": string }; Returns: boolean
                            },
 "get_profile_phone":
 { Args: { "p_profile_id": string }; Returns: string

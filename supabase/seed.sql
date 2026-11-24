@@ -112,3 +112,49 @@ insert into public.mitra_villages (tenant_id, village_id, user_id)
 values
   ('e0000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000004'),
   ('e0000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000004');
+
+-- Crop lists (tenant configuration).
+insert into public.tenant_crops (tenant_id, code, name_en, name_hi, sort_order)
+select tenant.id, crop.code, crop.name_en, crop.name_hi, crop.sort_order
+from (values
+  ('e0000000-0000-4000-8000-000000000001'::uuid),
+  ('e0000000-0000-4000-8000-000000000002'::uuid)
+) as tenant (id)
+cross join (values
+  ('wheat', 'Wheat', 'गेहूँ', 10),
+  ('paddy', 'Paddy', 'धान', 20),
+  ('sugarcane', 'Sugarcane', 'गन्ना', 30),
+  ('cotton', 'Cotton', 'कपास', 40),
+  ('mustard', 'Mustard', 'सरसों', 50),
+  ('maize', 'Maize', 'मक्का', 60)
+) as crop (code, name_en, name_hi, sort_order);
+
+-- Farmers (fake names; phone numbers are obviously fake 90000xxxxx values).
+insert into public.farmers (id, tenant_id, village_id, full_name, phone, consent_recorded_at)
+values
+  ('e3000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000001', 'Demo Farmer Ramesh', '9000000101', timezone('utc', now())),
+  ('e3000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000001', 'Demo Farmer Sunita', '9000000102', timezone('utc', now())),
+  ('e3000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000002', 'Demo Farmer Mohan', '9000000103', timezone('utc', now())),
+  ('e3000000-0000-4000-8000-000000000004', 'e0000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000003', 'Demo Farmer Kavita', '9000000104', timezone('utc', now()));
+
+-- farmer@agriasaan.test is linked to Demo Farmer Ramesh's record.
+update public.farmers set profile_id = 'd0000000-0000-4000-8000-000000000006'
+where id = 'e3000000-0000-4000-8000-000000000001';
+
+insert into public.fields (id, tenant_id, farmer_id, name, crop_id, area_acres, latitude, longitude)
+select field.id, 'e0000000-0000-4000-8000-000000000001', field.farmer_id, field.name, crop.id, field.area_acres, field.latitude, field.longitude
+from (values
+  ('e4000000-0000-4000-8000-000000000001'::uuid, 'e3000000-0000-4000-8000-000000000001'::uuid, 'Canal-side plot', 'wheat', 3.50, 29.002000, 77.003000),
+  ('e4000000-0000-4000-8000-000000000002'::uuid, 'e3000000-0000-4000-8000-000000000001'::uuid, 'Home plot', 'mustard', 1.25, 29.004000, 76.998000),
+  ('e4000000-0000-4000-8000-000000000003'::uuid, 'e3000000-0000-4000-8000-000000000002'::uuid, 'East plot', 'paddy', 2.00, 29.006000, 77.006000),
+  ('e4000000-0000-4000-8000-000000000004'::uuid, 'e3000000-0000-4000-8000-000000000003'::uuid, 'Main plot', 'sugarcane', 5.00, 29.052000, 77.051000),
+  ('e4000000-0000-4000-8000-000000000005'::uuid, 'e3000000-0000-4000-8000-000000000004'::uuid, 'Well plot', 'cotton', 4.00, 26.902000, 75.802000)
+) as field (id, farmer_id, name, crop_code, area_acres, latitude, longitude)
+join public.tenant_crops as crop
+  on crop.tenant_id = 'e0000000-0000-4000-8000-000000000001' and crop.code = field.crop_code;
+
+-- Demo boundary for satellite work: a ~3.5-acre square centred on the pin,
+-- matching the field's recorded area (checked with ST_Area).
+update public.fields
+set boundary = 'SRID=4326;POLYGON((77.00239 29.00146, 77.00361 29.00146, 77.00361 29.00254, 77.00239 29.00254, 77.00239 29.00146))'
+where id = 'e4000000-0000-4000-8000-000000000001';

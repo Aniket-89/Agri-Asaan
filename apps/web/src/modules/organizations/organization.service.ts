@@ -78,3 +78,25 @@ export async function verifyOrganizationMembership(organizationId: string) {
     context.memberships.find((membership) => membership.organization_id === organizationId) ?? null
   );
 }
+
+export type ActiveMembershipContext = {
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  organizationId: string;
+  userId: string;
+  role: OrganizationRole;
+};
+
+// The verified active organization and role for domain services, or null
+// when the caller is signed out or has no membership.
+export async function getActiveMembershipContext(): Promise<ActiveMembershipContext | null> {
+  const active = await resolveActiveOrganization();
+  if (!active?.membership) {
+    return null;
+  }
+  return {
+    supabase: active.supabase,
+    organizationId: active.membership.organization_id,
+    userId: active.user.id,
+    role: active.membership.role,
+  };
+}

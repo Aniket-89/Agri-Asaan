@@ -1,9 +1,9 @@
 # Data model
 
-Current schema: the identity, tenancy, and platform foundation, plus
-territory (regions, villages, and coverage, ADR 0008). Farmers, fields,
-bookings, pilots, drones, and satellite observations are not built yet. Add
-them here when their migrations land.
+Current schema: the identity, tenancy, and platform foundation, territory
+(ADR 0008), and farmers and fields (ADR 0009). Bookings, pilots, drones, and
+satellite observations are not built yet. Add them here when their
+migrations land.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -177,13 +177,64 @@ Every `SECURITY DEFINER` function uses `set search_path = ''` and has
 | -------------- | ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `brand-assets` | Yes (read) | Tenant logos at `<tenant_id>/<file>`. PNG, WebP, or JPEG, max 512 KB. | Platform owner and system admin only (`storage.objects` policies). |
 
+## Farmers and fields
+
+```mermaid
+erDiagram
+  villages ||--o{ farmers : "(tenant_id, village_id)"
+  organization_members ||--o| farmers : "(tenant_id, profile_id), farmer role, optional"
+  farmers ||--o{ fields : "(tenant_id, farmer_id)"
+  tenant_crops ||--o{ fields : "(tenant_id, crop_id)"
+
+  farmers {
+    uuid id PK "client-generated for idempotent registration"
+    uuid tenant_id FK
+    uuid village_id FK
+    text full_name
+    text phone "10-digit Indian mobile, personal data"
+    uuid profile_id FK "optional login link"
+    timestamptz consent_recorded_at "server clock"
+    uuid registered_by FK "caller, set by trigger"
+  }
+  fields {
+    uuid id PK
+    uuid farmer_id FK
+    text name "unique per farmer"
+    uuid crop_id FK
+    numeric area_acres "positive, 2 decimals"
+    numeric latitude "required"
+    numeric longitude "required"
+    geography location "generated Point 4326, GiST"
+    geography boundary "optional Polygon 4326, GiST"
+  }
+  tenant_crops {
+    uuid id PK
+    text code "unique per tenant"
+    text name_en
+    text name_hi
+  }
+```
+
+| Table          | Read                                                                                                | Write                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `tenant_crops` | All tenant members.                                                                                 | Org admin.                                                              |
+| `farmers`      | Org admin (tenant); regional admin (their regions); mitra (their villages); a linked farmer (self). | Insert/update: the same managers within their scope. Delete: org admin. |
+| `fields`       | Anyone who can view the farmer (`can_view_farmer`).                                                 | Farmer managers (`can_manage_farmer`).                                  |
+
+Column grants keep `tenant_id`, `profile_id`, `registered_by`, `boundary`,
+and generated columns out of client writes. `consent_recorded_at` and
+`registered_by` are stamped by a trigger.
+
 ## Spatial data
 
 PostGIS is enabled (`20261118180523_enable_postgis.sql`).
 
 - `villages.location`: `geography(Point, 4326)`, generated from
   `latitude`/`longitude`, with GiST index `villages_location_gist`.
-- Field points and boundaries will use SRID 4326 with GiST indexes.
+- `fields.location`: `geography(Point, 4326)`, generated from the required
+  pin, with GiST index `fields_location_gist`.
+- `fields.boundary`: optional `geography(Polygon, 4326)`, with GiST index
+  `fields_boundary_gist`. Seed/demo only for the MVP.
 
 ## Generated types
 
