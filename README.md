@@ -40,7 +40,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your-local-key
 
 The publishable key is safe for browser use. Never place `SUPABASE_SERVICE_ROLE_KEY` or `sb_secret_*` values in browser code or `NEXT_PUBLIC_*` variables.
 
-Additional database documentation is in `docs/database/local-development.md`.
+Additional database documentation is in `docs/database/local-development.md`, the data model in `docs/data-model.md`, and architecture decisions in `docs/adr/`.
 
 ## Development
 
@@ -48,7 +48,7 @@ Additional database documentation is in `docs/database/local-development.md`.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). It redirects to `/en` or `/hi` based on your last choice or your browser language. Translations live in `apps/web/src/lib/i18n/dictionaries/` (see `docs/adr/0006-i18n-locale-routing.md`).
 
 ## Shared package
 
@@ -59,17 +59,27 @@ import { SUPPORTED_LOCALES, supportedLocaleSchema } from "@agri/shared";
 ## Checks and build
 
 ```bash
-npm run typecheck
+npm run format:check  # Prettier (npm run format to fix)
+npm run typecheck   # generates Next.js route types, then runs tsc
 npm run lint
+npm test            # Vitest
+npm run db:test     # pgTAP (local Supabase must be running)
 npm run build
 npm run start
 ```
+
+CI (`.github/workflows/ci.yml`) runs all of these, plus a generated-type drift check, on every pull request.
+
+## Demo data
+
+`npm run db:reset` seeds fake users for every role. See `docs/database/local-development.md` for the logins and the white-label demo domain.
 
 ## Database commands
 
 ```bash
 npx supabase migration new migration_name
 npm run db:reset
+npm run db:types        # regenerate apps/web/src/types/database.types.ts
 npx supabase migration list
 npm run db:status
 npm run db:stop

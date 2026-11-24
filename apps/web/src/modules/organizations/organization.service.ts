@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isOrganizationRole, type OrganizationRole } from "./organization-roles";
 
 export type OrganizationMembership = {
   organization_id: string;
-  role: "super_admin" | "admin" | "mitra" | "farmer" | "pilot";
+  role: OrganizationRole;
   organization: {
     id: string;
     name: string;
@@ -12,13 +13,10 @@ export type OrganizationMembership = {
   };
 };
 
-type OrganizationMembershipRow = {
-  organization_id: string;
-  role: OrganizationMembership["role"];
-  organization:
-    | { id: string; name: string; slug: string }
-    | Array<{ id: string; name: string; slug: string }>;
-};
+// organization_members has two foreign keys to organizations (tenant_id and
+// organization_id), so the embed must name the relationship explicitly.
+const MEMBERSHIP_SELECT =
+  "organization_id, role, organization:organizations!organization_members_organization_id_fkey(id, name, slug)";
 
 export async function getAuthenticatedContext() {
   const supabase = await createSupabaseServerClient();
@@ -33,30 +31,23 @@ export async function getAuthenticatedContext() {
 
   const { data, error: membershipError } = await supabase
     .from("organization_members")
-    .select("organization_id, role, organization:organizations(id, name, slug)")
+    .select(MEMBERSHIP_SELECT)
     .eq("user_id", user.id);
 
   if (membershipError) {
     throw new Error("Unable to resolve organization memberships.");
   }
 
-  const memberships = ((data ?? []) as unknown as OrganizationMembershipRow[])
-    .map((row) => {
-      const organization = Array.isArray(row.organization)
-        ? row.organization[0]
-        : row.organization;
-
-      if (!organization) {
-        return null;
-      }
-
-      return {
+  const memberships: OrganizationMembership[] = [];
+  for (const row of data ?? []) {
+    if (row.organization && isOrganizationRole(row.role)) {
+      memberships.push({
         organization_id: row.organization_id,
         role: row.role,
-        organization,
-      } satisfies OrganizationMembership;
-    })
-    .filter((membership): membership is OrganizationMembership => membership !== null);
+        organization: row.organization,
+      });
+    }
+  }
 
   return { supabase, user, memberships };
 }
@@ -84,8 +75,6 @@ export async function verifyOrganizationMembership(organizationId: string) {
   }
 
   return (
-    context.memberships.find(
-      (membership) => membership.organization_id === organizationId
-    ) ?? null
+    context.memberships.find((membership) => membership.organization_id === organizationId) ?? null
   );
 }

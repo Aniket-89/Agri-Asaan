@@ -1,18 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function updateSupabaseSession(request: NextRequest) {
+import { withLocale, type Locale } from "@/lib/i18n/config";
+import type { Database } from "@/types/database.types";
+
+export type LocalizedRoute = {
+  // null for non-page requests such as /api/*, which get no auth redirects.
+  locale: Locale | null;
+  // Path without the locale prefix, e.g. "/dashboard".
+  path: string;
+};
+
+export async function updateSupabaseSession(request: NextRequest, route: LocalizedRoute) {
   let response = NextResponse.next({ request });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     return response;
   }
 
-  const supabase = createServerClient(url, key, {
+  const supabase = createServerClient<Database>(url, key, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -34,14 +43,27 @@ export async function updateSupabaseSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.search = "";
-    return NextResponse.redirect(loginUrl);
+  const { locale } = route;
+  if (!locale) {
+    return response;
   }
 
-  if (request.nextUrl.pathname.startsWith("/platform") && user) {
+  const redirectTo = (path: string) => {
+    const target = request.nextUrl.clone();
+    target.pathname = withLocale(locale, path);
+    target.search = "";
+    return NextResponse.redirect(target);
+  };
+
+  if (route.path.startsWith("/dashboard") && !user) {
+    return redirectTo("/login");
+  }
+
+  if (route.path.startsWith("/platform")) {
+    if (!user) {
+      return redirectTo("/login");
+    }
+
     const { data: staff } = await supabase
       .from("platform_staff")
       .select("role, status")
@@ -50,27 +72,12 @@ export async function updateSupabaseSession(request: NextRequest) {
       .maybeSingle();
 
     if (!staff) {
-      const dashboardUrl = request.nextUrl.clone();
-      dashboardUrl.pathname = "/dashboard";
-      dashboardUrl.search = "";
-      return NextResponse.redirect(dashboardUrl);
+      return redirectTo("/dashboard");
     }
-  } else if (request.nextUrl.pathname.startsWith("/platform") && !user) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.search = "";
-    return NextResponse.redirect(loginUrl);
   }
 
-  if (
-    (request.nextUrl.pathname === "/login" ||
-      request.nextUrl.pathname === "/register") &&
-    user
-  ) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
-    dashboardUrl.search = "";
-    return NextResponse.redirect(dashboardUrl);
+  if ((route.path === "/login" || route.path === "/register") && user) {
+    return redirectTo("/dashboard");
   }
 
   return response;

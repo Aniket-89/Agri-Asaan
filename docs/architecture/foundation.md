@@ -17,11 +17,21 @@
 
 ## Roles
 
-- `super_admin`
-- `admin`
+- `organization_admin`: tenant-wide administrator
+- `regional_admin`: manages operational members (mitra, farmer, pilot)
 - `mitra`
 - `farmer`
 - `pilot`
+
+The legacy `super_admin` and `admin` enum values are blocked by a constraint. See `docs/adr/0002-organization-role-names.md`.
+
+## Personal data
+
+`profiles.phone` is not directly selectable. `public.get_profile_phone` returns it to the member themselves and to organization or regional admins of a shared tenant. See `docs/adr/0004-member-phone-visibility.md`.
+
+## Branding
+
+Branding comes from `organization_settings`. Unauthenticated pages resolve it from a verified hostname through `public.get_public_branding`. Authenticated pages use the active organization. Only platform staff can verify domains or change organization type, status, and slug. See `docs/adr/0003-tenant-branding-resolution.md`.
 
 ## Security
 
@@ -52,4 +62,4 @@ npm run db:reset
 npm run db:test
 ```
 
-The pgTAP foundation suite proves own-organization access, cross-tenant denial, tenant write denial, self-role protection, and unauthenticated denial.
+The pgTAP suites prove own-organization access, cross-tenant denial, tenant write denial, self-role protection, unauthenticated denial, administrator role scope, platform-controlled organization fields, domain verification, phone visibility, and public branding. See `docs/data-model.md` for the full access summary.

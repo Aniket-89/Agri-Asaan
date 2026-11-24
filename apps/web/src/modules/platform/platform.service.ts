@@ -1,10 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type PlatformRole =
-  | "platform_owner"
-  | "system_admin"
-  | "developer"
-  | "support";
+export type PlatformRole = "platform_owner" | "system_admin" | "developer" | "support";
 
 export type PlatformStaffContext = {
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;

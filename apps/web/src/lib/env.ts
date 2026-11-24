@@ -12,6 +12,4 @@ export const env = envSchema.parse(process.env);
 export const supabasePublishableKey =
   env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const isSupabaseConfigured = Boolean(
-  env.NEXT_PUBLIC_SUPABASE_URL && supabasePublishableKey
-);
+export const isSupabaseConfigured = Boolean(env.NEXT_PUBLIC_SUPABASE_URL && supabasePublishableKey);

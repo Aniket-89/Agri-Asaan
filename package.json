@@ -18,10 +18,14 @@
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
     "db:diff": "supabase db diff",
-    "db:test": "supabase test db"
+    "db:test": "supabase test db",
+    "db:types": "supabase gen types typescript --local --schema public > apps/web/src/types/database.types.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "packageManager": "npm@10.9.7",
   "devDependencies": {
+    "prettier": "3.10.1",
     "supabase": "^3.2.0"
   }
 }

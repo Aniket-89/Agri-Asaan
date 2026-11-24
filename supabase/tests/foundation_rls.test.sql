@@ -17,8 +17,8 @@ values
 
 insert into public.organization_members (tenant_id, organization_id, user_id, role)
 values
-  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '11111111-1111-4111-8111-111111111111', 'admin'),
-  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '22222222-2222-4222-8222-222222222222', 'super_admin');
+  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '11111111-1111-4111-8111-111111111111', 'regional_admin'),
+  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '22222222-2222-4222-8222-222222222222', 'organization_admin');
 
 insert into public.organization_settings (tenant_id) values
   ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -41,7 +41,7 @@ select throws_ok(
 );
 
 update public.organization_members
-set role = 'super_admin'
+set role = 'organization_admin'
 where tenant_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   and user_id = '11111111-1111-4111-8111-111111111111';
 
@@ -49,8 +49,8 @@ select is(
   (select role::text from public.organization_members
    where tenant_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
      and user_id = '11111111-1111-4111-8111-111111111111'),
-  'admin',
-  'user cannot elevate their own membership role to super_admin'
+  'regional_admin',
+  'user cannot elevate their own membership role to organization_admin'
 );
 
 reset role;
