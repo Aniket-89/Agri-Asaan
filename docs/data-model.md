@@ -305,15 +305,24 @@ erDiagram
 
 ## Pilot invites (ADR 0012)
 
-| Function                            | Executable by     | Purpose                                                                                  |
-| ----------------------------------- | ----------------- | ---------------------------------------------------------------------------------------- |
-| `can_invite_pilot(region)`          | authenticated     | Is the caller a regional admin assigned to the region?                                   |
-| `account_exists_for_email(email)`   | service_role only | Refuse invites for emails that already have an account.                                  |
-| `provision_invited_pilot(...)`      | service_role only | Re-checks the inviter and a fresh invite, then creates the pilot membership and profile. |
-| `delete_orphaned_pilot_invite(...)` | service_role only | Removes a failed invite's account only if it is a fresh orphan.                          |
+`pilot_invites` is tenant-owned and append-mostly. It records every invite
+attempt: email, inviter, home region, status (`claimed`, `provisioned`,
+`email_in_use`, `rate_limited`, `failed`, `expired`), and the resulting
+account. A partial unique index allows only one open (`claimed`) claim per
+email. It's readable by org admins (their tenant) and by each regional admin
+(their own invites), and nobody writes it through the API.
 
-`add_organization_member` refuses the `pilot` role, and members cannot be
-updated to `pilot`. The invite flow is the only way to create a pilot.
+| Function                                     | Executable by     | Purpose                                                                                              |
+| -------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `can_invite_pilot(region)`                   | authenticated     | Is the caller a regional admin assigned to the region?                                               |
+| `claim_pilot_invite(...)`                    | service_role only | Per-email lock, rate limit, refuse existing accounts or open claims, record the attempt.             |
+| `provision_invited_pilot(invite, user, ...)` | service_role only | Requires the open claim and a matching fresh account, then creates the pilot membership and profile. |
+| `fail_pilot_invite(invite, reason)`          | service_role only | Releases a claim after a failure.                                                                    |
+| `delete_orphaned_pilot_invite(...)`          | service_role only | Removes a failed invite's account only if it is a fresh orphan.                                      |
+
+`add_organization_member` refuses the `pilot` role, members can't be
+updated to `pilot`, and clients can't insert `pilot_profiles`. The invite
+flow is the only way to create a pilot.
 
 ## Spatial data
 

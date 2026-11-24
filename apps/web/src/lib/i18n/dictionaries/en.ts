@@ -141,7 +141,8 @@ export const en = {
     invited: "Invite sent. The pilot appears below and can sign in after setting a password.",
     inviteErrors: {
       forbidden: "Only a regional admin can invite pilots into their own regions.",
-      email_in_use: "That email already has an account. Use a different email.",
+      email_in_use: "That email already has an account or a pending invite. Use a different email.",
+      rate_limited: "Too many invites in the last hour. Please try again later.",
       invalid: "Please check the details and try again.",
       invite_failed: "The invite could not be sent. Try again.",
     },

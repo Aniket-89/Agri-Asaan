@@ -23,7 +23,7 @@ export const instant = false;
 const searchSchema = z.object({
   status: z.enum(["saved", "invited"]).optional().catch(undefined),
   inviteError: z
-    .enum(["forbidden", "email_in_use", "invalid", "invite_failed"])
+    .enum(["forbidden", "email_in_use", "rate_limited", "invalid", "invite_failed"])
     .optional()
     .catch(undefined),
   error: z.enum(["forbidden", "duplicate", "invalid", "not_found"]).optional().catch(undefined),

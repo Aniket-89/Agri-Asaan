@@ -23,17 +23,28 @@ own regions. Phone OTP is deferred, so an interim login method is needed.
      session**.
   2. Only then does the server use the service key (`lib/supabase/admin.ts`,
      guarded by `server-only`).
-  3. `account_exists_for_email` refuses any email that already has an
-     account.
+  3. `claim_pilot_invite` **atomically claims the email**:
+     - takes a per-email advisory lock
+     - expires claims older than an hour
+     - enforces a rate limit of 20 attempts per inviter per hour
+     - refuses emails that already have an account or an open claim
+     - records every attempt in `pilot_invites`
+
+     A concurrent second invite for the same email waits on the lock, sees
+     the first claim, and stops before any account exists.
+
   4. Supabase `inviteUserByEmail` creates the user and sends the email.
-  5. `provision_invited_pilot` creates the `pilot` membership and the profile
-     (`created_by` = inviter). It is executable **only by `service_role`**
-     and re-checks everything:
-     - the inviter is still a regional admin assigned to the region
-     - the account is a fresh, unconfirmed, never-signed-in invite
-     - the account has no membership anywhere
-  6. On provisioning failure, `delete_orphaned_pilot_invite` removes the
-     account only if it is a fresh orphan created during this request.
+  5. `provision_invited_pilot(invite_id, user_id)` requires the open claim
+     and an account matching it: same email, created after the claim, still
+     a fresh unconfirmed invite, no membership anywhere. It also re-checks
+     that the inviter is still the region's regional admin. It then creates
+     the `pilot` membership and the profile (`created_by` = inviter) and
+     marks the claim provisioned.
+  6. On failure, `fail_pilot_invite` releases the claim, and
+     `delete_orphaned_pilot_invite` removes the account only if it is a
+     fresh orphan created during this request.
+  7. All of these functions except `can_invite_pilot` are executable only by
+     `service_role`.
 - **Email link:** `/api/auth/confirm?token_hash=…&type=invite` verifies the
   token server-side and sends the person to `/[lang]/account/set-password`.
   - Only the `invite` type is accepted, and the destination is fixed (no
@@ -63,6 +74,17 @@ own regions. Phone OTP is deferred, so an interim login method is needed.
   first version cleaned up by deleting whatever account came back, so
   inviting the same email twice deleted a real pilot. Fixed by the
   existence pre-check plus guarded clean-up, with pgTAP regression tests.
+- **Security review fixes (same branch):** a race let two concurrent
+  invites for one email receive the same new account, so the first
+  provisioning, possibly in another tenant, would win. The atomic claim
+  removes it; a real two-session concurrency test confirmed the second
+  claim waits and is refused.
+- **Known limitation, account enumeration:** an invite inherently reveals
+  whether an email already has an account somewhere on the platform (the
+  pilot either appears or doesn't). Exposure is limited by the per-inviter
+  rate limit, and every attempt is recorded in `pilot_invites` (visible to
+  org admins, and to each regional admin for their own invites). Removing
+  it entirely needs multi-organization membership with consent (ADR 0007).
 - **Follow-up:** there's no "resend invite" or password reset yet. A pilot
   who opens the link but loses the session before setting a password needs
   an admin to help. Add this with OTP onboarding, or as a small feature
