@@ -3,9 +3,18 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import type { Locale } from "@/lib/i18n";
 import { toDomainError, type DomainErrorCode } from "@/lib/utils/db-errors";
 import type { ActiveMembershipContext } from "@/modules/organizations";
-import { availableBookingActions, type BookingAction, type BookingStatus } from "./booking.rules";
+import {
+  availableBookingActions,
+  canAssignBooking,
+  type BookingAction,
+  type BookingStatus,
+} from "./booking.rules";
 import * as repository from "./booking.repository";
-import type { BookingStatusChangeInput, CreateBookingInput } from "./booking.schema";
+import type {
+  AssignBookingInput,
+  BookingStatusChangeInput,
+  CreateBookingInput,
+} from "./booking.schema";
 
 // Rule violations reported by the booking database functions through HINT.
 const BOOKING_RULE_ERRORS = [
@@ -19,6 +28,11 @@ const BOOKING_RULE_ERRORS = [
   "invalid_reason",
   "invalid_slot",
   "slot_full",
+  "slot_passed",
+  "pilot_unavailable",
+  "drone_unavailable",
+  "pilot_busy",
+  "drone_busy",
 ] as const;
 
 export type BookingErrorCode = DomainErrorCode | (typeof BOOKING_RULE_ERRORS)[number];
@@ -76,6 +90,9 @@ export type BookingDetail = {
     createdAt: string;
   }[];
   actions: BookingAction[];
+  // Only filled for region managers, who also see the assign form.
+  assignment: { pilotName: string; droneLabel: string } | null;
+  canAssign: boolean;
 };
 
 function unwrap<T>(result: { data: T | null; error: PostgrestError | null }, what: string): T {
@@ -199,6 +216,7 @@ export async function getBookingDetail(
   const isRegionManager =
     role === "organization_admin" ||
     (role === "regional_admin" && ownRegions.some((row) => row.region_id === booking.region_id));
+  const assignment = isRegionManager ? await loadCurrentAssignment(context, bookingId) : null;
 
   return {
     id: booking.id,
@@ -235,6 +253,29 @@ export async function getBookingDetail(
       isRequester: booking.requested_by === userId,
       isFarmer: role === "farmer" && booking.farmer.profile_id === userId,
     }),
+    assignment,
+    canAssign: canAssignBooking(booking.status, isRegionManager),
+  };
+}
+
+async function loadCurrentAssignment(
+  context: ActiveMembershipContext,
+  bookingId: string
+): Promise<BookingDetail["assignment"]> {
+  const { data, error } = await repository.getCurrentAssignment(context.supabase, bookingId);
+  if (error) {
+    throw new Error("Unable to load assignment.");
+  }
+  if (!data) {
+    return null;
+  }
+  const names = unwrap(
+    await repository.listProfileNames(context.supabase, [data.pilot_user_id]),
+    "pilot name"
+  );
+  return {
+    pilotName: names[0]?.full_name || "—",
+    droneLabel: data.drone ? `${data.drone.uid} · ${data.drone.model}` : "—",
   };
 }
 
@@ -304,5 +345,120 @@ export async function getSlotAvailability(
     id: slot.slot_id,
     label: formatSlotLabel(slot, locale),
     available: slot.available,
+  }));
+}
+
+export type AssignmentOption = {
+  id: string;
+  label: string;
+  regionName: string | null;
+  isHomeRegion: boolean;
+  isCurrent: boolean;
+};
+
+export type AssignmentOptions = { pilots: AssignmentOption[]; drones: AssignmentOption[] };
+
+// Pilots and drones free for the booking's date and slot, home region first.
+// The database function checks that the caller manages the booking's region.
+export async function getAssignmentOptions(
+  context: ActiveMembershipContext,
+  bookingId: string
+): Promise<AssignmentOptions> {
+  const rows = unwrap(
+    await repository.listAssignmentOptions(context.supabase, bookingId),
+    "assignment options"
+  );
+  const toOption = (row: (typeof rows)[number]): AssignmentOption => ({
+    id: row.id,
+    label: row.label,
+    regionName: row.region_name,
+    isHomeRegion: row.is_home_region,
+    isCurrent: row.is_current,
+  });
+  return {
+    pilots: rows.filter((row) => row.kind === "pilot").map(toOption),
+    drones: rows.filter((row) => row.kind === "drone").map(toOption),
+  };
+}
+
+export async function assignBooking(
+  context: ActiveMembershipContext,
+  input: AssignBookingInput
+): Promise<{ ok: true } | { ok: false; error: BookingErrorCode }> {
+  const { error } = await repository.callAssignBooking(context.supabase, input);
+  return error ? { ok: false, error: toBookingError(error) } : { ok: true };
+}
+
+export type PilotJob = {
+  bookingId: string;
+  status: BookingStatus;
+  date: string;
+  slotLabel: string;
+  farmerName: string;
+  farmerPhone: string;
+  villageName: string;
+  totalAcres: number;
+  droneUid: string;
+  notes: string | null;
+  fields: {
+    fieldId: string;
+    fieldName: string;
+    cropName: string;
+    areaAcres: number;
+    latitude: number;
+    longitude: number;
+  }[];
+};
+
+type PilotJobFieldRow = {
+  field_id: string;
+  field_name: string;
+  crop_name_en: string;
+  crop_name_hi: string;
+  area_acres: number;
+  latitude: number;
+  longitude: number;
+};
+
+// The signed-in pilot's upcoming jobs. Null for anyone who is not a pilot.
+export async function listMyJobs(
+  context: ActiveMembershipContext,
+  locale: Locale
+): Promise<PilotJob[] | null> {
+  if (context.role !== "pilot") {
+    return null;
+  }
+  const rows = unwrap(
+    await repository.listMyJobs(context.supabase, context.organizationId),
+    "jobs"
+  );
+  return rows.map((row) => ({
+    bookingId: row.booking_id,
+    status: row.status,
+    date: row.preferred_date,
+    slotLabel: formatSlotLabel(
+      {
+        name_en: row.slot_name_en,
+        name_hi: row.slot_name_hi,
+        start_time: row.start_time,
+        end_time: row.end_time,
+      },
+      locale
+    ),
+    farmerName: row.farmer_name,
+    farmerPhone: row.farmer_phone,
+    villageName: row.village_name,
+    totalAcres: row.total_acres,
+    droneUid: row.drone_uid,
+    notes: row.notes,
+    // Built by list_my_jobs with jsonb_build_object, so the shape is fixed.
+    fields: (row.fields as PilotJobFieldRow[]).map((field) => ({
+      fieldId: field.field_id,
+      fieldName: field.field_name,
+      cropName: locale === "hi" ? field.crop_name_hi : field.crop_name_en,
+      areaAcres: field.area_acres,
+      latitude: field.latitude,
+      longitude: field.longitude,
+    })),
   }));
 }

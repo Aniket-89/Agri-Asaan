@@ -3,8 +3,9 @@
 Current schema: the identity, tenancy, and platform foundation, territory
 (ADR 0008), farmers and fields (ADR 0009), the fleet (ADR 0010), bookings with
 append-only status history (ADR 0011), pilot invites (ADR 0012), and spraying
-slots with availability-aware booking (ADR 0013). Job assignment and satellite
-observations are not built yet.
+slots with availability-aware booking (ADR 0013), and pilot and drone
+assignment (ADR 0014). Job start/complete and satellite observations are not
+built yet.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -334,6 +335,21 @@ flow is the only way to create a pilot.
 | `slot_remaining_capacity(region, date, slot)` | Internal: min(available pilots, active drones) homed in the region, minus open bookings holding the slot.                                                                            |
 | `list_slot_availability(farmer, date)`        | For callers who may book for the farmer: active slots with places left; already-started slots today show 0.                                                                          |
 | `create_booking(..., slot, ...)`              | Reserves the slot; rejects invalid or started slots; re-checks capacity under a per (region, date, slot) advisory lock (`slot_full`).                                                |
+
+## Assignment (ADR 0014)
+
+| Table / function                        | Notes                                                                                                                                                                                                                                           |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `booking_assignments`                   | Tenant-owned: booking, pilot, drone, `work_period` (date + slot as `tstzrange` in the org timezone), `is_current`, `assigned_by`, `ended_at`. Read via `can_view_booking`; no client writes. One current row per booking; old rows are history. |
+| Exclusion constraints                   | `booking_assignments_pilot_no_overlap` / `_drone_no_overlap`: GiST (btree_gist) on (pilot or drone `=`, `work_period &&`) where `is_current`. The database guarantee against double-booking.                                                    |
+| `list_assignment_options(booking)`      | Region managers only: active pilots and drones of the organization free for the booking's slot, home region first (borrowing allowed).                                                                                                          |
+| `assign_booking(booking, pilot, drone)` | Region managers only: confirmed → assigned, or reassign while assigned; writes status history. Hints: `invalid_transition`, `invalid_slot`, `slot_passed`, `pilot_unavailable`, `drone_unavailable`, `pilot_busy`, `drone_busy`.                |
+| `set_booking_status`                    | Adds assigned → cancelled (region manager); cancelling ends the current assignment.                                                                                                                                                             |
+| `list_my_jobs(tenant)`                  | The calling pilot's current jobs from today, with farmer contact, village, slot, drone, and booked fields.                                                                                                                                      |
+| `can_view_booking`                      | Now also true for the currently assigned pilot.                                                                                                                                                                                                 |
+
+Pilots and drones with assignment history cannot be deleted (foreign keys);
+deactivate them instead.
 
 ## Spatial data
 

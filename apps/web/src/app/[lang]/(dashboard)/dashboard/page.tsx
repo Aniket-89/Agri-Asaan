@@ -35,6 +35,7 @@ async function DashboardContent() {
   const slotsHref = await localizedHref("/dashboard/slots");
   const bookingsHref = await localizedHref("/dashboard/bookings");
   const myFarmHref = await localizedHref("/dashboard/my-farm");
+  const myJobsHref = await localizedHref("/dashboard/my-jobs");
   const branding = active
     ? await getOrganizationBranding(context.supabase, active.organization_id)
     : PLATFORM_DEFAULT_BRANDING;
@@ -96,6 +97,14 @@ async function DashboardContent() {
                 href={myFarmHref}
               >
                 {t.dashboard.myFarmLink}
+              </a>
+            ) : null}
+            {active.role === "pilot" ? (
+              <a
+                className="inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
+                href={myJobsHref}
+              >
+                {t.dashboard.myJobsLink}
               </a>
             ) : null}
             {canWorkWithFarmers(active.role) ? (

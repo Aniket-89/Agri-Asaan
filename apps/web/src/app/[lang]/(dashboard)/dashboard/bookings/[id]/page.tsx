@@ -7,7 +7,14 @@ import { z } from "zod";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
-import { BOOKING_ERROR_CODES, canUseBookingInbox, getBookingDetail } from "@/modules/bookings";
+import {
+  BOOKING_ERROR_CODES,
+  canUseBookingInbox,
+  getAssignmentOptions,
+  getBookingDetail,
+  type AssignmentOption,
+  type AssignmentOptions,
+} from "@/modules/bookings";
 import {
   BookingStatusBadge,
   formatAcres,
@@ -15,12 +22,12 @@ import {
 } from "@/modules/bookings/components/booking-ui";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
-import { changeBookingStatusAction } from "../actions";
+import { assignBookingAction, changeBookingStatusAction } from "../actions";
 
 export const instant = false;
 
 const searchSchema = z.object({
-  status: z.enum(["booked", "updated"]).optional().catch(undefined),
+  status: z.enum(["booked", "updated", "assigned"]).optional().catch(undefined),
   error: z.enum(BOOKING_ERROR_CODES).optional().catch(undefined),
 });
 
@@ -56,6 +63,7 @@ async function BookingDetailContent({
   if (!booking) {
     notFound();
   }
+  const options = booking.canAssign ? await getAssignmentOptions(context, booking.id) : null;
 
   const backHref = withLocale(
     locale,
@@ -76,6 +84,7 @@ async function BookingDetailContent({
       {search.error ? <StatusBanner kind="error" text={t.errors[search.error]} /> : null}
       {search.status === "booked" ? <StatusBanner kind="success" text={t.booked} /> : null}
       {search.status === "updated" ? <StatusBanner kind="success" text={t.updated} /> : null}
+      {search.status === "assigned" ? <StatusBanner kind="success" text={t.assigned} /> : null}
 
       <section className="space-y-2 rounded-xl border p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -119,6 +128,23 @@ async function BookingDetailContent({
           ))}
         </ul>
       </section>
+
+      {booking.canAssign && options ? (
+        <AssignmentSection
+          bookingId={booking.id}
+          assignment={booking.assignment}
+          options={options}
+          t={t}
+        />
+      ) : booking.assignment ? (
+        <p className="rounded-xl border p-4 text-sm">
+          <span className="font-semibold">{t.assignment}: </span>
+          {format(t.assignedTo, {
+            pilot: booking.assignment.pilotName,
+            drone: booking.assignment.droneLabel,
+          })}
+        </p>
+      ) : null}
 
       {booking.actions.length > 0 ? (
         <section className="space-y-3 rounded-xl border p-4" aria-labelledby="actions-heading">
@@ -198,6 +224,91 @@ async function BookingDetailContent({
         </ol>
       </section>
     </>
+  );
+}
+
+function optionLabel(option: AssignmentOption, t: Dictionary["bookings"]): string {
+  const parts = [option.label];
+  if (!option.isHomeRegion && option.regionName) {
+    parts.push(format(t.otherRegion, { region: option.regionName }));
+  }
+  if (option.isCurrent) {
+    parts.push(t.current);
+  }
+  return parts.join(" · ");
+}
+
+function AssignmentSection({
+  bookingId,
+  assignment,
+  options,
+  t,
+}: {
+  bookingId: string;
+  assignment: { pilotName: string; droneLabel: string } | null;
+  options: AssignmentOptions;
+  t: Dictionary["bookings"];
+}) {
+  const currentPilot = options.pilots.find((option) => option.isCurrent)?.id ?? "";
+  const currentDrone = options.drones.find((option) => option.isCurrent)?.id ?? "";
+  const canSubmit = options.pilots.length > 0 && options.drones.length > 0;
+  const selectClass = "min-h-11 w-full rounded border px-3 py-2";
+
+  return (
+    <section className="space-y-3 rounded-xl border p-4" aria-labelledby="assignment-heading">
+      <h2 id="assignment-heading" className="text-lg font-semibold">
+        {t.assignment}
+      </h2>
+      <p className="text-sm">
+        {assignment
+          ? format(t.assignedTo, { pilot: assignment.pilotName, drone: assignment.droneLabel })
+          : t.notAssigned}
+      </p>
+      <form action={assignBookingAction} className="space-y-3">
+        <input type="hidden" name="bookingId" value={bookingId} />
+        <label className="block">
+          <span className="mb-1 block text-sm">{t.pilot}</span>
+          {options.pilots.length > 0 ? (
+            <select name="pilotUserId" required defaultValue={currentPilot} className={selectClass}>
+              <option value="" disabled>
+                {t.choose}
+              </option>
+              {options.pilots.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {optionLabel(option, t)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="block text-sm text-red-800">{t.noFreePilots}</span>
+          )}
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm">{t.drone}</span>
+          {options.drones.length > 0 ? (
+            <select name="droneId" required defaultValue={currentDrone} className={selectClass}>
+              <option value="" disabled>
+                {t.choose}
+              </option>
+              {options.drones.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {optionLabel(option, t)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="block text-sm text-red-800">{t.noFreeDrones}</span>
+          )}
+        </label>
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="min-h-11 w-full rounded bg-black px-4 py-3 text-white disabled:opacity-50"
+        >
+          {assignment ? t.reassign : t.assign}
+        </button>
+      </form>
+    </section>
   );
 }
 

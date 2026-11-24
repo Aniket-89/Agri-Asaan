@@ -5,7 +5,45 @@ export type Database = {
   
   "public": {
           Tables: {
-            "booking_fields": {
+            "booking_assignments": {
+                  Row: {
+                    "assigned_at": string,"assigned_by": string | null,"booking_id": string,"drone_id": string,"ended_at": string | null,"id": string,"is_current": boolean,"pilot_user_id": string,"tenant_id": string,"work_period": unknown
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "assigned_at"?: string,"assigned_by"?: string | null,"booking_id": string,"drone_id": string,"ended_at"?: string | null,"id"?: string,"is_current"?: boolean,"pilot_user_id": string,"tenant_id": string,"work_period": unknown
+                  }
+                  Update: {
+                    "assigned_at"?: string,"assigned_by"?: string | null,"booking_id"?: string,"drone_id"?: string,"ended_at"?: string | null,"id"?: string,"is_current"?: boolean,"pilot_user_id"?: string,"tenant_id"?: string,"work_period"?: unknown
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "booking_assignments_assigned_by_fkey"
+      columns: ["assigned_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "booking_assignments_booking_same_tenant"
+      columns: ["tenant_id","booking_id"]
+isOneToOne: false
+      referencedRelation: "bookings"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "booking_assignments_drone_same_tenant"
+      columns: ["tenant_id","drone_id"]
+isOneToOne: false
+      referencedRelation: "drones"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "booking_assignments_pilot_same_tenant"
+      columns: ["tenant_id","pilot_user_id"]
+isOneToOne: false
+      referencedRelation: "pilot_profiles"
+      referencedColumns: ["tenant_id","user_id"]
+    }
+                  ]
+                },"booking_fields": {
                   Row: {
                     "area_acres": number,"booking_id": string,"crop_code": string,"crop_name_en": string,"crop_name_hi": string,"farmer_id": string,"field_id": string,"field_name": string,"latitude": number,"longitude": number,"tenant_id": string
                   }
@@ -568,6 +606,12 @@ isOneToOne: false
             "add_organization_member":
 { Args: { "p_organization_id": string,"p_role": Database["public"]['Enums']["organization_role"],"p_user_id": string }; Returns: undefined
                            },
+"assign_booking":
+{ Args: { "p_booking_id": string,"p_drone_id": string,"p_pilot_user_id": string }; Returns: undefined
+                           },
+"booking_work_period":
+{ Args: { "p_date": string,"p_end": string,"p_start": string,"p_tenant_id": string }; Returns: unknown
+                           },
 "bootstrap_platform_owner":
 { Args: { "p_user_id": string }; Returns: undefined
                            },
@@ -643,6 +687,16 @@ isOneToOne: false
                            },
 "is_system_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"list_assignment_options":
+{ Args: { "p_booking_id": string }; Returns: {
+              "id": string,"is_current": boolean,"is_home_region": boolean,"kind": string,"label": string,"region_name": string
+            }[]
+                           },
+"list_my_jobs":
+{ Args: { "p_tenant_id": string }; Returns: {
+              "booking_id": string,"drone_uid": string,"end_time": string,"farmer_name": string,"farmer_phone": string,"fields": Json,"notes": string,"preferred_date": string,"slot_name_en": string,"slot_name_hi": string,"start_time": string,"status": Database["public"]['Enums']["booking_status"],"total_acres": number,"village_name": string
+            }[]
                            },
 "list_slot_availability":
 { Args: { "p_date": string,"p_farmer_id": string }; Returns: {
