@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { getDictionary, localizedHref } from "@/lib/i18n/dictionary";
 import { getOrganizationBranding, PLATFORM_DEFAULT_BRANDING } from "@/modules/branding";
 import { resolveActiveOrganization } from "@/modules/organizations";
+import { canUseBookingInbox } from "@/modules/bookings";
 import { canViewFleet } from "@/modules/drones";
 import { canWorkWithFarmers } from "@/modules/farmers";
 import { canViewTerritoryAdmin } from "@/modules/villages";
@@ -30,6 +31,8 @@ async function DashboardContent() {
   const territoryHref = await localizedHref("/dashboard/territory");
   const farmersHref = await localizedHref("/dashboard/farmers");
   const fleetHref = await localizedHref("/dashboard/fleet");
+  const bookingsHref = await localizedHref("/dashboard/bookings");
+  const myFarmHref = await localizedHref("/dashboard/my-farm");
   const branding = active
     ? await getOrganizationBranding(context.supabase, active.organization_id)
     : PLATFORM_DEFAULT_BRANDING;
@@ -77,11 +80,24 @@ async function DashboardContent() {
           <p className="font-medium">{active.organization.name}</p>
           <p className="text-sm">Role: {active.role}</p>
           <div className="mt-4 flex flex-wrap gap-3">
-            {canWorkWithFarmers(active.role) ? (
+            {canUseBookingInbox(active.role) ? (
               <a
                 className="inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
-                href={farmersHref}
+                href={bookingsHref}
               >
+                {t.dashboard.bookingsLink}
+              </a>
+            ) : null}
+            {active.role === "farmer" ? (
+              <a
+                className="inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
+                href={myFarmHref}
+              >
+                {t.dashboard.myFarmLink}
+              </a>
+            ) : null}
+            {canWorkWithFarmers(active.role) ? (
+              <a className="inline-block min-h-11 rounded border px-4 py-3" href={farmersHref}>
                 {t.dashboard.farmersLink}
               </a>
             ) : null}

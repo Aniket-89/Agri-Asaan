@@ -1,9 +1,9 @@
 # Data model
 
 Current schema: the identity, tenancy, and platform foundation, territory
-(ADR 0008), farmers and fields (ADR 0009), and the fleet: drones and pilot
-profiles (ADR 0010). Bookings, job assignment, and satellite observations are
-not built yet. Add them here when their migrations land.
+(ADR 0008), farmers and fields (ADR 0009), the fleet (ADR 0010), and bookings
+with append-only status history (ADR 0011). Job assignment and satellite
+observations are not built yet. Add them here when their migrations land.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -254,6 +254,54 @@ erDiagram
 | ---------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `drones`         | Org and regional admins (whole tenant, `can_view_fleet`). | Org admin; regional admin for items homed in their regions (`can_manage_fleet_item`). Delete: org admin. |
 | `pilot_profiles` | Org and regional admins; the pilot (own profile).         | Same as drones. A trigger requires the pilot role.                                                       |
+
+## Bookings
+
+```mermaid
+erDiagram
+  farmers ||--o{ bookings : "(tenant_id, farmer_id)"
+  villages ||--o{ bookings : "village snapshot"
+  regions ||--o{ bookings : "region snapshot, routing"
+  bookings ||--|{ booking_fields : "(tenant_id, booking_id, farmer_id)"
+  fields ||--o{ booking_fields : "(tenant_id, farmer_id, field_id)"
+  bookings ||--o{ booking_status_history : "(tenant_id, booking_id), append-only"
+
+  bookings {
+    uuid id PK "client-generated, idempotent"
+    uuid farmer_id FK
+    uuid village_id FK "snapshot"
+    uuid region_id FK "snapshot"
+    booking_status status
+    date preferred_date "today..+60 days, Asia/Kolkata"
+    text notes "max 500"
+    numeric total_acres "sum of lines"
+    uuid requested_by FK
+  }
+  booking_fields {
+    uuid booking_id PK
+    uuid field_id PK
+    text field_name "snapshot"
+    text crop_code "snapshot"
+    text crop_name_en "snapshot"
+    text crop_name_hi "snapshot"
+    numeric area_acres "snapshot"
+    numeric latitude "snapshot"
+    numeric longitude "snapshot"
+  }
+  booking_status_history {
+    bigint id PK
+    booking_status from_status
+    booking_status to_status
+    text reason
+    uuid actor_id FK
+  }
+```
+
+| Table                    | Read (`can_view_booking`)                                                                          | Write                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `bookings`               | Region managers; mitras of the village; the requester (while a member); the farmer's linked login. | Only `create_booking` / `set_booking_status`.                           |
+| `booking_fields`         | Same as the booking.                                                                               | Only `create_booking`.                                                  |
+| `booking_status_history` | Same as the booking.                                                                               | Only the booking functions. `UPDATE`/`DELETE` are blocked by a trigger. |
 
 ## Spatial data
 

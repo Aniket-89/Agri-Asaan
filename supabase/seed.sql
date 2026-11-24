@@ -172,3 +172,36 @@ values
 
 insert into public.pilot_profiles (tenant_id, user_id, home_region_id, license_number)
 values ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000005', 'e1000000-0000-4000-8000-000000000001', 'RPC-DEMO-0001');
+
+-- Bookings (seed runs without a session, so rows are written directly, with
+-- the same snapshots and history create_booking would produce).
+insert into public.bookings (id, tenant_id, farmer_id, village_id, region_id, status, preferred_date, notes, total_acres, requested_by)
+values
+  ('e6000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000001',
+   'e2000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', 'requested', current_date + 3,
+   'Fake demo note: aphid spotted on wheat.', 4.75, 'd0000000-0000-4000-8000-000000000004'),
+  ('e6000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000003',
+   'e2000000-0000-4000-8000-000000000002', 'e1000000-0000-4000-8000-000000000001', 'confirmed', current_date + 5,
+   null, 5.00, 'd0000000-0000-4000-8000-000000000004'),
+  ('e6000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000004',
+   'e2000000-0000-4000-8000-000000000003', 'e1000000-0000-4000-8000-000000000002', 'requested', current_date + 7,
+   null, 4.00, 'd0000000-0000-4000-8000-000000000002');
+
+insert into public.booking_fields (tenant_id, booking_id, farmer_id, field_id, field_name, crop_code, crop_name_en, crop_name_hi, area_acres, latitude, longitude)
+select booking.tenant_id, booking.id, booking.farmer_id, field.id, field.name, crop.code, crop.name_en, crop.name_hi, field.area_acres, field.latitude, field.longitude
+from (values
+  ('e6000000-0000-4000-8000-000000000001'::uuid, 'e4000000-0000-4000-8000-000000000001'::uuid),
+  ('e6000000-0000-4000-8000-000000000001'::uuid, 'e4000000-0000-4000-8000-000000000002'::uuid),
+  ('e6000000-0000-4000-8000-000000000002'::uuid, 'e4000000-0000-4000-8000-000000000004'::uuid),
+  ('e6000000-0000-4000-8000-000000000003'::uuid, 'e4000000-0000-4000-8000-000000000005'::uuid)
+) as line (booking_id, field_id)
+join public.bookings as booking on booking.id = line.booking_id
+join public.fields as field on field.id = line.field_id
+join public.tenant_crops as crop on crop.id = field.crop_id;
+
+insert into public.booking_status_history (tenant_id, booking_id, from_status, to_status, reason, actor_id)
+values
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000001', null, 'requested', null, 'd0000000-0000-4000-8000-000000000004'),
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000002', null, 'requested', null, 'd0000000-0000-4000-8000-000000000004'),
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000002', 'requested', 'confirmed', null, 'd0000000-0000-4000-8000-000000000003'),
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000003', null, 'requested', null, 'd0000000-0000-4000-8000-000000000002');

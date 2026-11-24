@@ -18,6 +18,8 @@ export function toDomainError(error: PostgrestError): DomainErrorCode {
       return "invalid";
     case "42501":
       return "forbidden";
+    case "P0002":
+      return "not_found";
     default:
       throw new Error(`Unexpected database error (${error.code}).`);
   }
