@@ -10,6 +10,7 @@
 --   pilot@agriasaan.test      AgriAsaan       pilot
 --   farmer@agriasaan.test     AgriAsaan       farmer
 --   admin@greenfield.test     Greenfield Agri organization_admin (white-label demo)
+--   pilot2@agriasaan.test     AgriAsaan       pilot (no pilot profile yet: create it in the UI)
 --
 -- White-label branding demo: http://greenfield.localhost:3000 resolves to the
 -- Greenfield brand through its verified domain; http://localhost:3000 shows
@@ -23,7 +24,8 @@ with seed_users (id, email, full_name, phone) as (
     ('d0000000-0000-4000-8000-000000000004'::uuid, 'mitra@agriasaan.test', 'Demo Mitra', '910000000104'),
     ('d0000000-0000-4000-8000-000000000005'::uuid, 'pilot@agriasaan.test', 'Demo Pilot', '910000000105'),
     ('d0000000-0000-4000-8000-000000000006'::uuid, 'farmer@agriasaan.test', 'Demo Farmer', '910000000106'),
-    ('d0000000-0000-4000-8000-000000000007'::uuid, 'admin@greenfield.test', 'Demo Greenfield Admin', '910000000107')
+    ('d0000000-0000-4000-8000-000000000007'::uuid, 'admin@greenfield.test', 'Demo Greenfield Admin', '910000000107'),
+    ('d0000000-0000-4000-8000-000000000008'::uuid, 'pilot2@agriasaan.test', 'Demo Pilot Two', '910000000108')
 ),
 inserted_users as (
   insert into auth.users (
@@ -88,7 +90,8 @@ values
   ('e0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000004', 'mitra'),
   ('e0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000005', 'pilot'),
   ('e0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000006', 'farmer'),
-  ('e0000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000007', 'organization_admin');
+  ('e0000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000007', 'organization_admin'),
+  ('e0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000008', 'pilot');
 
 -- Territory (fake names and approximate demo coordinates only).
 insert into public.regions (id, tenant_id, name)
@@ -158,3 +161,14 @@ join public.tenant_crops as crop
 update public.fields
 set boundary = 'SRID=4326;POLYGON((77.00239 29.00146, 77.00361 29.00146, 77.00361 29.00254, 77.00239 29.00254, 77.00239 29.00146))'
 where id = 'e4000000-0000-4000-8000-000000000001';
+
+-- Fleet: demo drones (fake UIDs) and a pilot profile for pilot@agriasaan.test.
+insert into public.drones (tenant_id, uid, model, home_region_id, status)
+values
+  ('e0000000-0000-4000-8000-000000000001', 'UA-DEMO-N01', 'Demo Sprayer 10L', 'e1000000-0000-4000-8000-000000000001', 'active'),
+  ('e0000000-0000-4000-8000-000000000001', 'UA-DEMO-N02', 'Demo Sprayer 16L', 'e1000000-0000-4000-8000-000000000001', 'maintenance'),
+  ('e0000000-0000-4000-8000-000000000001', 'UA-DEMO-S01', 'Demo Sprayer 10L', 'e1000000-0000-4000-8000-000000000002', 'active'),
+  ('e0000000-0000-4000-8000-000000000002', 'GF-DEMO-01', 'Demo Sprayer 10L', 'e1000000-0000-4000-8000-000000000003', 'active');
+
+insert into public.pilot_profiles (tenant_id, user_id, home_region_id, license_number)
+values ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000005', 'e1000000-0000-4000-8000-000000000001', 'RPC-DEMO-0001');
