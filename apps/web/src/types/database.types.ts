@@ -5,7 +5,33 @@ export type Database = {
   
   "public": {
           Tables: {
-            "farmers": {
+            "drones": {
+                  Row: {
+                    "created_at": string,"home_region_id": string | null,"id": string,"model": string,"status": Database["public"]['Enums']["drone_status"],"tenant_id": string,"uid": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"home_region_id"?: string | null,"id"?: string,"model": string,"status"?: Database["public"]['Enums']["drone_status"],"tenant_id": string,"uid": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"home_region_id"?: string | null,"id"?: string,"model"?: string,"status"?: Database["public"]['Enums']["drone_status"],"tenant_id"?: string,"uid"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "drones_home_region_same_tenant"
+      columns: ["tenant_id","home_region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "drones_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"farmers": {
                   Row: {
                     "consent_recorded_at": string,"created_at": string,"full_name": string,"id": string,"is_active": boolean,"phone": string,"profile_id": string | null,"registered_by": string | null,"tenant_id": string,"updated_at": string,"village_id": string
                   }
@@ -201,6 +227,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"pilot_profiles": {
+                  Row: {
+                    "created_at": string,"home_region_id": string | null,"is_active": boolean,"license_number": string | null,"tenant_id": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"home_region_id"?: string | null,"is_active"?: boolean,"license_number"?: string | null,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "pilot_profiles_home_region_same_tenant"
+      columns: ["tenant_id","home_region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "pilot_profiles_member_same_tenant"
+      columns: ["tenant_id","user_id"]
+isOneToOne: true
+      referencedRelation: "organization_members"
+      referencedColumns: ["organization_id","user_id"]
+    }
+                  ]
                 },"platform_audit_log": {
                   Row: {
                     "action": string,"actor_id": string | null,"actor_platform_role": Database["public"]['Enums']["platform_role"] | null,"details": NonNullable<Json>,"id": number,"occurred_at": string,"target_id": string | null,"target_table": string | null,"target_tenant_id": string | null
@@ -365,6 +417,9 @@ isOneToOne: false
 "can_manage_farmers_in_village":
 { Args: { "p_village_id": string }; Returns: boolean
                            },
+"can_manage_fleet_item":
+{ Args: { "p_home_region_id": string,"p_tenant_id": string }; Returns: boolean
+                           },
 "can_manage_region":
 { Args: { "p_region_id": string }; Returns: boolean
                            },
@@ -373,6 +428,9 @@ isOneToOne: false
                            },
 "can_view_farmer":
 { Args: { "p_farmer_id": string }; Returns: boolean
+                           },
+"can_view_fleet":
+{ Args: { "p_tenant_id": string }; Returns: boolean
                            },
 "get_profile_phone":
 { Args: { "p_profile_id": string }; Returns: string
@@ -420,7 +478,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "organization_role": "super_admin"|"admin"|"mitra"|"farmer"|"pilot"|"organization_admin"|"regional_admin","organization_type": "customer"|"agriasaan","platform_role": "platform_owner"|"system_admin"|"developer"|"support","platform_staff_status": "active"|"suspended"
+            "drone_status": "active"|"maintenance"|"retired","organization_role": "super_admin"|"admin"|"mitra"|"farmer"|"pilot"|"organization_admin"|"regional_admin","organization_type": "customer"|"agriasaan","platform_role": "platform_owner"|"system_admin"|"developer"|"support","platform_staff_status": "active"|"suspended"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -536,7 +594,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "organization_role": ["super_admin", "admin", "mitra", "farmer", "pilot", "organization_admin", "regional_admin"],"organization_type": ["customer", "agriasaan"],"platform_role": ["platform_owner", "system_admin", "developer", "support"],"platform_staff_status": ["active", "suspended"]
+            "drone_status": ["active", "maintenance", "retired"],"organization_role": ["super_admin", "admin", "mitra", "farmer", "pilot", "organization_admin", "regional_admin"],"organization_type": ["customer", "agriasaan"],"platform_role": ["platform_owner", "system_admin", "developer", "support"],"platform_staff_status": ["active", "suspended"]
           }
         }
 } as const

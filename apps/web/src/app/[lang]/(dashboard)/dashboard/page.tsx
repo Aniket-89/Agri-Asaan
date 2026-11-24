@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { getDictionary, localizedHref } from "@/lib/i18n/dictionary";
 import { getOrganizationBranding, PLATFORM_DEFAULT_BRANDING } from "@/modules/branding";
 import { resolveActiveOrganization } from "@/modules/organizations";
+import { canViewFleet } from "@/modules/drones";
 import { canWorkWithFarmers } from "@/modules/farmers";
 import { canViewTerritoryAdmin } from "@/modules/villages";
 
@@ -28,6 +29,7 @@ async function DashboardContent() {
   const { t } = await getDictionary();
   const territoryHref = await localizedHref("/dashboard/territory");
   const farmersHref = await localizedHref("/dashboard/farmers");
+  const fleetHref = await localizedHref("/dashboard/fleet");
   const branding = active
     ? await getOrganizationBranding(context.supabase, active.organization_id)
     : PLATFORM_DEFAULT_BRANDING;
@@ -81,6 +83,11 @@ async function DashboardContent() {
                 href={farmersHref}
               >
                 {t.dashboard.farmersLink}
+              </a>
+            ) : null}
+            {canViewFleet(active.role) ? (
+              <a className="inline-block min-h-11 rounded border px-4 py-3" href={fleetHref}>
+                {t.dashboard.fleetLink}
               </a>
             ) : null}
             {canViewTerritoryAdmin(active.role) ? (

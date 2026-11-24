@@ -1,9 +1,9 @@
 # Data model
 
 Current schema: the identity, tenancy, and platform foundation, territory
-(ADR 0008), and farmers and fields (ADR 0009). Bookings, pilots, drones, and
-satellite observations are not built yet. Add them here when their
-migrations land.
+(ADR 0008), farmers and fields (ADR 0009), and the fleet: drones and pilot
+profiles (ADR 0010). Bookings, job assignment, and satellite observations are
+not built yet. Add them here when their migrations land.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -224,6 +224,36 @@ erDiagram
 Column grants keep `tenant_id`, `profile_id`, `registered_by`, `boundary`,
 and generated columns out of client writes. `consent_recorded_at` and
 `registered_by` are stamped by a trigger.
+
+## Fleet: drones and pilot profiles
+
+```mermaid
+erDiagram
+  regions ||--o{ drones : "(tenant_id, home_region_id), optional"
+  regions ||--o{ pilot_profiles : "(tenant_id, home_region_id), optional"
+  organization_members ||--o| pilot_profiles : "(tenant_id, user_id), pilot role"
+
+  drones {
+    uuid id PK
+    uuid tenant_id FK
+    text uid "upper-case, unique per tenant"
+    text model
+    uuid home_region_id FK
+    drone_status status "active | maintenance | retired"
+  }
+  pilot_profiles {
+    uuid tenant_id PK
+    uuid user_id PK
+    uuid home_region_id FK
+    text license_number "DGCA remote pilot certificate, optional"
+    boolean is_active "availability"
+  }
+```
+
+| Table            | Read                                                      | Write                                                                                                    |
+| ---------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `drones`         | Org and regional admins (whole tenant, `can_view_fleet`). | Org admin; regional admin for items homed in their regions (`can_manage_fleet_item`). Delete: org admin. |
+| `pilot_profiles` | Org and regional admins; the pilot (own profile).         | Same as drones. A trigger requires the pilot role.                                                       |
 
 ## Spatial data
 
