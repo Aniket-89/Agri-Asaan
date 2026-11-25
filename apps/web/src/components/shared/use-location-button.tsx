@@ -2,6 +2,8 @@
 
 import { useState, type MouseEvent } from "react";
 
+import { buttonClass } from "@/components/ui/button";
+
 type Props = {
   // Names of the inputs in the same form that receive the coordinates.
   latitudeName: string;
@@ -46,12 +48,12 @@ export function UseLocationButton({ latitudeName, longitudeName, labels }: Props
         type="button"
         onClick={locate}
         disabled={state === "locating"}
-        className="min-h-11 w-full rounded border px-4 py-2 disabled:opacity-60"
+        className={buttonClass({ variant: "secondary", block: true })}
       >
         {state === "locating" ? labels.locating : labels.idle}
       </button>
       {state === "unavailable" ? (
-        <p role="status" className="text-sm text-amber-800">
+        <p role="status" className="text-sm text-sun-ink">
           {labels.unavailable}
         </p>
       ) : null}

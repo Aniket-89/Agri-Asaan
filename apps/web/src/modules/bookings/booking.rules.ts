@@ -23,6 +23,20 @@ export const OPEN_BOOKING_STATUSES: readonly BookingStatus[] = [
   "in_progress",
 ];
 
+// How many bookings sit in each status (Home summary tiles).
+export function countByStatus(
+  items: readonly { status: BookingStatus }[]
+): Record<BookingStatus, number> {
+  const counts = Object.fromEntries(BOOKING_STATUSES.map((status) => [status, 0])) as Record<
+    BookingStatus,
+    number
+  >;
+  for (const item of items) {
+    counts[item.status] += 1;
+  }
+  return counts;
+}
+
 export type BookingAction = "confirm" | "reject" | "cancel" | "verify" | "send_back";
 
 export type BookingActor = {

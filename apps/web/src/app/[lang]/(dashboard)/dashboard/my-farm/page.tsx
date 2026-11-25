@@ -4,7 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
+import { ClipboardTextIcon, PlantIcon, UserCircleIcon } from "@phosphor-icons/react/dist/ssr";
+
 import { StatusBanner } from "@/components/shared/status-banner";
+import { EmptyState, Page, PageHeader, Panel } from "@/components/ui";
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import {
@@ -53,7 +56,12 @@ async function MyFarmContent({
 
   const farmerId = await getOwnFarmerId(context);
   if (!farmerId) {
-    return <p>{t.bookings.noFarmerRecord}</p>;
+    return (
+      <EmptyState
+        icon={<UserCircleIcon weight="duotone" className="size-7" />}
+        text={t.bookings.noFarmerRecord}
+      />
+    );
   }
 
   // The farmer reads their own fields through the fields module; RLS limits
@@ -77,22 +85,31 @@ async function MyFarmContent({
         <StatusBanner kind="error" text={t.bookings.errors[search.bookingError]} />
       ) : null}
 
-      <section className="space-y-2" aria-labelledby="my-fields-heading">
-        <h2 id="my-fields-heading" className="text-xl font-semibold">
-          {t.fields.heading}
-        </h2>
-        {fields.length === 0 ? <p className="text-gray-600">{t.fields.none}</p> : null}
-        <ul className="space-y-2">
+      <Panel
+        id="my-fields"
+        title={t.fields.heading}
+        icon={<PlantIcon weight="duotone" className="size-5" />}
+      >
+        {fields.length === 0 ? <p className="text-ink-muted">{t.fields.none}</p> : null}
+        <ul className="grid gap-2 sm:grid-cols-2">
           {fields.map((field) => (
-            <li key={field.id} className="rounded border p-3 text-sm">
-              <p className="font-medium">{field.name}</p>
-              <p>
-                {field.cropName} · {formatAcres(field.areaAcres, locale, t.bookings)}
-              </p>
+            <li key={field.id} className="flex items-center gap-3 rounded-xl bg-canvas px-4 py-3">
+              <span
+                aria-hidden="true"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-leaf-soft text-leaf-ink"
+              >
+                <PlantIcon weight="fill" className="size-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-ink">{field.name}</span>
+                <span className="block text-sm text-ink-muted">
+                  {field.cropName}, {formatAcres(field.areaAcres, locale, t.bookings)}
+                </span>
+              </span>
             </li>
           ))}
         </ul>
-      </section>
+      </Panel>
 
       <BookingForm
         farmerId={farmerId}
@@ -115,8 +132,12 @@ async function MyFarmContent({
       />
 
       {bookings.length > 0 ? (
-        <section className="space-y-2" aria-labelledby="my-bookings-heading">
-          <h2 id="my-bookings-heading" className="text-xl font-semibold">
+        <section className="space-y-3" aria-labelledby="my-bookings-heading">
+          <h2
+            id="my-bookings-heading"
+            className="flex items-center gap-2 text-lg font-bold text-ink"
+          >
+            <ClipboardTextIcon weight="duotone" className="size-5 text-brand" aria-hidden />
             {t.bookings.farmerBookings}
           </h2>
           <BookingList bookings={bookings} locale={locale} t={t.bookings} showFarmer={false} />
@@ -130,19 +151,11 @@ export default async function MyFarmPage({ searchParams }: PageProps<"/[lang]/da
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-3xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-1">
-        <a
-          className="inline-block min-h-11 py-2 text-sm underline"
-          href={withLocale(locale, "/dashboard")}
-        >
-          ← {t.bookings.backToDashboard}
-        </a>
-        <h1 className="text-2xl font-semibold">{t.bookings.myFarmTitle}</h1>
-      </header>
+    <Page>
+      <PageHeader title={t.bookings.myFarmTitle} />
       <Suspense fallback={<p aria-busy="true">…</p>}>
         <MyFarmContent searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
-    </main>
+    </Page>
   );
 }

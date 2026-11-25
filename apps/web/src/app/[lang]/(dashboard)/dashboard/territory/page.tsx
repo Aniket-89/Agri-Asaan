@@ -4,6 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
+import { MapPinAreaIcon, PlusIcon } from "@phosphor-icons/react/dist/ssr";
+
+import { StatusBanner } from "@/components/shared/status-banner";
+import { Button, controlClass, EmptyState, Page, PageHeader } from "@/components/ui";
 import { withLocale, type Dictionary } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { resolveActiveOrganization } from "@/modules/organizations";
@@ -39,18 +43,10 @@ function StatusMessage({
   t: Dictionary["territory"];
 }) {
   if (search.error) {
-    return (
-      <p role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-red-900">
-        {t.errors[search.error]}
-      </p>
-    );
+    return <StatusBanner kind="error" text={t.errors[search.error]} />;
   }
   if (search.status === "saved") {
-    return (
-      <p role="status" className="rounded border border-green-300 bg-green-50 p-3 text-green-900">
-        {t.saved}
-      </p>
-    );
+    return <StatusBanner kind="success" text={t.saved} />;
   }
   return null;
 }
@@ -92,24 +88,33 @@ async function TerritoryContent({
       {overview.canManageRegions ? (
         <form
           action={createRegionAction}
-          className="flex flex-col gap-2 rounded-xl border p-4 sm:flex-row sm:items-end"
+          className="flex gap-2 rounded-2xl bg-surface p-3 shadow-soft"
         >
-          <label className="flex-1">
-            <span className="mb-1 block text-sm">{t.regionName}</span>
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">{t.regionName}</span>
             <input
               name="name"
               required
               maxLength={120}
-              className="min-h-11 w-full rounded border px-3 py-2"
+              placeholder={t.regionName}
+              className={controlClass}
             />
           </label>
-          <button type="submit" className="min-h-11 rounded bg-black px-4 py-2 text-white">
+          <Button
+            className="shrink-0"
+            icon={<PlusIcon weight="bold" className="size-5" aria-hidden />}
+          >
             {t.addRegion}
-          </button>
+          </Button>
         </form>
       ) : null}
 
-      {overview.regions.length === 0 ? <p>{t.noRegions}</p> : null}
+      {overview.regions.length === 0 ? (
+        <EmptyState
+          icon={<MapPinAreaIcon weight="duotone" className="size-7" />}
+          text={t.noRegions}
+        />
+      ) : null}
 
       {overview.regions.map((region) => (
         <TerritoryRegionCard
@@ -136,20 +141,11 @@ export default async function TerritoryPage({
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-3xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-1">
-        <a
-          className="inline-block min-h-11 py-2 text-sm underline"
-          href={withLocale(locale, "/dashboard")}
-        >
-          ← {t.territory.backToDashboard}
-        </a>
-        <h1 className="text-2xl font-semibold">{t.territory.title}</h1>
-        <p className="text-gray-600">{t.territory.intro}</p>
-      </header>
+    <Page>
+      <PageHeader title={t.territory.title} description={t.territory.intro} />
       <Suspense fallback={<p aria-busy="true">…</p>}>
         <TerritoryContent searchParams={searchParams} t={t.territory} locale={locale} />
       </Suspense>
-    </main>
+    </Page>
   );
 }

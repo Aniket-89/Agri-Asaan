@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
+import { KeyIcon } from "@phosphor-icons/react/dist/ssr";
+
+import { AuthScreen } from "@/components/layout/auth-screen";
 import { StatusBanner } from "@/components/shared/status-banner";
+import { Button, controlClass, Field } from "@/components/ui";
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -21,8 +25,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getDictionary();
   return { title: t.account.setPasswordTitle };
 }
-
-const inputClass = "min-h-11 w-full rounded border px-3 py-2";
 
 async function SetPasswordForm({
   searchParams,
@@ -44,9 +46,15 @@ async function SetPasswordForm({
   const search = searchSchema.parse(await searchParams);
 
   return (
-    <form action={setPasswordAction} className="w-full space-y-4 rounded-xl border p-6">
-      <h1 className="text-2xl font-semibold">{t.setPasswordTitle}</h1>
-      <p className="text-sm text-gray-600">{t.setPasswordIntro}</p>
+    <form action={setPasswordAction} className="space-y-4">
+      <span
+        aria-hidden="true"
+        className="flex size-14 items-center justify-center rounded-2xl bg-leaf-soft text-leaf-ink"
+      >
+        <KeyIcon weight="duotone" className="size-8" />
+      </span>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">{t.setPasswordTitle}</h1>
+      <p className="text-ink-muted">{t.setPasswordIntro}</p>
       {search.error ? <StatusBanner kind="error" text={t.errors[search.error]} /> : null}
       {/* Lets password managers associate the new password with the account. */}
       <input
@@ -57,8 +65,7 @@ async function SetPasswordForm({
         readOnly
         hidden
       />
-      <label className="block">
-        <span className="mb-1 block text-sm">{t.newPassword}</span>
+      <Field label={t.newPassword}>
         <input
           name="password"
           type="password"
@@ -66,11 +73,10 @@ async function SetPasswordForm({
           minLength={8}
           maxLength={72}
           autoComplete="new-password"
-          className={inputClass}
+          className={controlClass}
         />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-sm">{t.confirmPassword}</span>
+      </Field>
+      <Field label={t.confirmPassword}>
         <input
           name="confirmPassword"
           type="password"
@@ -78,12 +84,10 @@ async function SetPasswordForm({
           minLength={8}
           maxLength={72}
           autoComplete="new-password"
-          className={inputClass}
+          className={controlClass}
         />
-      </label>
-      <button type="submit" className="min-h-11 w-full rounded bg-black px-4 py-3 text-white">
-        {t.savePassword}
-      </button>
+      </Field>
+      <Button block>{t.savePassword}</Button>
     </form>
   );
 }
@@ -94,10 +98,10 @@ export default async function SetPasswordPage({
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
+    <AuthScreen>
       <Suspense fallback={<p aria-busy="true">…</p>}>
         <SetPasswordForm searchParams={searchParams} t={t.account} locale={locale} />
       </Suspense>
-    </main>
+    </AuthScreen>
   );
 }

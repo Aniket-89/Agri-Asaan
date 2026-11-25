@@ -21,8 +21,8 @@ export type TenantBrandOverrides = {
 export const PLATFORM_DEFAULT_BRANDING: Branding = {
   name: "AgriAsaan",
   tagline: "Drone · Crop Monitoring · Farm Services",
-  primaryColor: "#14532d",
-  accentColor: "#75B82A",
+  primaryColor: "#2e7d32",
+  accentColor: "#8cc63f",
   logoUrl: null,
   isPlatformDefault: true,
 };

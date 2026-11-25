@@ -2,6 +2,17 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import {
+  CaretRightIcon,
+  MagnifyingGlassIcon,
+  MapPinIcon,
+  PhoneIcon,
+  UserIcon,
+  UserPlusIcon,
+  UsersThreeIcon,
+} from "@phosphor-icons/react/dist/ssr";
+
+import { Badge, Button, buttonClass, EmptyState, Page, PageHeader } from "@/components/ui";
 
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -41,49 +52,72 @@ async function FarmerList({
 
   return (
     <>
-      <form method="get" className="flex flex-col gap-2 sm:flex-row sm:items-end" role="search">
-        <label className="flex-1">
-          <span className="mb-1 block text-sm">{t.searchLabel}</span>
+      <form method="get" className="flex gap-2" role="search">
+        <label className="relative min-w-0 flex-1">
+          <span className="sr-only">{t.searchLabel}</span>
+          <MagnifyingGlassIcon
+            className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-ink-faint"
+            aria-hidden
+          />
           <input
             name="q"
             type="search"
             defaultValue={query ?? ""}
             maxLength={60}
-            className="min-h-11 w-full rounded border px-3 py-2"
+            placeholder={t.searchLabel}
+            className="min-h-12 w-full rounded-xl bg-surface py-2.5 pr-4 pl-11 text-base text-ink shadow-soft placeholder:text-ink-faint focus:ring-3 focus:ring-leaf/70 focus:outline-none"
           />
         </label>
-        <button type="submit" className="min-h-11 rounded border px-4 py-2">
-          {t.searchSubmit}
-        </button>
+        <Button variant="secondary">{t.searchSubmit}</Button>
       </form>
 
-      {farmers.length === 0 ? <p>{t.noResults}</p> : null}
       {farmers.length === FARMER_LIST_LIMIT ? (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-ink-muted">
           {format(t.showingFirst, { count: FARMER_LIST_LIMIT })}
         </p>
       ) : null}
 
-      <ul className="divide-y rounded-xl border">
-        {farmers.map((farmer) => (
-          <li key={farmer.id}>
-            <a
-              href={withLocale(locale, `/dashboard/farmers/${farmer.id}`)}
-              className="flex min-h-14 flex-col justify-center px-4 py-3 hover:bg-gray-50"
-            >
-              <span className="font-medium">
-                {farmer.fullName}
-                {farmer.isActive ? null : (
-                  <span className="ml-2 text-sm font-normal">({t.inactive})</span>
-                )}
-              </span>
-              <span className="text-sm text-gray-600">
-                {farmer.villageName} · {farmer.phone}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
+      {farmers.length === 0 ? (
+        <EmptyState
+          icon={<UsersThreeIcon weight="duotone" className="size-7" />}
+          text={t.noResults}
+        />
+      ) : (
+        <ul className="space-y-1 rounded-2xl bg-surface p-1.5 shadow-soft">
+          {farmers.map((farmer) => (
+            <li key={farmer.id}>
+              <a
+                href={withLocale(locale, `/dashboard/farmers/${farmer.id}`)}
+                className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-canvas"
+              >
+                <span
+                  aria-hidden="true"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-full bg-sky-soft text-sky"
+                >
+                  <UserIcon weight="fill" className="size-5" />
+                </span>
+                <span className="min-w-0 flex-1 space-y-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="truncate font-semibold text-ink">{farmer.fullName}</span>
+                    {farmer.isActive ? null : <Badge tone="neutral">{t.inactive}</Badge>}
+                  </span>
+                  <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
+                    <span className="flex items-center gap-1.5">
+                      <MapPinIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />
+                      {farmer.villageName}
+                    </span>
+                    <span className="flex items-center gap-1.5 tabular-nums">
+                      <PhoneIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />
+                      {farmer.phone}
+                    </span>
+                  </span>
+                </span>
+                <CaretRightIcon className="size-5 shrink-0 text-ink-faint" aria-hidden />
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }
@@ -94,27 +128,19 @@ export default async function FarmersPage({
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-3xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-2">
-        <a
-          className="inline-block min-h-11 py-2 text-sm underline"
-          href={withLocale(locale, "/dashboard")}
-        >
-          ← {t.farmers.backToDashboard}
-        </a>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">{t.farmers.title}</h1>
-          <a
-            href={withLocale(locale, "/dashboard/farmers/new")}
-            className="min-h-11 rounded bg-black px-4 py-3 text-white"
-          >
+    <Page>
+      <PageHeader
+        title={t.farmers.title}
+        action={
+          <a href={withLocale(locale, "/dashboard/farmers/new")} className={buttonClass()}>
+            <UserPlusIcon weight="bold" className="size-5" aria-hidden />
             {t.farmers.register}
           </a>
-        </div>
-      </header>
+        }
+      />
       <Suspense fallback={<p aria-busy="true">…</p>}>
         <FarmerList searchParams={searchParams} t={t.farmers} locale={locale} />
       </Suspense>
-    </main>
+    </Page>
   );
 }

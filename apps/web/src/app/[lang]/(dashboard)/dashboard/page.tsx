@@ -1,160 +1,323 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import {
+  BuildingsIcon,
+  ClipboardTextIcon,
+  ClockIcon,
+  DroneIcon,
+  ListChecksIcon,
+  MapPinAreaIcon,
+  MapTrifoldIcon,
+  PlantIcon,
+  PlusIcon,
+  UsersThreeIcon,
+} from "@phosphor-icons/react/dist/ssr";
 
-import { getDictionary, localizedHref } from "@/lib/i18n/dictionary";
-import { getOrganizationBranding, PLATFORM_DEFAULT_BRANDING } from "@/modules/branding";
-import { resolveActiveOrganization } from "@/modules/organizations";
-import { canUseBookingInbox } from "@/modules/bookings";
-import { canViewFleet } from "@/modules/drones";
-import { canViewFieldMap } from "@/modules/fields";
-import { canManageSlots } from "@/modules/slots";
-import { canWorkWithFarmers } from "@/modules/farmers";
-import { canViewTerritoryAdmin } from "@/modules/villages";
+import { navItemsForRole, type NavLabel } from "@/components/layout/nav-items";
+import { Button, buttonClass, controlClass, EmptyState, Field, Page, Panel } from "@/components/ui";
+import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import {
+  canUseBookingInbox,
+  countByStatus,
+  getOwnFarmerId,
+  listBookings,
+  listFarmerBookings,
+  listMyJobs,
+  OPEN_BOOKING_STATUSES,
+} from "@/modules/bookings";
+import { resolveActiveOrganization, type ActiveMembershipContext } from "@/modules/organizations";
 
 export const instant = false;
 
+type ShortcutLabel = Exclude<NavLabel, "home">;
+
+// Each section gets its own farm tone so the grid reads at a glance instead
+// of as a stack of identical cards.
+const SHORTCUTS: Record<ShortcutLabel, { icon: typeof PlantIcon; tone: string }> = {
+  bookings: { icon: ClipboardTextIcon, tone: "bg-sun-soft text-sun-ink" },
+  myJobs: { icon: ListChecksIcon, tone: "bg-leaf-soft text-leaf-ink" },
+  myFarm: { icon: PlantIcon, tone: "bg-leaf-soft text-leaf-ink" },
+  farmers: { icon: UsersThreeIcon, tone: "bg-sky-soft text-sky" },
+  map: { icon: MapTrifoldIcon, tone: "bg-brand-soft text-brand" },
+  fleet: { icon: DroneIcon, tone: "bg-soil-soft text-soil" },
+  slots: { icon: ClockIcon, tone: "bg-sun-soft text-sun-ink" },
+  territory: { icon: MapPinAreaIcon, tone: "bg-sky-soft text-sky" },
+};
+
+function shortcutLabel(label: ShortcutLabel, t: Dictionary): string {
+  const labels: Record<ShortcutLabel, string> = {
+    bookings: t.dashboard.bookingsLink,
+    myFarm: t.dashboard.myFarmLink,
+    myJobs: t.dashboard.myJobsLink,
+    farmers: t.dashboard.farmersLink,
+    map: t.maps.overviewLink,
+    fleet: t.dashboard.fleetLink,
+    slots: t.dashboard.slotsLink,
+    territory: t.dashboard.territoryLink,
+  };
+  return labels[label];
+}
+
+type Stat = { label: string; value: number; href: string };
+
+// The few numbers each role acts on, each linking to the matching list.
+async function loadStats(
+  context: ActiveMembershipContext,
+  locale: Locale,
+  t: Dictionary
+): Promise<Stat[]> {
+  const href = (path: string) => withLocale(locale, path);
+  const s = t.dashboard.stats;
+
+  if (canUseBookingInbox(context.role)) {
+    const counts = countByStatus((await listBookings(context)) ?? []);
+    return (["requested", "confirmed", "completed"] as const).map((status) => ({
+      label: s[status],
+      value: counts[status],
+      href: href(`/dashboard/bookings?status=${status}`),
+    }));
+  }
+  if (context.role === "pilot") {
+    const jobs = await listMyJobs(context, locale);
+    if (!jobs) {
+      return [];
+    }
+    return [
+      { label: s.today, value: jobs.today.length, href: href("/dashboard/my-jobs?tab=today") },
+      {
+        label: s.upcoming,
+        value: jobs.upcoming.length,
+        href: href("/dashboard/my-jobs?tab=upcoming"),
+      },
+      {
+        label: s.done,
+        value: jobs.completed.length,
+        href: href("/dashboard/my-jobs?tab=completed"),
+      },
+    ];
+  }
+  if (context.role === "farmer") {
+    const farmerId = await getOwnFarmerId(context);
+    if (!farmerId) {
+      return [];
+    }
+    const counts = countByStatus(await listFarmerBookings(context, farmerId));
+    const farm = href("/dashboard/my-farm");
+    return [
+      {
+        label: s.open,
+        value: OPEN_BOOKING_STATUSES.reduce((sum, status) => sum + counts[status], 0),
+        href: farm,
+      },
+      { label: s.sprayed, value: counts.completed + counts.verified, href: farm },
+    ];
+  }
+  return [];
+}
+
+function Hero({
+  name,
+  subtitle,
+  date,
+  stats,
+  summaryLabel,
+  action,
+}: {
+  name: string;
+  subtitle: string;
+  date: string;
+  stats: Stat[];
+  summaryLabel: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <section className="relative isolate overflow-hidden rounded-3xl bg-linear-135 from-brand to-forest p-5 text-white shadow-raised sm:p-7">
+      {/* Furrows: crop rows running across the corner of the card. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 opacity-[0.14] [mask-image:linear-gradient(110deg,transparent_35%,black_80%)]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(-28deg, var(--leaf) 0 3px, transparent 3px 22px)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute -top-24 -right-16 -z-10 size-72 rounded-full bg-leaf opacity-25 blur-3xl"
+      />
+      <p className="text-sm font-semibold text-leaf">{date}</p>
+      <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{name}</h1>
+      <p className="mt-0.5 text-white/75">{subtitle}</p>
+
+      {stats.length > 0 ? (
+        <>
+          <h2 className="sr-only">{summaryLabel}</h2>
+          <ul className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+            {stats.map((stat) => (
+              <li key={stat.label}>
+                <a
+                  href={stat.href}
+                  className="block h-full rounded-2xl bg-white/10 px-3 py-3 transition hover:bg-white/15 sm:px-4"
+                >
+                  <span className="block text-3xl leading-none font-bold tabular-nums sm:text-4xl">
+                    {stat.value}
+                  </span>
+                  <span className="mt-1.5 block text-sm leading-tight text-white/80">
+                    {stat.label}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      {action ? <div className="mt-5">{action}</div> : null}
+    </section>
+  );
+}
+
 async function DashboardContent() {
   await connection();
+  const { locale, t } = await getDictionary();
   const context = await resolveActiveOrganization();
-
   if (!context) {
-    redirect(await localizedHref("/login"));
+    redirect(withLocale(locale, "/login"));
   }
 
   const { data: profile } = await context.supabase
     .from("profiles")
     .select("full_name")
     .eq("id", context.user.id)
-    .single();
-
+    .maybeSingle();
+  const name = profile?.full_name || context.user.email || "";
   const active = context.membership;
-  const { t } = await getDictionary();
-  const territoryHref = await localizedHref("/dashboard/territory");
-  const farmersHref = await localizedHref("/dashboard/farmers");
-  const fleetHref = await localizedHref("/dashboard/fleet");
-  const slotsHref = await localizedHref("/dashboard/slots");
-  const bookingsHref = await localizedHref("/dashboard/bookings");
-  const myFarmHref = await localizedHref("/dashboard/my-farm");
-  const myJobsHref = await localizedHref("/dashboard/my-jobs");
-  const mapHref = await localizedHref("/dashboard/map");
-  const branding = active
-    ? await getOrganizationBranding(context.supabase, active.organization_id)
-    : PLATFORM_DEFAULT_BRANDING;
+
+  if (!active) {
+    return (
+      <EmptyState
+        icon={<BuildingsIcon weight="duotone" className="size-7" />}
+        text={
+          <>
+            <span className="block font-semibold text-ink">{t.dashboard.noOrganization}</span>
+            {t.dashboard.noOrganizationHint}
+          </>
+        }
+      />
+    );
+  }
+
+  const stats = await loadStats(
+    {
+      supabase: context.supabase,
+      organizationId: active.organization_id,
+      userId: context.user.id,
+      role: active.role,
+    },
+    locale,
+    t
+  );
+  const shortcuts = navItemsForRole(active.role).filter(
+    (item): item is typeof item & { label: ShortcutLabel } => item.label !== "home"
+  );
+  const date = new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date());
 
   return (
     <>
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold" style={{ color: branding.primaryColor }}>
-          {branding.name} Dashboard
-        </h1>
-        <form action="/api/auth/signout" method="post">
-          <button className="rounded border px-3 py-2" type="submit">
-            Logout
-          </button>
-        </form>
-      </header>
+      <Hero
+        name={format(t.dashboard.greeting, { name })}
+        subtitle={format(t.dashboard.roleIn, {
+          role: t.shell.roles[active.role],
+          organization: active.organization.name,
+        })}
+        date={date}
+        stats={stats}
+        summaryLabel={t.dashboard.summary}
+        action={
+          active.role === "farmer" ? (
+            <a
+              href={withLocale(locale, "/dashboard/my-farm#book")}
+              className={buttonClass({ variant: "accent" })}
+            >
+              <PlusIcon weight="bold" className="size-5" aria-hidden />
+              {t.dashboard.bookSpray}
+            </a>
+          ) : null
+        }
+      />
+
+      <section aria-labelledby="shortcuts-heading" className="space-y-3">
+        <h2 id="shortcuts-heading" className="text-lg font-bold text-ink">
+          {t.dashboard.shortcuts}
+        </h2>
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          {shortcuts.map((item) => {
+            const { icon: Icon, tone } = SHORTCUTS[item.label];
+            return (
+              <li key={item.path}>
+                <a
+                  href={withLocale(locale, item.path)}
+                  className="flex h-full flex-col gap-3 rounded-2xl bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-raised"
+                >
+                  <span className={`flex size-12 items-center justify-center rounded-2xl ${tone}`}>
+                    <Icon weight="duotone" className="size-7" aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block text-lg leading-tight font-bold text-ink">
+                      {shortcutLabel(item.label, t)}
+                    </span>
+                    <span className="mt-1 block text-sm leading-snug text-ink-muted">
+                      {t.dashboard.hints[item.label]}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       {context.memberships.length > 1 ? (
-        <form action="/api/organization/select" method="post" className="flex items-end gap-3">
-          <label className="block">
-            <span className="mb-1 block text-sm">Active organization</span>
-            <select
-              className="rounded border px-3 py-2"
-              name="organizationId"
-              defaultValue={active?.organization_id}
-            >
-              {context.memberships.map((membership) => (
-                <option key={membership.organization_id} value={membership.organization_id}>
-                  {membership.organization.name} — {membership.role}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="rounded bg-black px-4 py-2 text-white" type="submit">
-            Switch
-          </button>
-        </form>
+        <Panel title={t.dashboard.switchOrganization}>
+          <form
+            action="/api/organization/select"
+            method="post"
+            className="flex flex-wrap items-end gap-3"
+          >
+            <Field label={t.dashboard.switchOrganization} className="min-w-0 flex-1">
+              <select
+                className={controlClass}
+                name="organizationId"
+                defaultValue={active.organization_id}
+              >
+                {context.memberships.map((membership) => (
+                  <option key={membership.organization_id} value={membership.organization_id}>
+                    {membership.organization.name} ({t.shell.roles[membership.role]})
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Button variant="secondary">{t.dashboard.switch}</Button>
+          </form>
+        </Panel>
       ) : null}
-
-      {active ? (
-        <section className="rounded-xl border p-5">
-          <p className="text-sm text-gray-600">Signed in as</p>
-          <p className="font-medium">{profile?.full_name || context.user.email}</p>
-          <p className="mt-4 text-sm text-gray-600">Active organization</p>
-          <p className="font-medium">{active.organization.name}</p>
-          <p className="text-sm">Role: {active.role}</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {canUseBookingInbox(active.role) ? (
-              <a
-                className="inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
-                href={bookingsHref}
-              >
-                {t.dashboard.bookingsLink}
-              </a>
-            ) : null}
-            {active.role === "farmer" ? (
-              <a
-                className="inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
-                href={myFarmHref}
-              >
-                {t.dashboard.myFarmLink}
-              </a>
-            ) : null}
-            {active.role === "pilot" ? (
-              <a
-                className="inline-block min-h-11 rounded bg-black px-4 py-3 text-white"
-                href={myJobsHref}
-              >
-                {t.dashboard.myJobsLink}
-              </a>
-            ) : null}
-            {canWorkWithFarmers(active.role) ? (
-              <a className="inline-block min-h-11 rounded border px-4 py-3" href={farmersHref}>
-                {t.dashboard.farmersLink}
-              </a>
-            ) : null}
-            {canViewFieldMap(active.role) ? (
-              <a className="inline-block min-h-11 rounded border px-4 py-3" href={mapHref}>
-                {t.maps.overviewLink}
-              </a>
-            ) : null}
-            {canViewFleet(active.role) ? (
-              <a className="inline-block min-h-11 rounded border px-4 py-3" href={fleetHref}>
-                {t.dashboard.fleetLink}
-              </a>
-            ) : null}
-            {canManageSlots(active.role) ? (
-              <a className="inline-block min-h-11 rounded border px-4 py-3" href={slotsHref}>
-                {t.dashboard.slotsLink}
-              </a>
-            ) : null}
-            {canViewTerritoryAdmin(active.role) ? (
-              <a className="inline-block min-h-11 rounded border px-4 py-3" href={territoryHref}>
-                {t.dashboard.territoryLink}
-              </a>
-            ) : null}
-          </div>
-        </section>
-      ) : (
-        <section className="rounded-xl border p-5">
-          <p>You are not a member of an organization yet.</p>
-          <p className="mt-2 text-sm text-gray-600">
-            Ask your organization administrator to add you. You will see your organization here once
-            access is granted.
-          </p>
-        </section>
-      )}
     </>
   );
 }
 
 export default function DashboardPage() {
   return (
-    <main className="mx-auto min-h-screen max-w-3xl space-y-6 p-6">
-      <Suspense fallback={<p>Loading dashboard…</p>}>
+    <Page>
+      <Suspense fallback={<p aria-busy="true">…</p>}>
         <DashboardContent />
       </Suspense>
-    </main>
+    </Page>
   );
 }

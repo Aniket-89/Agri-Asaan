@@ -93,7 +93,7 @@ export function PinPicker({ latitudeName, longitudeName, center, label, labels }
 
         placeMarker = (longitude: number, latitude: number) => {
           if (!marker) {
-            marker = new maplibre.Marker({ draggable: true, color: "#1d4ed8" })
+            marker = new maplibre.Marker({ draggable: true, color: "#2e7d32" })
               .setLngLat([longitude, latitude])
               .addTo(loadedMap);
             marker.on("dragend", () => {
@@ -146,18 +146,18 @@ export function PinPicker({ latitudeName, longitudeName, center, label, labels }
 
   return (
     <div className="space-y-1">
-      <p className="text-sm text-gray-600">{labels.hint}</p>
+      <p className="text-sm text-ink-muted">{labels.hint}</p>
       <div className="relative">
         <div
           ref={container}
           role="region"
           aria-label={label}
-          className="h-72 w-full overflow-hidden rounded-xl border bg-gray-100"
+          className="h-72 w-full overflow-hidden rounded-xl bg-field shadow-inset"
         />
         {state !== "ready" ? (
           <p
             role="status"
-            className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-gray-700"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-ink-muted"
           >
             {state === "loading" ? labels.loading : labels.failed}
           </p>

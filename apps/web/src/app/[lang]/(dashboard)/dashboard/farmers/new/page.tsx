@@ -4,7 +4,18 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
+import { MapPinAreaIcon, UserPlusIcon } from "@phosphor-icons/react/dist/ssr";
+
 import { StatusBanner } from "@/components/shared/status-banner";
+import {
+  BackLink,
+  Button,
+  controlClass,
+  EmptyState,
+  Field,
+  Page,
+  PageHeader,
+} from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getOrganizationBranding } from "@/modules/branding";
@@ -23,8 +34,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getDictionary();
   return { title: t.farmers.registerTitle };
 }
-
-const inputClass = "min-h-11 w-full rounded border px-3 py-2";
 
 async function RegistrationForm({
   searchParams,
@@ -51,27 +60,33 @@ async function RegistrationForm({
   ]);
 
   if (villages.length === 0) {
-    return <p>{t.noVillages}</p>;
+    return (
+      <EmptyState
+        icon={<MapPinAreaIcon weight="duotone" className="size-7" />}
+        text={t.noVillages}
+      />
+    );
   }
 
   return (
     <>
       {search.error ? <StatusBanner kind="error" text={t.errors[search.error]} /> : null}
-      <form action={registerFarmerAction} className="space-y-4 rounded-xl border p-4">
+      <form
+        action={registerFarmerAction}
+        className="space-y-5 rounded-2xl bg-surface p-4 shadow-soft sm:p-6"
+      >
         {/* Fresh id per rendered form: resubmitting the same form cannot create a duplicate. */}
         <input type="hidden" name="id" value={crypto.randomUUID()} />
-        <label className="block">
-          <span className="mb-1 block text-sm">{t.fullName}</span>
+        <Field label={t.fullName}>
           <input
             name="fullName"
             required
             maxLength={120}
             autoComplete="off"
-            className={inputClass}
+            className={controlClass}
           />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm">{t.phone}</span>
+        </Field>
+        <Field label={t.phone} hint={<span id="phone-hint">{t.phoneHint}</span>}>
           <input
             name="phone"
             type="tel"
@@ -79,19 +94,15 @@ async function RegistrationForm({
             required
             autoComplete="off"
             aria-describedby="phone-hint"
-            className={inputClass}
+            className={controlClass}
           />
-          <span id="phone-hint" className="mt-1 block text-xs text-gray-600">
-            {t.phoneHint}
-          </span>
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm">{t.village}</span>
+        </Field>
+        <Field label={t.village}>
           <select
             name="villageId"
             required
             defaultValue={villages.length === 1 ? villages[0].id : ""}
-            className={inputClass}
+            className={controlClass}
           >
             <option value="" disabled>
               {t.chooseVillage}
@@ -102,17 +113,27 @@ async function RegistrationForm({
               </option>
             ))}
           </select>
-        </label>
-        <fieldset className="rounded border p-3">
-          <legend className="px-1 text-sm font-medium">{t.consentHeading}</legend>
+        </Field>
+        <fieldset className="rounded-xl bg-canvas p-4">
+          <legend className="sr-only">{t.consentHeading}</legend>
+          <p aria-hidden="true" className="mb-2 text-sm font-semibold text-ink">
+            {t.consentHeading}
+          </p>
           <label className="flex min-h-11 items-start gap-3">
-            <input name="consent" type="checkbox" required className="mt-1 h-5 w-5 shrink-0" />
-            <span className="text-sm">{format(t.consent, { brand: branding.name })}</span>
+            <input
+              name="consent"
+              type="checkbox"
+              required
+              className="mt-0.5 size-5 shrink-0 accent-[var(--brand)]"
+            />
+            <span className="text-sm text-ink-muted">
+              {format(t.consent, { brand: branding.name })}
+            </span>
           </label>
         </fieldset>
-        <button type="submit" className="min-h-11 w-full rounded bg-black px-4 py-3 text-white">
+        <Button block icon={<UserPlusIcon weight="bold" className="size-5" aria-hidden />}>
           {t.submitRegistration}
-        </button>
+        </Button>
       </form>
     </>
   );
@@ -124,19 +145,16 @@ export default async function RegisterFarmerPage({
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-1">
-        <a
-          className="inline-block min-h-11 py-2 text-sm underline"
-          href={withLocale(locale, "/dashboard/farmers")}
-        >
-          ← {t.farmers.backToFarmers}
-        </a>
-        <h1 className="text-2xl font-semibold">{t.farmers.registerTitle}</h1>
-      </header>
+    <Page width="narrow">
+      <div className="space-y-2">
+        <BackLink href={withLocale(locale, "/dashboard/farmers")}>
+          {t.farmers.backToFarmers}
+        </BackLink>
+        <PageHeader title={t.farmers.registerTitle} />
+      </div>
       <Suspense fallback={<p aria-busy="true">…</p>}>
         <RegistrationForm searchParams={searchParams} t={t.farmers} locale={locale} />
       </Suspense>
-    </main>
+    </Page>
   );
 }

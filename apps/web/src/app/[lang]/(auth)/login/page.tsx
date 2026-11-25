@@ -1,8 +1,13 @@
 import { Suspense } from "react";
+import { SignInIcon } from "@phosphor-icons/react/dist/ssr";
 import { z } from "zod";
 
+import { BrandMark } from "@/components/brand/brand-mark";
+import { AuthScreen } from "@/components/layout/auth-screen";
+import { BrandTokens } from "@/components/layout/brand-tokens";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { StatusBanner } from "@/components/shared/status-banner";
+import { Button, buttonClass, controlClass, Field } from "@/components/ui";
 import { getRequestBranding } from "@/lib/branding/request-branding";
 import { withLocale, format, type Dictionary } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -24,15 +29,23 @@ async function LoginError({
   return error ? <StatusBanner kind="error" text={t.login.errors[error]} /> : null;
 }
 
+const headingClass = "text-2xl font-bold tracking-tight text-ink";
+
 async function BrandedHeading({ title }: { title: string }) {
   const branding = await getRequestBranding();
-  return <h1 className="text-2xl font-semibold">{format(title, { brand: branding.name })}</h1>;
+  return (
+    <div className="space-y-4">
+      <BrandTokens branding={branding} />
+      <BrandMark branding={branding} className="size-14" />
+      <h1 className={headingClass}>{format(title, { brand: branding.name })}</h1>
+    </div>
+  );
 }
 
 function LoginHeading({ t }: { t: Dictionary }) {
   return (
     // Brand-neutral fallback so a white-label domain never flashes another brand.
-    <Suspense fallback={<h1 className="text-2xl font-semibold">{t.login.titleFallback}</h1>}>
+    <Suspense fallback={<h1 className={`${headingClass} pt-18`}>{t.login.titleFallback}</h1>}>
       <BrandedHeading title={t.login.title} />
     </Suspense>
   );
@@ -42,38 +55,44 @@ export default async function LoginPage({ searchParams }: PageProps<"/[lang]/log
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 px-6">
-      <LanguageSwitcher
-        current={locale}
-        label={t.language.label}
-        names={{ en: t.language.en, hi: t.language.hi }}
-      />
-      <form action={loginAction} className="w-full space-y-4 rounded-xl border p-6">
-        <LoginHeading t={t} />
-        <Suspense fallback={null}>
-          <LoginError searchParams={searchParams} t={t} />
-        </Suspense>
-        <label className="block">
-          <span className="mb-1 block text-sm">{t.login.email}</span>
-          <input className="w-full rounded border px-3 py-2" name="email" type="email" required />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm">{t.login.password}</span>
+    <AuthScreen
+      top={
+        <LanguageSwitcher
+          current={locale}
+          label={t.language.label}
+          names={{ en: t.language.en, hi: t.language.hi }}
+          onDark
+        />
+      }
+    >
+      <LoginHeading t={t} />
+      <Suspense fallback={null}>
+        <LoginError searchParams={searchParams} t={t} />
+      </Suspense>
+      <form action={loginAction} className="space-y-4">
+        <Field label={t.login.email}>
+          <input className={controlClass} name="email" type="email" autoComplete="email" required />
+        </Field>
+        <Field label={t.login.password}>
           <input
-            className="w-full rounded border px-3 py-2"
+            className={controlClass}
             name="password"
             type="password"
+            autoComplete="current-password"
             minLength={6}
             required
           />
-        </label>
-        <button className="w-full rounded bg-black px-4 py-3 text-white" type="submit">
+        </Field>
+        <Button block icon={<SignInIcon weight="bold" className="size-5" aria-hidden />}>
           {t.login.submit}
-        </button>
-        <a className="block text-center text-sm underline" href={withLocale(locale, "/register")}>
-          {t.login.createAccount}
-        </a>
+        </Button>
       </form>
-    </main>
+      <a
+        className={buttonClass({ variant: "quiet", block: true })}
+        href={withLocale(locale, "/register")}
+      >
+        {t.login.createAccount}
+      </a>
+    </AuthScreen>
   );
 }

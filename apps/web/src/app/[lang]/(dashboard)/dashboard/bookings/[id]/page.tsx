@@ -2,10 +2,32 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import {
+  ArrowLeftIcon,
+  CalendarBlankIcon,
+  CheckCircleIcon,
+  ClockCounterClockwiseIcon,
+  ClockIcon,
+  DroneIcon,
+  NoteIcon,
+  PhoneIcon,
+  PlantIcon,
+  SealCheckIcon,
+  UserPlusIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import { z } from "zod";
 
 import { FieldMap } from "@/components/maps/field-map";
 import { StatusBanner } from "@/components/shared/status-banner";
+import {
+  Button,
+  buttonClass,
+  controlClass,
+  controlOnTintClass,
+  Field,
+  Page,
+  Panel,
+} from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import {
@@ -17,7 +39,9 @@ import {
   type AssignmentOptions,
 } from "@/modules/bookings";
 import {
+  BookingJourney,
   BookingStatusBadge,
+  Fact,
   formatAcres,
   formatBookingDate,
   formatSprayed,
@@ -37,6 +61,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getDictionary();
   return { title: t.bookings.detailTitle };
 }
+
+const reasonClass = controlOnTintClass;
 
 async function BookingDetailContent({
   params,
@@ -81,8 +107,9 @@ async function BookingDetailContent({
 
   return (
     <>
-      <a className="inline-block min-h-11 py-2 text-sm underline" href={backHref}>
-        ← {t.backToBookings}
+      <a className={`${buttonClass({ variant: "quiet", size: "sm" })} -ml-3`} href={backHref}>
+        <ArrowLeftIcon className="size-4" aria-hidden />
+        {t.backToBookings}
       </a>
 
       {search.error ? <StatusBanner kind="error" text={t.errors[search.error]} /> : null}
@@ -90,81 +117,102 @@ async function BookingDetailContent({
       {search.status === "updated" ? <StatusBanner kind="success" text={t.updated} /> : null}
       {search.status === "assigned" ? <StatusBanner kind="success" text={t.assigned} /> : null}
 
-      <section className="space-y-2 rounded-xl border p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-2xl font-semibold">{t.detailTitle}</h1>
+      <section className="space-y-4 rounded-2xl bg-surface p-4 shadow-soft sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink-muted">{t.detailTitle}</p>
+            <h1 className="text-2xl font-bold tracking-tight text-ink">
+              {booking.farmer.fullName}
+            </h1>
+            <p className="text-ink-muted">{booking.villageName}</p>
+          </div>
           <BookingStatusBadge status={booking.status} t={t} />
         </div>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-gray-600">{t.farmer}</dt>
-          <dd>
-            {booking.farmer.fullName} ·{" "}
-            <a className="underline" href={`tel:+91${booking.farmer.phone}`}>
-              {booking.farmer.phone}
-            </a>
-          </dd>
-          <dt className="text-gray-600">{t.village}</dt>
-          <dd>{booking.villageName}</dd>
-          <dt className="text-gray-600">{t.preferredDate}</dt>
-          <dd>
+        <BookingJourney status={booking.status} t={t} />
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          <Fact icon={<CalendarBlankIcon weight="fill" className="size-4" />}>
             {formatBookingDate(booking.preferredDate, locale)}
-            {booking.slotLabel ? ` · ${booking.slotLabel}` : ""}
-          </dd>
-        </dl>
-        {booking.notes ? <p className="rounded bg-gray-50 p-3 text-sm">{booking.notes}</p> : null}
+          </Fact>
+          {booking.slotLabel ? (
+            <Fact icon={<ClockIcon weight="fill" className="size-4" />}>{booking.slotLabel}</Fact>
+          ) : null}
+        </div>
+        <a
+          className={buttonClass({ variant: "secondary", size: "sm" })}
+          href={`tel:+91${booking.farmer.phone}`}
+        >
+          <PhoneIcon weight="fill" className="size-4 text-brand" aria-hidden />
+          {booking.farmer.phone}
+        </a>
+        {booking.notes ? (
+          <p className="flex gap-2 rounded-xl bg-sun-soft px-4 py-3 text-sm text-sun-ink">
+            <NoteIcon weight="fill" className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {booking.notes}
+          </p>
+        ) : null}
       </section>
 
-      <section className="space-y-2" aria-labelledby="lines-heading">
-        <h2 id="lines-heading" className="text-lg font-semibold">
-          {t.fields} · {formatAcres(booking.totalAcres, locale, t)}
-        </h2>
-        <FieldMap
-          label={maps.bookingFields}
-          labels={{ loading: maps.loading, failed: maps.failed }}
-          pins={booking.lines.map((line) => ({
-            id: line.fieldId,
-            label: line.fieldName,
-            detail: `${line.cropName} · ${formatAcres(line.areaAcres, locale, t)}`,
-            latitude: line.latitude,
-            longitude: line.longitude,
-          }))}
-        />
-        <ul className="space-y-2">
-          {booking.lines.map((line) => (
-            <li key={line.fieldId} className="rounded border p-3 text-sm">
-              <p className="font-medium">{line.fieldName}</p>
-              <p>
-                {line.cropName} · {formatAcres(line.areaAcres, locale, t)}
-              </p>
-              {line.actualAcres !== null ? (
-                <p className="font-medium">
-                  {formatSprayed(line.actualAcres, line.areaAcres, locale, t)}
+      <Panel
+        id="lines"
+        title={`${t.fields} (${formatAcres(booking.totalAcres, locale, t)})`}
+        icon={<PlantIcon weight="duotone" className="size-5" />}
+      >
+        <div className="space-y-3">
+          <FieldMap
+            label={maps.bookingFields}
+            labels={{ loading: maps.loading, failed: maps.failed }}
+            pins={booking.lines.map((line) => ({
+              id: line.fieldId,
+              label: line.fieldName,
+              detail: `${line.cropName}, ${formatAcres(line.areaAcres, locale, t)}`,
+              latitude: line.latitude,
+              longitude: line.longitude,
+            }))}
+          />
+          <ul className="space-y-2">
+            {booking.lines.map((line) => (
+              <li key={line.fieldId} className="rounded-xl bg-canvas px-4 py-3">
+                <p className="font-semibold text-ink">{line.fieldName}</p>
+                <p className="text-sm text-ink-muted">
+                  {line.cropName}, {formatAcres(line.areaAcres, locale, t)}
                 </p>
-              ) : null}
-              <p className="text-gray-600">
-                {line.latitude}, {line.longitude}
-              </p>
-            </li>
-          ))}
-        </ul>
-        {booking.execution.actualTotalAcres !== null ? (
-          <p className="font-semibold">
-            {formatSprayed(
-              booking.execution.actualTotalAcres,
-              booking.totalAcres,
-              locale,
-              t,
-              "totalSprayed"
-            )}
-          </p>
-        ) : null}
-        {booking.execution.completionNotes ? (
-          <p className="rounded bg-gray-50 p-3 text-sm">
-            <span className="font-medium">{t.pilotNote}: </span>
-            {booking.execution.completionNotes}
-          </p>
-        ) : null}
-      </section>
+                {line.actualAcres !== null ? (
+                  <p className="mt-1 text-sm font-semibold text-leaf-ink">
+                    {formatSprayed(line.actualAcres, line.areaAcres, locale, t)}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-xs text-ink-faint">
+                  {line.latitude}, {line.longitude}
+                </p>
+              </li>
+            ))}
+          </ul>
+          {booking.execution.actualTotalAcres !== null ? (
+            <p className="rounded-xl bg-leaf-soft px-4 py-3 font-bold text-leaf-ink">
+              {formatSprayed(
+                booking.execution.actualTotalAcres,
+                booking.totalAcres,
+                locale,
+                t,
+                "totalSprayed"
+              )}
+            </p>
+          ) : null}
+          {booking.execution.completionNotes ? (
+            <p className="flex gap-2 rounded-xl bg-canvas px-4 py-3 text-sm">
+              <NoteIcon
+                weight="fill"
+                className="mt-0.5 size-4 shrink-0 text-ink-faint"
+                aria-hidden
+              />
+              <span>
+                <span className="font-semibold">{t.pilotNote}: </span>
+                {booking.execution.completionNotes}
+              </span>
+            </p>
+          ) : null}
+        </div>
+      </Panel>
 
       {booking.canAssign && options ? (
         <AssignmentSection
@@ -174,135 +222,139 @@ async function BookingDetailContent({
           t={t}
         />
       ) : booking.assignment ? (
-        <p className="rounded-xl border p-4 text-sm">
-          <span className="font-semibold">{t.assignment}: </span>
-          {format(t.assignedTo, {
-            pilot: booking.assignment.pilotName,
-            drone: booking.assignment.droneLabel,
-          })}
-        </p>
+        <Panel
+          id="assignment"
+          title={t.assignment}
+          icon={<DroneIcon weight="duotone" className="size-5" />}
+        >
+          <p>
+            {format(t.assignedTo, {
+              pilot: booking.assignment.pilotName,
+              drone: booking.assignment.droneLabel,
+            })}
+          </p>
+        </Panel>
       ) : null}
 
       {booking.actions.length > 0 ? (
-        <section className="space-y-3 rounded-xl border p-4" aria-labelledby="actions-heading">
-          <h2 id="actions-heading" className="text-lg font-semibold">
-            {t.actions}
-          </h2>
-          {booking.actions.includes("confirm") ? (
-            <form action={changeBookingStatusAction}>
-              <input type="hidden" name="bookingId" value={booking.id} />
-              <input type="hidden" name="toStatus" value="confirmed" />
-              <button
-                type="submit"
-                className="min-h-11 w-full rounded bg-black px-4 py-3 text-white"
+        <Panel id="actions" title={t.actions}>
+          <div className="space-y-4">
+            {booking.actions.includes("confirm") ? (
+              <form action={changeBookingStatusAction}>
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <input type="hidden" name="toStatus" value="confirmed" />
+                <Button
+                  block
+                  icon={<CheckCircleIcon weight="fill" className="size-5" aria-hidden />}
+                >
+                  {t.confirm}
+                </Button>
+              </form>
+            ) : null}
+            {booking.actions.includes("verify") ? (
+              <form action={changeBookingStatusAction}>
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <input type="hidden" name="toStatus" value="verified" />
+                <Button block icon={<SealCheckIcon weight="fill" className="size-5" aria-hidden />}>
+                  {t.verify}
+                </Button>
+              </form>
+            ) : null}
+            {booking.actions.includes("send_back") ? (
+              <form
+                action={changeBookingStatusAction}
+                className="space-y-3 rounded-xl bg-canvas p-3"
               >
-                {t.confirm}
-              </button>
-            </form>
-          ) : null}
-          {booking.actions.includes("reject") ? (
-            <form action={changeBookingStatusAction} className="space-y-2">
-              <input type="hidden" name="bookingId" value={booking.id} />
-              <input type="hidden" name="toStatus" value="rejected" />
-              <label className="block">
-                <span className="mb-1 block text-sm">{t.rejectReason}</span>
-                <input
-                  name="reason"
-                  required
-                  maxLength={500}
-                  className="min-h-11 w-full rounded border px-3 py-2"
-                />
-              </label>
-              <button
-                type="submit"
-                className="min-h-11 w-full rounded border border-red-700 px-4 py-2 text-red-800"
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <input type="hidden" name="toStatus" value="in_progress" />
+                <Field label={t.sendBackReason}>
+                  <input name="reason" required maxLength={500} className={reasonClass} />
+                </Field>
+                <Button variant="secondary" block>
+                  {t.sendBack}
+                </Button>
+              </form>
+            ) : null}
+            {booking.actions.includes("reject") ? (
+              <form
+                action={changeBookingStatusAction}
+                className="space-y-3 rounded-xl bg-canvas p-3"
               >
-                {t.reject}
-              </button>
-            </form>
-          ) : null}
-          {booking.actions.includes("verify") ? (
-            <form action={changeBookingStatusAction}>
-              <input type="hidden" name="bookingId" value={booking.id} />
-              <input type="hidden" name="toStatus" value="verified" />
-              <button
-                type="submit"
-                className="min-h-11 w-full rounded bg-black px-4 py-3 text-white"
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <input type="hidden" name="toStatus" value="rejected" />
+                <Field label={t.rejectReason}>
+                  <input name="reason" required maxLength={500} className={reasonClass} />
+                </Field>
+                <Button variant="danger" block>
+                  {t.reject}
+                </Button>
+              </form>
+            ) : null}
+            {booking.actions.includes("cancel") ? (
+              <form
+                action={changeBookingStatusAction}
+                className="space-y-3 rounded-xl bg-canvas p-3"
               >
-                {t.verify}
-              </button>
-            </form>
-          ) : null}
-          {booking.actions.includes("send_back") ? (
-            <form action={changeBookingStatusAction} className="space-y-2">
-              <input type="hidden" name="bookingId" value={booking.id} />
-              <input type="hidden" name="toStatus" value="in_progress" />
-              <label className="block">
-                <span className="mb-1 block text-sm">{t.sendBackReason}</span>
-                <input
-                  name="reason"
-                  required
-                  maxLength={500}
-                  className="min-h-11 w-full rounded border px-3 py-2"
-                />
-              </label>
-              <button type="submit" className="min-h-11 w-full rounded border px-4 py-2">
-                {t.sendBack}
-              </button>
-            </form>
-          ) : null}
-          {booking.actions.includes("cancel") ? (
-            <form action={changeBookingStatusAction} className="space-y-2">
-              <input type="hidden" name="bookingId" value={booking.id} />
-              <input type="hidden" name="toStatus" value="cancelled" />
-              <label className="block">
-                <span className="mb-1 block text-sm">{t.cancelReason}</span>
-                <input
-                  name="reason"
-                  maxLength={500}
-                  className="min-h-11 w-full rounded border px-3 py-2"
-                />
-              </label>
-              <button type="submit" className="min-h-11 w-full rounded border px-4 py-2">
-                {t.cancel}
-              </button>
-            </form>
-          ) : null}
-        </section>
+                <input type="hidden" name="bookingId" value={booking.id} />
+                <input type="hidden" name="toStatus" value="cancelled" />
+                <Field label={t.cancelReason}>
+                  <input name="reason" maxLength={500} className={reasonClass} />
+                </Field>
+                <Button variant="secondary" block>
+                  {t.cancel}
+                </Button>
+              </form>
+            ) : null}
+          </div>
+        </Panel>
       ) : null}
 
-      <section className="space-y-2" aria-labelledby="history-heading">
-        <h2 id="history-heading" className="text-lg font-semibold">
-          {t.history}
-        </h2>
-        <ol className="space-y-2 border-l-2 pl-4">
-          {booking.history.map((entry) => (
-            <li key={entry.id} className="text-sm">
-              <p className="font-medium">
-                {format(t.historyEntry, {
-                  status: t.statuses[entry.toStatus],
-                  actor: entry.actorName,
-                })}
-              </p>
-              <p className="text-gray-600">{timeFormat.format(new Date(entry.createdAt))}</p>
-              {entry.reason ? <p className="italic">“{entry.reason}”</p> : null}
+      <Panel
+        id="history"
+        title={t.history}
+        icon={<ClockCounterClockwiseIcon weight="duotone" className="size-5" />}
+      >
+        <ol className="space-y-4">
+          {booking.history.map((entry, index) => (
+            <li key={entry.id} className="flex gap-3">
+              <span
+                aria-hidden="true"
+                className={`mt-1.5 size-3 shrink-0 rounded-full ${
+                  index === booking.history.length - 1 ? "bg-brand" : "bg-leaf"
+                }`}
+              />
+              <span className="min-w-0">
+                <span className="block font-semibold text-ink">
+                  {format(t.historyEntry, {
+                    status: t.statuses[entry.toStatus],
+                    actor: entry.actorName,
+                  })}
+                </span>
+                <span className="block text-sm text-ink-muted">
+                  {timeFormat.format(new Date(entry.createdAt))}
+                </span>
+                {entry.reason ? (
+                  <span className="mt-1 block rounded-lg bg-canvas px-3 py-2 text-sm">
+                    {entry.reason}
+                  </span>
+                ) : null}
+              </span>
             </li>
           ))}
         </ol>
-      </section>
+      </Panel>
     </>
   );
 }
 
 function optionLabel(option: AssignmentOption, t: Dictionary["bookings"]): string {
-  const parts = [option.label];
-  if (!option.isHomeRegion && option.regionName) {
-    parts.push(format(t.otherRegion, { region: option.regionName }));
-  }
-  if (option.isCurrent) {
-    parts.push(t.current);
-  }
-  return parts.join(" · ");
+  const extras = [
+    !option.isHomeRegion && option.regionName
+      ? format(t.otherRegion, { region: option.regionName })
+      : null,
+    option.isCurrent ? t.current : null,
+  ].filter(Boolean);
+  return extras.length > 0 ? `${option.label} (${extras.join(", ")})` : option.label;
 }
 
 function AssignmentSection({
@@ -319,24 +371,28 @@ function AssignmentSection({
   const currentPilot = options.pilots.find((option) => option.isCurrent)?.id ?? "";
   const currentDrone = options.drones.find((option) => option.isCurrent)?.id ?? "";
   const canSubmit = options.pilots.length > 0 && options.drones.length > 0;
-  const selectClass = "min-h-11 w-full rounded border px-3 py-2";
 
   return (
-    <section className="space-y-3 rounded-xl border p-4" aria-labelledby="assignment-heading">
-      <h2 id="assignment-heading" className="text-lg font-semibold">
-        {t.assignment}
-      </h2>
-      <p className="text-sm">
+    <Panel
+      id="assignment"
+      title={t.assignment}
+      icon={<DroneIcon weight="duotone" className="size-5" />}
+    >
+      <p className="mb-4 text-ink-muted">
         {assignment
           ? format(t.assignedTo, { pilot: assignment.pilotName, drone: assignment.droneLabel })
           : t.notAssigned}
       </p>
-      <form action={assignBookingAction} className="space-y-3">
+      <form action={assignBookingAction} className="grid gap-4 sm:grid-cols-2">
         <input type="hidden" name="bookingId" value={bookingId} />
-        <label className="block">
-          <span className="mb-1 block text-sm">{t.pilot}</span>
+        <Field label={t.pilot}>
           {options.pilots.length > 0 ? (
-            <select name="pilotUserId" required defaultValue={currentPilot} className={selectClass}>
+            <select
+              name="pilotUserId"
+              required
+              defaultValue={currentPilot}
+              className={controlClass}
+            >
               <option value="" disabled>
                 {t.choose}
               </option>
@@ -347,13 +403,14 @@ function AssignmentSection({
               ))}
             </select>
           ) : (
-            <span className="block text-sm text-red-800">{t.noFreePilots}</span>
+            <span className="block rounded-xl bg-clay-soft px-4 py-3 text-sm text-clay">
+              {t.noFreePilots}
+            </span>
           )}
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm">{t.drone}</span>
+        </Field>
+        <Field label={t.drone}>
           {options.drones.length > 0 ? (
-            <select name="droneId" required defaultValue={currentDrone} className={selectClass}>
+            <select name="droneId" required defaultValue={currentDrone} className={controlClass}>
               <option value="" disabled>
                 {t.choose}
               </option>
@@ -364,18 +421,21 @@ function AssignmentSection({
               ))}
             </select>
           ) : (
-            <span className="block text-sm text-red-800">{t.noFreeDrones}</span>
+            <span className="block rounded-xl bg-clay-soft px-4 py-3 text-sm text-clay">
+              {t.noFreeDrones}
+            </span>
           )}
-        </label>
-        <button
-          type="submit"
+        </Field>
+        <Button
+          block
           disabled={!canSubmit}
-          className="min-h-11 w-full rounded bg-black px-4 py-3 text-white disabled:opacity-50"
+          className="sm:col-span-2"
+          icon={<UserPlusIcon weight="fill" className="size-5" aria-hidden />}
         >
           {assignment ? t.reassign : t.assign}
-        </button>
+        </Button>
       </form>
-    </section>
+    </Panel>
   );
 }
 
@@ -386,7 +446,7 @@ export default async function BookingDetailPage({
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-3xl space-y-6 p-4 sm:p-6">
+    <Page>
       <Suspense fallback={<p aria-busy="true">…</p>}>
         <BookingDetailContent
           params={params}
@@ -396,6 +456,6 @@ export default async function BookingDetailPage({
           locale={locale}
         />
       </Suspense>
-    </main>
+    </Page>
   );
 }

@@ -1,20 +1,19 @@
-import { withLocale } from "@/lib/i18n/config";
-import { getLocale } from "@/lib/i18n/dictionary";
+import { HourglassMediumIcon } from "@phosphor-icons/react/dist/ssr";
+
+import { AuthNotice } from "@/components/layout/auth-notice";
+import { withLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 export default async function PendingAccessPage() {
-  const locale = await getLocale();
+  const { locale, t } = await getDictionary();
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
-      <section className="w-full space-y-4 rounded-xl border p-6">
-        <h1 className="text-2xl font-semibold">Access pending</h1>
-        <p>
-          Your account is ready, but it is not connected to an organization. Ask an organization
-          administrator to invite you.
-        </p>
-        <a className="inline-block underline" href={withLocale(locale, "/login")}>
-          Return to sign in
-        </a>
-      </section>
-    </main>
+    <AuthNotice
+      icon={<HourglassMediumIcon weight="duotone" className="size-8" />}
+      title={t.register.pendingTitle}
+      backHref={withLocale(locale, "/login")}
+      backLabel={t.register.backToSignIn}
+    >
+      <p>{t.register.pendingBody}</p>
+    </AuthNotice>
   );
 }
