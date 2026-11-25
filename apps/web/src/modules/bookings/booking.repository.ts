@@ -5,7 +5,9 @@ import { OPEN_BOOKING_STATUSES, type BookingStatus } from "./booking.rules";
 import type {
   AssignBookingInput,
   BookingStatusChangeInput,
+  CompleteJobInput,
   CreateBookingInput,
+  StartJobInput,
 } from "./booking.schema";
 
 type Client = SupabaseClient<Database>;
@@ -74,7 +76,7 @@ export async function getBooking(supabase: Client, tenantId: string, bookingId: 
   return supabase
     .from("bookings")
     .select(
-      "id, status, preferred_date, notes, total_acres, region_id, requested_by, created_at, farmer:farmers!bookings_farmer_same_tenant(id, full_name, phone, profile_id), village:villages!bookings_village_same_tenant(name), slot:spray_slots!bookings_slot_same_tenant(name_en, name_hi, start_time, end_time)"
+      "id, status, preferred_date, notes, total_acres, region_id, requested_by, created_at, started_at, completed_at, actual_total_acres, completion_notes, verified_at, farmer:farmers!bookings_farmer_same_tenant(id, full_name, phone, profile_id), village:villages!bookings_village_same_tenant(name), slot:spray_slots!bookings_slot_same_tenant(name_en, name_hi, start_time, end_time)"
     )
     .eq("tenant_id", tenantId)
     .eq("id", bookingId)
@@ -84,7 +86,9 @@ export async function getBooking(supabase: Client, tenantId: string, bookingId: 
 export async function listBookingLines(supabase: Client, bookingId: string) {
   return supabase
     .from("booking_fields")
-    .select("field_id, field_name, crop_name_en, crop_name_hi, area_acres, latitude, longitude")
+    .select(
+      "field_id, field_name, crop_name_en, crop_name_hi, area_acres, actual_acres, latitude, longitude"
+    )
     .eq("booking_id", bookingId)
     .order("field_name");
 }
@@ -145,4 +149,17 @@ export async function getCurrentAssignment(supabase: Client, bookingId: string) 
 
 export async function listMyJobs(supabase: Client, tenantId: string) {
   return supabase.rpc("list_my_jobs", { p_tenant_id: tenantId });
+}
+
+export async function callStartJob(supabase: Client, input: StartJobInput) {
+  return supabase.rpc("start_job", { p_booking_id: input.bookingId });
+}
+
+export async function callCompleteJob(supabase: Client, input: CompleteJobInput) {
+  return supabase.rpc("complete_job", {
+    p_booking_id: input.bookingId,
+    p_field_ids: input.fieldIds,
+    p_acres: input.acres,
+    p_notes: input.notes,
+  });
 }

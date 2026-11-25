@@ -44,6 +44,30 @@ export function formatAcres(area: number, locale: Locale, t: Dictionary["booking
   return format(t.totalAcres, { area: number });
 }
 
+// Mission-plan area against the booked acres, e.g. "Sprayed 4.3 acres ·
+// booked 4 acres (+0.3)". The difference is omitted when they match.
+export function formatSprayed(
+  actual: number,
+  booked: number,
+  locale: Locale,
+  t: Dictionary["bookings"],
+  template: "sprayed" | "totalSprayed" = "sprayed"
+): string {
+  const difference = Math.round((actual - booked) * 100) / 100;
+  const diff =
+    difference === 0
+      ? ""
+      : ` (${new Intl.NumberFormat(locale === "hi" ? "hi-IN" : "en-IN", {
+          maximumFractionDigits: 2,
+          signDisplay: "always",
+        }).format(difference)})`;
+  return format(t[template], {
+    actual: formatAcres(actual, locale, t),
+    area: formatAcres(booked, locale, t),
+    diff,
+  });
+}
+
 export function BookingList({
   bookings,
   locale,

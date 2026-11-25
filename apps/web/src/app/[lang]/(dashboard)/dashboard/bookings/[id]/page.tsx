@@ -19,6 +19,7 @@ import {
   BookingStatusBadge,
   formatAcres,
   formatBookingDate,
+  formatSprayed,
 } from "@/modules/bookings/components/booking-ui";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
@@ -121,12 +122,34 @@ async function BookingDetailContent({
               <p>
                 {line.cropName} · {formatAcres(line.areaAcres, locale, t)}
               </p>
+              {line.actualAcres !== null ? (
+                <p className="font-medium">
+                  {formatSprayed(line.actualAcres, line.areaAcres, locale, t)}
+                </p>
+              ) : null}
               <p className="text-gray-600">
                 {line.latitude}, {line.longitude}
               </p>
             </li>
           ))}
         </ul>
+        {booking.execution.actualTotalAcres !== null ? (
+          <p className="font-semibold">
+            {formatSprayed(
+              booking.execution.actualTotalAcres,
+              booking.totalAcres,
+              locale,
+              t,
+              "totalSprayed"
+            )}
+          </p>
+        ) : null}
+        {booking.execution.completionNotes ? (
+          <p className="rounded bg-gray-50 p-3 text-sm">
+            <span className="font-medium">{t.pilotNote}: </span>
+            {booking.execution.completionNotes}
+          </p>
+        ) : null}
       </section>
 
       {booking.canAssign && options ? (
@@ -181,6 +204,36 @@ async function BookingDetailContent({
                 className="min-h-11 w-full rounded border border-red-700 px-4 py-2 text-red-800"
               >
                 {t.reject}
+              </button>
+            </form>
+          ) : null}
+          {booking.actions.includes("verify") ? (
+            <form action={changeBookingStatusAction}>
+              <input type="hidden" name="bookingId" value={booking.id} />
+              <input type="hidden" name="toStatus" value="verified" />
+              <button
+                type="submit"
+                className="min-h-11 w-full rounded bg-black px-4 py-3 text-white"
+              >
+                {t.verify}
+              </button>
+            </form>
+          ) : null}
+          {booking.actions.includes("send_back") ? (
+            <form action={changeBookingStatusAction} className="space-y-2">
+              <input type="hidden" name="bookingId" value={booking.id} />
+              <input type="hidden" name="toStatus" value="in_progress" />
+              <label className="block">
+                <span className="mb-1 block text-sm">{t.sendBackReason}</span>
+                <input
+                  name="reason"
+                  required
+                  maxLength={500}
+                  className="min-h-11 w-full rounded border px-3 py-2"
+                />
+              </label>
+              <button type="submit" className="min-h-11 w-full rounded border px-4 py-2">
+                {t.sendBack}
               </button>
             </form>
           ) : null}

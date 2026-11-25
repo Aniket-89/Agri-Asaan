@@ -100,6 +100,16 @@ confirmed but unassigned: sign in as `regional@agriasaan.test`, open it from
 **Bookings**, and assign a pilot and drone; `pilot@agriasaan.test` then sees it
 under **My jobs**.
 
+## Job execution (demo data)
+
+Sunita's East plot is booked for **today** (Evening) and assigned to Demo
+Pilot. Sign in as `pilot@agriasaan.test`, open **My jobs**, press **Start job**,
+then enter the acres sprayed and **Mark job complete**. As
+`regional@agriasaan.test`, open the booking to **Verify job** or **Send back to
+pilot** with a reason. Other jobs are on later dates, so they show "You can
+start this job on its day". The seed uses the current date, so run
+`npm run db:reset` on a new day to get a fresh "today" job.
+
 ## Pilot invites (email)
 
 Inviting a pilot (Pilots & drones page, as `regional@agriasaan.test`) needs
