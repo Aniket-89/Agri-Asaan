@@ -9,6 +9,8 @@ package-lock.json
 # Generated files: regenerate instead of formatting (npm run db:types)
 apps/web/src/types/database.types.ts
 next-env.d.ts
+# Third-party MapLibre worker copied by apps/web/scripts/copy-map-worker.mjs
+apps/web/public/vendor
 
 # Supabase CLI state
 supabase/.temp

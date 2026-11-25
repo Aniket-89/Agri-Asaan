@@ -375,6 +375,9 @@ PostGIS is enabled (`20261118180523_enable_postgis.sql`).
   pin, with GiST index `fields_location_gist`.
 - `fields.boundary`: optional `geography(Polygon, 4326)`, with GiST index
   `fields_boundary_gist`. Seed/demo only for the MVP.
+- `boundary_geojson(fields)`: computed column (`select=boundary_geojson`) that
+  returns the boundary as a GeoJSON Polygon for the web maps. Security
+  invoker, so RLS on `fields` still decides what is visible (ADR 0016).
 
 ## Generated types
 

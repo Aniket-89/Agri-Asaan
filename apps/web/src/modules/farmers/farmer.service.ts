@@ -23,7 +23,12 @@ export type FarmerListItem = {
   isActive: boolean;
 };
 
-export type FarmerDetail = FarmerListItem & { villageId: string; createdAt: string };
+export type FarmerDetail = FarmerListItem & {
+  villageId: string;
+  // The village pin, when recorded; maps start there before a field is set.
+  villageLocation: { latitude: number; longitude: number } | null;
+  createdAt: string;
+};
 
 export type VillageOption = { id: string; name: string };
 
@@ -78,6 +83,10 @@ export async function getFarmer(
     phone: row.phone,
     villageId: row.village.id,
     villageName: row.village.name,
+    villageLocation:
+      row.village.latitude !== null && row.village.longitude !== null
+        ? { latitude: row.village.latitude, longitude: row.village.longitude }
+        : null,
     isActive: row.is_active,
     createdAt: row.created_at,
   };

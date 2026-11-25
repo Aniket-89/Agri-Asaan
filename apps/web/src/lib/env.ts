@@ -5,6 +5,8 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional().or(z.literal("")),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().optional().or(z.literal("")),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional().or(z.literal("")),
+  // Optional MapLibre style; lib/maps/geo.ts falls back to OpenFreeMap.
+  NEXT_PUBLIC_MAP_STYLE_URL: z.string().url().optional().or(z.literal("")),
 });
 
 export const env = envSchema.parse(process.env);

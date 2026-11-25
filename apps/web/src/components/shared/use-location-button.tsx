@@ -30,6 +30,8 @@ export function UseLocationButton({ latitudeName, longitudeName, labels }: Props
         if (latitude instanceof HTMLInputElement && longitude instanceof HTMLInputElement) {
           latitude.value = coords.latitude.toFixed(6);
           longitude.value = coords.longitude.toFixed(6);
+          // Let listeners (such as the pin-picker map) follow the new value.
+          longitude.dispatchEvent(new Event("input", { bubbles: true }));
         }
         setState("idle");
       },

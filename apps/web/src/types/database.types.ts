@@ -205,9 +205,9 @@ isOneToOne: false
                   ]
                 },"fields": {
                   Row: {
-                    "area_acres": number,"boundary": unknown,"created_at": string,"crop_id": string,"farmer_id": string,"id": string,"is_active": boolean,"latitude": number,"location": unknown,"longitude": number,"name": string,"tenant_id": string,"updated_at": string
+                    "area_acres": number,"boundary": unknown,"created_at": string,"crop_id": string,"farmer_id": string,"id": string,"is_active": boolean,"latitude": number,"location": unknown,"longitude": number,"name": string,"tenant_id": string,"updated_at": string,"boundary_geojson": Json | null
                   }
-                  ComputedFields: never
+                  ComputedFields: "boundary_geojson"
                   Insert: {
                     "area_acres": number,"boundary"?: unknown,"created_at"?: string,"crop_id": string,"farmer_id": string,"id"?: string,"is_active"?: boolean,"latitude": number,"location"?: never,"longitude": number,"name": string,"tenant_id": string,"updated_at"?: string
                   }
@@ -620,6 +620,9 @@ isOneToOne: false
                            },
 "bootstrap_platform_owner":
 { Args: { "p_user_id": string }; Returns: undefined
+                           },
+"boundary_geojson":
+{ Args: { "p_field": Omit<Database["public"]['Tables']["fields"]['Row'], Database["public"]['Tables']["fields"]['ComputedFields']> }; Returns: Json
                            },
 "can_book_for_farmer":
 { Args: { "p_farmer_id": string }; Returns: boolean

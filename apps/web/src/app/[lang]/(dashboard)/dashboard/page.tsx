@@ -7,6 +7,7 @@ import { getOrganizationBranding, PLATFORM_DEFAULT_BRANDING } from "@/modules/br
 import { resolveActiveOrganization } from "@/modules/organizations";
 import { canUseBookingInbox } from "@/modules/bookings";
 import { canViewFleet } from "@/modules/drones";
+import { canViewFieldMap } from "@/modules/fields";
 import { canManageSlots } from "@/modules/slots";
 import { canWorkWithFarmers } from "@/modules/farmers";
 import { canViewTerritoryAdmin } from "@/modules/villages";
@@ -36,6 +37,7 @@ async function DashboardContent() {
   const bookingsHref = await localizedHref("/dashboard/bookings");
   const myFarmHref = await localizedHref("/dashboard/my-farm");
   const myJobsHref = await localizedHref("/dashboard/my-jobs");
+  const mapHref = await localizedHref("/dashboard/map");
   const branding = active
     ? await getOrganizationBranding(context.supabase, active.organization_id)
     : PLATFORM_DEFAULT_BRANDING;
@@ -110,6 +112,11 @@ async function DashboardContent() {
             {canWorkWithFarmers(active.role) ? (
               <a className="inline-block min-h-11 rounded border px-4 py-3" href={farmersHref}>
                 {t.dashboard.farmersLink}
+              </a>
+            ) : null}
+            {canViewFieldMap(active.role) ? (
+              <a className="inline-block min-h-11 rounded border px-4 py-3" href={mapHref}>
+                {t.maps.overviewLink}
               </a>
             ) : null}
             {canViewFleet(active.role) ? (

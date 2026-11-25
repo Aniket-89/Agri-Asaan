@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
+import { FieldMap } from "@/components/maps/field-map";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -41,11 +42,13 @@ async function BookingDetailContent({
   params,
   searchParams,
   t,
+  maps,
   locale,
 }: {
   params: PageProps<"/[lang]/dashboard/bookings/[id]">["params"];
   searchParams: PageProps<"/[lang]/dashboard/bookings/[id]">["searchParams"];
   t: Dictionary["bookings"];
+  maps: Dictionary["maps"];
   locale: Locale;
 }) {
   await connection();
@@ -115,6 +118,17 @@ async function BookingDetailContent({
         <h2 id="lines-heading" className="text-lg font-semibold">
           {t.fields} · {formatAcres(booking.totalAcres, locale, t)}
         </h2>
+        <FieldMap
+          label={maps.bookingFields}
+          labels={{ loading: maps.loading, failed: maps.failed }}
+          pins={booking.lines.map((line) => ({
+            id: line.fieldId,
+            label: line.fieldName,
+            detail: `${line.cropName} · ${formatAcres(line.areaAcres, locale, t)}`,
+            latitude: line.latitude,
+            longitude: line.longitude,
+          }))}
+        />
         <ul className="space-y-2">
           {booking.lines.map((line) => (
             <li key={line.fieldId} className="rounded border p-3 text-sm">
@@ -378,6 +392,7 @@ export default async function BookingDetailPage({
           params={params}
           searchParams={searchParams}
           t={t.bookings}
+          maps={t.maps}
           locale={locale}
         />
       </Suspense>
