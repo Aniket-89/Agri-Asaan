@@ -8,6 +8,7 @@ import {
   bookingDateWindow,
   canAssignBooking,
   canStartJob,
+  countByStatus,
   groupPilotJobs,
   type BookingActor,
   type BookingStatus,
@@ -321,5 +322,19 @@ describe("formatSprayed (mission-plan area vs booked)", () => {
     expect(formatSprayed(5.3, 5, "en", t, "totalSprayed")).toBe(
       "Total sprayed 5.3 acres · booked 5 acres (+0.3)"
     );
+  });
+});
+
+describe("countByStatus", () => {
+  it("counts every status, including ones with no bookings", () => {
+    const counts = countByStatus([
+      { status: "requested" },
+      { status: "requested" },
+      { status: "verified" },
+    ]);
+    expect(counts.requested).toBe(2);
+    expect(counts.verified).toBe(1);
+    expect(counts.confirmed).toBe(0);
+    expect(Object.keys(counts)).toHaveLength(8);
   });
 });

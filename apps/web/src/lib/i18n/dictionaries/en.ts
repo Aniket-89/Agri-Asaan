@@ -9,6 +9,8 @@ export const en = {
     label: "Language",
     en: "English",
     hi: "हिन्दी",
+    enShort: "EN",
+    hiShort: "हि",
   },
   login: {
     title: "Sign in to {brand}",
@@ -23,6 +25,28 @@ export const en = {
         "This link is invalid or has expired. Ask your regional admin for a new invite.",
     },
   },
+  register: {
+    title: "Create an account",
+    fullName: "Full name",
+    email: "Email",
+    password: "Password",
+    passwordHint: "At least 6 characters.",
+    submit: "Create account",
+    haveAccount: "Already have an account? Sign in",
+    errors: {
+      invalid_registration:
+        "Check the details: name, a valid email and a password of 6 or more characters.",
+      registration_failed: "The account could not be created. Try again in a moment.",
+    },
+    checkEmailTitle: "Verify your email",
+    checkEmailBody: "Check your inbox and follow the link to verify your email address.",
+    checkEmailNext:
+      "After verification, an organization administrator must add you before you can sign in.",
+    pendingTitle: "Access pending",
+    pendingBody:
+      "Your account is ready, but it is not connected to an organization yet. Ask an organization administrator to add you.",
+    backToSignIn: "Back to sign in",
+  },
   account: {
     setPasswordTitle: "Set your password",
     setPasswordIntro:
@@ -36,7 +60,28 @@ export const en = {
       failed: "The password could not be saved. Try again, or ask for a new invite.",
     },
   },
+  shell: {
+    navigation: "Main navigation",
+    home: "Home",
+    more: "More",
+    signOut: "Sign out",
+    roles: {
+      organization_admin: "Organization admin",
+      regional_admin: "Regional admin",
+      mitra: "Mitra",
+      pilot: "Pilot",
+      farmer: "Farmer",
+    },
+  },
   dashboard: {
+    greeting: "Hello, {name}",
+    roleIn: "{role} at {organization}",
+    switchOrganization: "Switch organization",
+    switch: "Switch",
+    noOrganization: "You are not a member of an organization yet.",
+    noOrganizationHint:
+      "Ask your organization administrator to add you. Your organization will appear here once access is granted.",
+    shortcuts: "Go to",
     territoryLink: "Manage territory",
     farmersLink: "Farmers",
     fleetLink: "Pilots & drones",
@@ -44,6 +89,28 @@ export const en = {
     myFarmLink: "My farm",
     slotsLink: "Spraying slots",
     myJobsLink: "My jobs",
+    summary: "At a glance",
+    stats: {
+      requested: "New requests",
+      confirmed: "To assign",
+      completed: "To verify",
+      today: "Jobs today",
+      upcoming: "Upcoming",
+      done: "Done recently",
+      open: "Open bookings",
+      sprayed: "Sprayed",
+    },
+    bookSpray: "Book a spray",
+    hints: {
+      bookings: "Review, confirm and assign",
+      myFarm: "Fields and spray bookings",
+      myJobs: "Today's spraying work",
+      farmers: "Register and find farmers",
+      map: "Fields across your area",
+      fleet: "Pilots and drones by region",
+      slots: "Times farmers can book",
+      territory: "Regions, villages, mitras",
+    },
   },
   slots: {
     title: "Spraying slots",
@@ -104,6 +171,7 @@ export const en = {
     booked: "Spraying requested.",
     farmerBookings: "Bookings",
     detailTitle: "Booking",
+    progress: "Step {step} of {total}: {status}",
     farmer: "Farmer",
     village: "Village",
     fields: "Fields",

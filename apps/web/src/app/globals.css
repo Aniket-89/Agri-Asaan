@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
+/*
+ * AgriAsaan design tokens (ADR 0017).
+ * Crop and sprout greens, harvest wheat, soil and sky complements, black and white.
+ * Depth comes from soft green-tinted shadows, not outlines. --brand and
+ * --leaf are overridden per organization by the app shell (white-label).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand: #2e7d32;
+  --leaf: #8cc63f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-mukta), ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand (tenant-overridable) and derived shades. */
+  --color-brand: var(--brand);
+  --color-brand-strong: color-mix(in oklab, var(--brand) 80%, black);
+  --color-brand-soft: color-mix(in oklab, var(--brand) 10%, white);
+  --color-forest: color-mix(in oklab, var(--brand) 64%, #04140a);
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: color-mix(in oklab, var(--leaf) 28%, white);
+  --color-leaf-ink: color-mix(in oklab, var(--leaf) 35%, #0d2a10);
+
+  /* Neutrals: a sage canvas deep enough that white surfaces lift off it. */
+  --color-canvas: #e8efe3;
+  --color-surface: #ffffff;
+  --color-field: #eef3ea;
+  --color-ink: #17251b;
+  --color-ink-muted: #56665c;
+  --color-ink-faint: #8a978f;
+
+  /* Farm complements: harvest wheat, soil, monsoon sky; clay for danger. */
+  --color-sun: #d48a0b;
+  --color-sun-soft: #fcefd2;
+  --color-sun-ink: #7d4c05;
+  --color-soil: #8b5a36;
+  --color-soil-soft: #f2e7dc;
+  --color-sky: #2a679e;
+  --color-sky-soft: #e3eef9;
+  --color-clay: #b23a28;
+  --color-clay-soft: #fbe6e1;
+
+  /* Elevation: green-tinted, layered, never a hard grey or an outline. */
+  --shadow-soft: 0 1px 2px rgb(20 60 30 / 0.07), 0 3px 10px -3px rgb(20 60 30 / 0.12);
+  --shadow-raised: 0 2px 4px rgb(20 60 30 / 0.07), 0 14px 32px -10px rgb(20 60 30 / 0.26);
+  --shadow-inset: inset 0 1px 2px rgb(20 60 30 / 0.12);
+  --shadow-nav: 0 -1px 0 rgb(20 60 30 / 0.05), 0 -8px 24px -8px rgb(20 60 30 / 0.18);
+  --shadow-button:
+    inset 0 1px 0 rgb(255 255 255 / 0.18), 0 1px 2px rgb(10 40 15 / 0.2),
+    0 6px 14px -6px color-mix(in oklab, var(--brand) 70%, transparent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-canvas);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Visible keyboard focus everywhere, in the accent colour. */
+:focus-visible {
+  outline: 3px solid var(--leaf);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

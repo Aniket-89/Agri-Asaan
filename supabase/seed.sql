@@ -68,11 +68,14 @@ values
   ('e0000000-0000-4000-8000-000000000002', 'Greenfield Agri Services', 'greenfield-agri', 'customer', 'd0000000-0000-4000-8000-000000000001');
 
 insert into public.organization_settings (
-  tenant_id, default_locale, timezone, brand_name, brand_primary_color, brand_accent_color, brand_tagline
+  tenant_id, default_locale, timezone, brand_name, brand_primary_color, brand_accent_color, brand_tagline,
+  brand_logo_path
 )
 values
-  ('e0000000-0000-4000-8000-000000000001', 'hi', 'Asia/Kolkata', 'AgriAsaan', '#14532d', '#75B82A', 'Drone · Crop Monitoring · Farm Services'),
-  ('e0000000-0000-4000-8000-000000000002', 'en', 'Asia/Kolkata', 'Greenfield Agri', '#1d4ed8', '#f59e0b', 'Fake demo tenant · Spraying services');
+  ('e0000000-0000-4000-8000-000000000001', 'hi', 'Asia/Kolkata', 'AgriAsaan', '#2e7d32', '#8cc63f', 'Drone · Crop Monitoring · Farm Services',
+   -- Uploaded from supabase/storage/brand-assets by `npm run db:reset`.
+   'e0000000-0000-4000-8000-000000000001/agriasaan-leaf.png'),
+  ('e0000000-0000-4000-8000-000000000002', 'en', 'Asia/Kolkata', 'Greenfield Agri', '#1d4ed8', '#f59e0b', 'Fake demo tenant · Spraying services', null);
 
 insert into public.organization_domains (tenant_id, hostname, is_primary, is_verified)
 values ('e0000000-0000-4000-8000-000000000002', 'greenfield.localhost', true, true);

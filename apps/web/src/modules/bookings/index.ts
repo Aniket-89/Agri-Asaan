@@ -4,6 +4,7 @@ export {
   bookingDateWindow,
   canAssignBooking,
   canStartJob,
+  countByStatus,
   groupPilotJobs,
   OPEN_BOOKING_STATUSES,
   PILOT_JOB_TABS,

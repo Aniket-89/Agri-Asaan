@@ -10,9 +10,9 @@ import { MAP_STYLE_URL, pinBounds, type MapPin, type PinTone } from "@/lib/maps/
 import { loadMapLibre } from "./load-maplibre";
 
 const TONE_COLORS: Record<PinTone, string> = {
-  neutral: "#1d4ed8",
-  open: "#b45309",
-  done: "#15803d",
+  neutral: "#2a679e",
+  open: "#c47d06",
+  done: "#2e7d32",
 };
 
 type Props = {
@@ -137,12 +137,12 @@ export function FieldMap({ pins, label, labels, heightClass = "h-64" }: Props) {
         ref={container}
         role="region"
         aria-label={label}
-        className={`${heightClass} w-full overflow-hidden rounded-xl border bg-gray-100`}
+        className={`${heightClass} w-full overflow-hidden rounded-xl bg-field shadow-inset`}
       />
       {state === "loading" || state === "failed" ? (
         <p
           role="status"
-          className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-gray-700"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-ink-muted"
         >
           {state === "loading" ? labels.loading : labels.failed}
         </p>

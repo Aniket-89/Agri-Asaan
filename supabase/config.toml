@@ -121,6 +121,14 @@ file_size_limit = "50MiB"
 # objects_path = "./images"
 
 # Allow connections via S3 compatible clients
+# Demo logo for the seeded AgriAsaan organization (fake demo asset). Limits
+# mirror the brand-assets bucket migration. Uploaded by `npm run db:reset`.
+[storage.buckets.brand-assets]
+public = true
+file_size_limit = "512KiB"
+allowed_mime_types = ["image/png", "image/webp", "image/jpeg"]
+objects_path = "./storage/brand-assets"
+
 [storage.s3_protocol]
 enabled = true
 

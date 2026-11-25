@@ -1,39 +1,75 @@
-import { withLocale } from "@/lib/i18n/config";
-import { getLocale } from "@/lib/i18n/dictionary";
+import { Suspense } from "react";
+import { UserPlusIcon } from "@phosphor-icons/react/dist/ssr";
+import { z } from "zod";
+
+import { AuthScreen } from "@/components/layout/auth-screen";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { StatusBanner } from "@/components/shared/status-banner";
+import { Button, buttonClass, controlClass, Field } from "@/components/ui";
+import { withLocale, type Dictionary } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 import { registerAction } from "./actions";
 
-export default async function RegisterPage() {
-  const locale = await getLocale();
+const searchSchema = z.object({
+  error: z.enum(["invalid_registration", "registration_failed"]).optional().catch(undefined),
+});
+
+async function RegisterError({
+  searchParams,
+  t,
+}: {
+  searchParams: PageProps<"/[lang]/register">["searchParams"];
+  t: Dictionary["register"];
+}) {
+  const { error } = searchSchema.parse(await searchParams);
+  return error ? <StatusBanner kind="error" text={t.errors[error]} /> : null;
+}
+
+export default async function RegisterPage({ searchParams }: PageProps<"/[lang]/register">) {
+  const { locale, t } = await getDictionary();
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
-      <form action={registerAction} className="w-full space-y-4 rounded-xl border p-6">
-        <h1 className="text-2xl font-semibold">Create AgriAsaan account</h1>
-        <label className="block">
-          <span className="mb-1 block text-sm">Full name</span>
-          <input className="w-full rounded border px-3 py-2" name="fullName" required />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm">Email</span>
-          <input className="w-full rounded border px-3 py-2" name="email" type="email" required />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm">Password</span>
+    <AuthScreen
+      top={
+        <LanguageSwitcher
+          current={locale}
+          label={t.language.label}
+          names={{ en: t.language.en, hi: t.language.hi }}
+          onDark
+        />
+      }
+    >
+      <h1 className="text-2xl font-bold tracking-tight text-ink">{t.register.title}</h1>
+      <Suspense fallback={null}>
+        <RegisterError searchParams={searchParams} t={t.register} />
+      </Suspense>
+      <form action={registerAction} className="space-y-4">
+        <Field label={t.register.fullName}>
+          <input className={controlClass} name="fullName" autoComplete="name" required />
+        </Field>
+        <Field label={t.register.email}>
+          <input className={controlClass} name="email" type="email" autoComplete="email" required />
+        </Field>
+        <Field label={t.register.password} hint={t.register.passwordHint}>
           <input
-            className="w-full rounded border px-3 py-2"
+            className={controlClass}
             name="password"
             type="password"
+            autoComplete="new-password"
             minLength={6}
             required
           />
-        </label>
-        <button className="w-full rounded bg-black px-4 py-3 text-white" type="submit">
-          Register
-        </button>
-        <a className="block text-center text-sm underline" href={withLocale(locale, "/login")}>
-          Already have an account?
-        </a>
+        </Field>
+        <Button block icon={<UserPlusIcon weight="bold" className="size-5" aria-hidden />}>
+          {t.register.submit}
+        </Button>
       </form>
-    </main>
+      <a
+        className={buttonClass({ variant: "quiet", block: true })}
+        href={withLocale(locale, "/login")}
+      >
+        {t.register.haveAccount}
+      </a>
+    </AuthScreen>
   );
 }

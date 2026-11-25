@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 
+import { TrayIcon } from "@phosphor-icons/react/dist/ssr";
+
+import { EmptyState, FilterChips, Page, PageHeader } from "@/components/ui";
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { bookingListFilterSchema, listBookings, type BookingStatus } from "@/modules/bookings";
@@ -15,6 +18,10 @@ const FILTERS: (BookingStatus | undefined)[] = [
   undefined,
   "requested",
   "confirmed",
+  "assigned",
+  "in_progress",
+  "completed",
+  "verified",
   "cancelled",
   "rejected",
 ];
@@ -46,25 +53,26 @@ async function BookingInbox({
 
   return (
     <>
-      <nav aria-label={t.filterLabel} className="flex flex-wrap gap-2">
-        {FILTERS.map((filter) => (
-          <a
-            key={filter ?? "all"}
-            href={withLocale(
-              locale,
-              filter ? `/dashboard/bookings?status=${filter}` : "/dashboard/bookings"
-            )}
-            aria-current={filter === status ? "page" : undefined}
-            className={`min-h-11 rounded px-3 py-2 text-sm ${
-              filter === status ? "bg-black text-white" : "border"
-            }`}
-          >
-            {filter ? t.statuses[filter] : t.filterAll}
-          </a>
-        ))}
-      </nav>
-      {bookings.length === 0 ? <p>{status ? t.noneForFilter : t.none}</p> : null}
-      {bookings.length > 0 ? <BookingList bookings={bookings} locale={locale} t={t} /> : null}
+      <FilterChips
+        label={t.filterLabel}
+        items={FILTERS.map((filter) => ({
+          key: filter ?? "all",
+          href: withLocale(
+            locale,
+            filter ? `/dashboard/bookings?status=${filter}` : "/dashboard/bookings"
+          ),
+          label: filter ? t.statuses[filter] : t.filterAll,
+          active: filter === status,
+        }))}
+      />
+      {bookings.length === 0 ? (
+        <EmptyState
+          icon={<TrayIcon weight="duotone" className="size-7" />}
+          text={status ? t.noneForFilter : t.none}
+        />
+      ) : (
+        <BookingList bookings={bookings} locale={locale} t={t} />
+      )}
     </>
   );
 }
@@ -75,19 +83,11 @@ export default async function BookingsPage({
   const { locale, t } = await getDictionary();
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-3xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-1">
-        <a
-          className="inline-block min-h-11 py-2 text-sm underline"
-          href={withLocale(locale, "/dashboard")}
-        >
-          ← {t.bookings.backToDashboard}
-        </a>
-        <h1 className="text-2xl font-semibold">{t.bookings.title}</h1>
-      </header>
+    <Page>
+      <PageHeader title={t.bookings.title} />
       <Suspense fallback={<p aria-busy="true">…</p>}>
         <BookingInbox searchParams={searchParams} t={t.bookings} locale={locale} />
       </Suspense>
-    </main>
+    </Page>
   );
 }
