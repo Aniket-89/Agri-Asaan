@@ -4,8 +4,8 @@ Current schema: the identity, tenancy, and platform foundation, territory
 (ADR 0008), farmers and fields (ADR 0009), the fleet (ADR 0010), bookings with
 append-only status history (ADR 0011), pilot invites (ADR 0012), and spraying
 slots with availability-aware booking (ADR 0013), and pilot and drone
-assignment (ADR 0014). Job start/complete and satellite observations are not
-built yet.
+assignment (ADR 0014), and job execution and verification (ADR 0015).
+Satellite observations are not built yet.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -350,6 +350,20 @@ flow is the only way to create a pilot.
 
 Pilots and drones with assignment history cannot be deleted (foreign keys);
 deactivate them instead.
+
+## Job execution and verification (ADR 0015)
+
+| Column / function                                | Notes                                                                                                                                                                                                                      |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `booking_fields.actual_acres`                    | Area actually sprayed, from the drone's mission plan; may exceed the booked `area_acres` (e.g. 4.3 on a 4-acre field), between 0 and 2× `area_acres` (check constraint, typo guard). Written only by `complete_job`.       |
+| `bookings.started_at` / `completed_at`           | Set by `start_job` / `complete_job`; `completed_at` is cleared when a job is sent back.                                                                                                                                    |
+| `bookings.actual_total_acres`                    | Sum of the per-field actual acres (> 0).                                                                                                                                                                                   |
+| `bookings.completion_notes`                      | The pilot's optional note (≤ 500 characters).                                                                                                                                                                              |
+| `bookings.verified_at` / `verified_by`           | Set when a region manager verifies.                                                                                                                                                                                        |
+| `start_job(booking)`                             | The current assigned pilot only, on the job day (org timezone): assigned → in progress. Hints: `invalid_transition`, `not_job_day`.                                                                                        |
+| `complete_job(booking, field_ids, acres, notes)` | The assigned pilot: in progress → completed, with a value for every booked field. Hints: `invalid_transition`, `invalid_acres`, `invalid_notes`.                                                                           |
+| `set_booking_status`                             | Adds completed → verified and completed → in progress ("send back", reason required), region managers only.                                                                                                                |
+| `list_my_jobs(tenant)`                           | Feeds the Today / Upcoming / Completed tabs: assigned jobs from today, every in-progress job (whatever its date), and completed or verified jobs from the last 60 days; with actual acres and the latest send-back reason. |
 
 ## Spatial data
 

@@ -45,14 +45,14 @@ isOneToOne: false
                   ]
                 },"booking_fields": {
                   Row: {
-                    "area_acres": number,"booking_id": string,"crop_code": string,"crop_name_en": string,"crop_name_hi": string,"farmer_id": string,"field_id": string,"field_name": string,"latitude": number,"longitude": number,"tenant_id": string
+                    "actual_acres": number | null,"area_acres": number,"booking_id": string,"crop_code": string,"crop_name_en": string,"crop_name_hi": string,"farmer_id": string,"field_id": string,"field_name": string,"latitude": number,"longitude": number,"tenant_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "area_acres": number,"booking_id": string,"crop_code": string,"crop_name_en": string,"crop_name_hi": string,"farmer_id": string,"field_id": string,"field_name": string,"latitude": number,"longitude": number,"tenant_id": string
+                    "actual_acres"?: number | null,"area_acres": number,"booking_id": string,"crop_code": string,"crop_name_en": string,"crop_name_hi": string,"farmer_id": string,"field_id": string,"field_name": string,"latitude": number,"longitude": number,"tenant_id": string
                   }
                   Update: {
-                    "area_acres"?: number,"booking_id"?: string,"crop_code"?: string,"crop_name_en"?: string,"crop_name_hi"?: string,"farmer_id"?: string,"field_id"?: string,"field_name"?: string,"latitude"?: number,"longitude"?: number,"tenant_id"?: string
+                    "actual_acres"?: number | null,"area_acres"?: number,"booking_id"?: string,"crop_code"?: string,"crop_name_en"?: string,"crop_name_hi"?: string,"farmer_id"?: string,"field_id"?: string,"field_name"?: string,"latitude"?: number,"longitude"?: number,"tenant_id"?: string
                   }
                   Relationships: [
                     {
@@ -97,14 +97,14 @@ isOneToOne: false
                   ]
                 },"bookings": {
                   Row: {
-                    "created_at": string,"farmer_id": string,"id": string,"notes": string | null,"preferred_date": string,"region_id": string,"requested_by": string | null,"slot_id": string | null,"status": Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at": string,"village_id": string
+                    "actual_total_acres": number | null,"completed_at": string | null,"completion_notes": string | null,"created_at": string,"farmer_id": string,"id": string,"notes": string | null,"preferred_date": string,"region_id": string,"requested_by": string | null,"slot_id": string | null,"started_at": string | null,"status": Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at": string,"verified_at": string | null,"verified_by": string | null,"village_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"farmer_id": string,"id": string,"notes"?: string | null,"preferred_date": string,"region_id": string,"requested_by"?: string | null,"slot_id"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at"?: string,"village_id": string
+                    "actual_total_acres"?: number | null,"completed_at"?: string | null,"completion_notes"?: string | null,"created_at"?: string,"farmer_id": string,"id": string,"notes"?: string | null,"preferred_date": string,"region_id": string,"requested_by"?: string | null,"slot_id"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"village_id": string
                   }
                   Update: {
-                    "created_at"?: string,"farmer_id"?: string,"id"?: string,"notes"?: string | null,"preferred_date"?: string,"region_id"?: string,"requested_by"?: string | null,"slot_id"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id"?: string,"total_acres"?: number,"updated_at"?: string,"village_id"?: string
+                    "actual_total_acres"?: number | null,"completed_at"?: string | null,"completion_notes"?: string | null,"created_at"?: string,"farmer_id"?: string,"id"?: string,"notes"?: string | null,"preferred_date"?: string,"region_id"?: string,"requested_by"?: string | null,"slot_id"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id"?: string,"total_acres"?: number,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"village_id"?: string
                   }
                   Relationships: [
                     {
@@ -131,6 +131,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "spray_slots"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "bookings_verified_by_fkey"
+      columns: ["verified_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
     },{
       foreignKeyName: "bookings_village_same_tenant"
       columns: ["tenant_id","village_id"]
@@ -650,6 +656,9 @@ isOneToOne: false
               "invite_id": string,"outcome": Database["public"]['Enums']["pilot_invite_status"]
             }[]
                            },
+"complete_job":
+{ Args: { "p_acres": (number)[],"p_booking_id": string,"p_field_ids": (string)[],"p_notes"?: string }; Returns: undefined
+                           },
 "create_booking":
 { Args: { "p_booking_id": string,"p_farmer_id": string,"p_field_ids": (string)[],"p_notes"?: string,"p_preferred_date": string,"p_slot_id": string }; Returns: string
                            },
@@ -669,6 +678,9 @@ isOneToOne: false
                            },
 "has_organization_role":
 { Args: { "p_organization_id": string,"p_roles": (Database["public"]['Enums']["organization_role"])[] }; Returns: boolean
+                           },
+"is_assigned_pilot":
+{ Args: { "p_booking_id": string }; Returns: boolean
                            },
 "is_mitra_for_village":
 { Args: { "p_village_id": string }; Returns: boolean
@@ -695,7 +707,7 @@ isOneToOne: false
                            },
 "list_my_jobs":
 { Args: { "p_tenant_id": string }; Returns: {
-              "booking_id": string,"drone_uid": string,"end_time": string,"farmer_name": string,"farmer_phone": string,"fields": Json,"notes": string,"preferred_date": string,"slot_name_en": string,"slot_name_hi": string,"start_time": string,"status": Database["public"]['Enums']["booking_status"],"total_acres": number,"village_name": string
+              "actual_total_acres": number,"booking_id": string,"drone_uid": string,"end_time": string,"farmer_name": string,"farmer_phone": string,"fields": Json,"notes": string,"preferred_date": string,"sent_back_reason": string,"slot_name_en": string,"slot_name_hi": string,"start_time": string,"status": Database["public"]['Enums']["booking_status"],"total_acres": number,"village_name": string
             }[]
                            },
 "list_slot_availability":
@@ -726,6 +738,9 @@ isOneToOne: false
                            },
 "slot_remaining_capacity":
 { Args: { "p_date": string,"p_region_id": string,"p_slot_id": string }; Returns: number
+                           },
+"start_job":
+{ Args: { "p_booking_id": string }; Returns: undefined
                            },
 "tenant_local_now":
 { Args: { "p_tenant_id": string }; Returns: string

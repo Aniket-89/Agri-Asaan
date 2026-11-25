@@ -246,3 +246,37 @@ insert into public.booking_status_history (tenant_id, booking_id, from_status, t
 values
   ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000003', 'requested', 'confirmed', null, 'd0000000-0000-4000-8000-000000000002'),
   ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000003', 'confirmed', 'assigned', null, 'd0000000-0000-4000-8000-000000000002');
+
+-- Sunita's East plot is booked for today (Evening) and assigned to Demo Pilot
+-- with UA-DEMO-N01, so pilot@agriasaan.test can start and complete a job.
+insert into public.bookings (id, tenant_id, farmer_id, village_id, region_id, status, preferred_date, slot_id, total_acres, requested_by)
+values (
+  'e6000000-0000-4000-8000-000000000004', 'e0000000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000002',
+  'e2000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', 'assigned',
+  (now() at time zone 'Asia/Kolkata')::date, 'e7000000-0000-4000-8000-000000000003', 2.00, 'd0000000-0000-4000-8000-000000000004'
+);
+
+insert into public.booking_fields (tenant_id, booking_id, farmer_id, field_id, field_name, crop_code, crop_name_en, crop_name_hi, area_acres, latitude, longitude)
+select field.tenant_id, 'e6000000-0000-4000-8000-000000000004', field.farmer_id, field.id, field.name, crop.code, crop.name_en, crop.name_hi, field.area_acres, field.latitude, field.longitude
+from public.fields as field
+join public.tenant_crops as crop on crop.id = field.crop_id
+where field.id = 'e4000000-0000-4000-8000-000000000003';
+
+insert into public.booking_assignments (tenant_id, booking_id, pilot_user_id, drone_id, work_period, assigned_by)
+select booking.tenant_id, booking.id, 'd0000000-0000-4000-8000-000000000005', drone.id,
+  tstzrange(
+    (booking.preferred_date + slot.start_time) at time zone 'Asia/Kolkata',
+    (booking.preferred_date + slot.end_time) at time zone 'Asia/Kolkata',
+    '[)'
+  ),
+  'd0000000-0000-4000-8000-000000000003'
+from public.bookings as booking
+join public.spray_slots as slot on slot.id = booking.slot_id
+join public.drones as drone on drone.tenant_id = booking.tenant_id and drone.uid = 'UA-DEMO-N01'
+where booking.id = 'e6000000-0000-4000-8000-000000000004';
+
+insert into public.booking_status_history (tenant_id, booking_id, from_status, to_status, reason, actor_id)
+values
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000004', null, 'requested', null, 'd0000000-0000-4000-8000-000000000004'),
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000004', 'requested', 'confirmed', null, 'd0000000-0000-4000-8000-000000000003'),
+  ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000004', 'confirmed', 'assigned', null, 'd0000000-0000-4000-8000-000000000003');

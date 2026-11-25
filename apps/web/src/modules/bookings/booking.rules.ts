@@ -23,7 +23,7 @@ export const OPEN_BOOKING_STATUSES: readonly BookingStatus[] = [
   "in_progress",
 ];
 
-export type BookingAction = "confirm" | "reject" | "cancel";
+export type BookingAction = "confirm" | "reject" | "cancel" | "verify" | "send_back";
 
 export type BookingActor = {
   // Organization admin, or regional admin assigned to the booking's region.
@@ -46,6 +46,9 @@ export function availableBookingActions(
     ((status === "confirmed" || status === "assigned") && actor.isRegionManager)
   ) {
     actions.push("cancel");
+  }
+  if (status === "completed" && actor.isRegionManager) {
+    actions.push("verify", "send_back");
   }
   return actions;
 }
@@ -73,4 +76,35 @@ export function bookingDateWindow(now: Date): { min: string; max: string } {
     .toISOString()
     .slice(0, 10);
   return { min, max };
+}
+
+// Mirrors start_job: the assigned pilot starts an assigned job on its day
+// (`today` is the organization's local date, YYYY-MM-DD).
+export function canStartJob(status: BookingStatus, jobDate: string, today: string): boolean {
+  return status === "assigned" && jobDate === today;
+}
+
+export const PILOT_JOB_TABS = ["today", "upcoming", "completed"] as const;
+export type PilotJobTab = (typeof PILOT_JOB_TABS)[number];
+
+// Splits a pilot's jobs into tabs. Today also holds every started job that
+// is not finished yet (e.g. one sent back for correction), whatever its date.
+// Completed (and verified) jobs are newest first; the others keep the given
+// date/slot order.
+export function groupPilotJobs<T extends { status: BookingStatus; date: string }>(
+  jobs: readonly T[],
+  today: string
+): Record<PilotJobTab, T[]> {
+  const groups: Record<PilotJobTab, T[]> = { today: [], upcoming: [], completed: [] };
+  for (const job of jobs) {
+    if (job.status === "completed" || job.status === "verified") {
+      groups.completed.push(job);
+    } else if (job.status === "in_progress" || job.date <= today) {
+      groups.today.push(job);
+    } else {
+      groups.upcoming.push(job);
+    }
+  }
+  groups.completed.sort((a, b) => b.date.localeCompare(a.date));
+  return groups;
 }

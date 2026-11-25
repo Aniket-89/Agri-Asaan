@@ -5,15 +5,21 @@ import { toDomainError, type DomainErrorCode } from "@/lib/utils/db-errors";
 import type { ActiveMembershipContext } from "@/modules/organizations";
 import {
   availableBookingActions,
+  bookingDateWindow,
   canAssignBooking,
+  canStartJob,
+  groupPilotJobs,
   type BookingAction,
   type BookingStatus,
+  type PilotJobTab,
 } from "./booking.rules";
 import * as repository from "./booking.repository";
 import type {
   AssignBookingInput,
   BookingStatusChangeInput,
+  CompleteJobInput,
   CreateBookingInput,
+  StartJobInput,
 } from "./booking.schema";
 
 // Rule violations reported by the booking database functions through HINT.
@@ -33,6 +39,8 @@ const BOOKING_RULE_ERRORS = [
   "drone_unavailable",
   "pilot_busy",
   "drone_busy",
+  "not_job_day",
+  "invalid_acres",
 ] as const;
 
 export type BookingErrorCode = DomainErrorCode | (typeof BOOKING_RULE_ERRORS)[number];
@@ -71,6 +79,14 @@ export type BookingDetail = {
   notes: string | null;
   totalAcres: number;
   createdAt: string;
+  // Filled in as the pilot works the job and an admin verifies it.
+  execution: {
+    startedAt: string | null;
+    completedAt: string | null;
+    actualTotalAcres: number | null;
+    completionNotes: string | null;
+    verifiedAt: string | null;
+  };
   farmer: { id: string; fullName: string; phone: string };
   villageName: string;
   lines: {
@@ -78,6 +94,7 @@ export type BookingDetail = {
     fieldName: string;
     cropName: string;
     areaAcres: number;
+    actualAcres: number | null;
     latitude: number;
     longitude: number;
   }[];
@@ -226,6 +243,13 @@ export async function getBookingDetail(
     notes: booking.notes,
     totalAcres: booking.total_acres,
     createdAt: booking.created_at,
+    execution: {
+      startedAt: booking.started_at,
+      completedAt: booking.completed_at,
+      actualTotalAcres: booking.actual_total_acres,
+      completionNotes: booking.completion_notes,
+      verifiedAt: booking.verified_at,
+    },
     farmer: {
       id: booking.farmer.id,
       fullName: booking.farmer.full_name,
@@ -237,6 +261,7 @@ export async function getBookingDetail(
       fieldName: line.field_name,
       cropName: locale === "hi" ? line.crop_name_hi : line.crop_name_en,
       areaAcres: line.area_acres,
+      actualAcres: line.actual_acres,
       latitude: line.latitude,
       longitude: line.longitude,
     })),
@@ -400,11 +425,16 @@ export type PilotJob = {
   totalAcres: number;
   droneUid: string;
   notes: string | null;
+  actualTotalAcres: number | null;
+  // Set while a job sent back by an admin is being corrected.
+  sentBackReason: string | null;
+  canStart: boolean;
   fields: {
     fieldId: string;
     fieldName: string;
     cropName: string;
     areaAcres: number;
+    actualAcres: number | null;
     latitude: number;
     longitude: number;
   }[];
@@ -416,15 +446,17 @@ type PilotJobFieldRow = {
   crop_name_en: string;
   crop_name_hi: string;
   area_acres: number;
+  actual_acres: number | null;
   latitude: number;
   longitude: number;
 };
 
-// The signed-in pilot's upcoming jobs. Null for anyone who is not a pilot.
+// The signed-in pilot's jobs grouped into Today / Upcoming / Completed. Null
+// for anyone who is not a pilot.
 export async function listMyJobs(
   context: ActiveMembershipContext,
   locale: Locale
-): Promise<PilotJob[] | null> {
+): Promise<Record<PilotJobTab, PilotJob[]> | null> {
   if (context.role !== "pilot") {
     return null;
   }
@@ -432,7 +464,8 @@ export async function listMyJobs(
     await repository.listMyJobs(context.supabase, context.organizationId),
     "jobs"
   );
-  return rows.map((row) => ({
+  const today = bookingDateWindow(new Date()).min;
+  const jobs = rows.map((row): PilotJob => ({
     bookingId: row.booking_id,
     status: row.status,
     date: row.preferred_date,
@@ -451,14 +484,37 @@ export async function listMyJobs(
     totalAcres: row.total_acres,
     droneUid: row.drone_uid,
     notes: row.notes,
+    actualTotalAcres: row.actual_total_acres,
+    sentBackReason: row.sent_back_reason,
+    canStart: canStartJob(row.status, row.preferred_date, today),
     // Built by list_my_jobs with jsonb_build_object, so the shape is fixed.
     fields: (row.fields as PilotJobFieldRow[]).map((field) => ({
       fieldId: field.field_id,
       fieldName: field.field_name,
       cropName: locale === "hi" ? field.crop_name_hi : field.crop_name_en,
       areaAcres: field.area_acres,
+      actualAcres: field.actual_acres,
       latitude: field.latitude,
       longitude: field.longitude,
     })),
   }));
+  return groupPilotJobs(jobs, today);
+}
+
+export type JobResult = { ok: true } | { ok: false; error: BookingErrorCode };
+
+export async function startJob(
+  context: ActiveMembershipContext,
+  input: StartJobInput
+): Promise<JobResult> {
+  const { error } = await repository.callStartJob(context.supabase, input);
+  return error ? { ok: false, error: toBookingError(error) } : { ok: true };
+}
+
+export async function completeJob(
+  context: ActiveMembershipContext,
+  input: CompleteJobInput
+): Promise<JobResult> {
+  const { error } = await repository.callCompleteJob(context.supabase, input);
+  return error ? { ok: false, error: toBookingError(error) } : { ok: true };
 }
