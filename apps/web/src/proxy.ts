@@ -44,5 +44,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // vendor/ holds static third-party files (the MapLibre worker) that must
+  // not get a locale prefix.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|vendor/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
+import { FieldMap } from "@/components/maps/field-map";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -203,6 +204,25 @@ async function MyJobsContent({
               <h2 className="font-semibold">
                 {t.jobs.fields} · {formatAcres(job.totalAcres, locale, t.bookings)}
               </h2>
+              {/* Collapsed so a list of jobs doesn't load many maps at once. */}
+              <details className="rounded border">
+                <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm font-medium">
+                  {t.maps.showMap}
+                </summary>
+                <div className="p-2">
+                  <FieldMap
+                    label={t.maps.jobFields}
+                    labels={{ loading: t.maps.loading, failed: t.maps.failed }}
+                    pins={job.fields.map((field) => ({
+                      id: field.fieldId,
+                      label: field.fieldName,
+                      detail: `${field.cropName} · ${formatAcres(field.areaAcres, locale, t.bookings)}`,
+                      latitude: field.latitude,
+                      longitude: field.longitude,
+                    }))}
+                  />
+                </div>
+              </details>
               <ul className="space-y-2">
                 {job.fields.map((field) => (
                   <li key={field.fieldId} className="rounded border p-3 text-sm">

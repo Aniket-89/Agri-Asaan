@@ -35,7 +35,7 @@ export async function getFarmer(supabase: Client, tenantId: string, farmerId: st
   return supabase
     .from("farmers")
     .select(
-      "id, full_name, phone, is_active, created_at, village:villages!farmers_village_same_tenant(id, name)"
+      "id, full_name, phone, is_active, created_at, village:villages!farmers_village_same_tenant(id, name, latitude, longitude)"
     )
     .eq("tenant_id", tenantId)
     .eq("id", farmerId)

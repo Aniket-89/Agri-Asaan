@@ -146,3 +146,12 @@ Stopping Supabase leaves Docker data until the stack is started again or explici
 - If Next.js cannot connect, verify `apps/web/.env.local` and restart the Next.js development server.
 - If migrations fail, run `npm run db:reset` from the repository root and inspect the migration SQL.
 - Do not use `supabase db push` or `supabase link` for local development. They can affect remote projects.
+
+## Maps (demo data)
+
+Maps use OpenFreeMap tiles, so they need internet access; everything else
+works offline from the local stack. `npm run dev` and `npm run build` first
+copy the MapLibre worker into `apps/web/public/vendor/` (git-ignored). Ramesh's
+Canal-side plot has a demo boundary, so it shows as a square on his farmer page.
+Sign in as `regional@agriasaan.test` or `orgadmin@agriasaan.test` and open
+**Field map** for the region overview.

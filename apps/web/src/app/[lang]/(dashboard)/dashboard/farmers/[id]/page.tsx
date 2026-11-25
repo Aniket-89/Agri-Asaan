@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
+import { FieldMap } from "@/components/maps/field-map";
+import { PinPicker } from "@/components/maps/pin-picker";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { UseLocationButton } from "@/components/shared/use-location-button";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
@@ -116,6 +118,18 @@ async function FarmerDetailContent({
           {t.fields.heading}
         </h2>
         {fields.length === 0 ? <p className="text-gray-600">{t.fields.none}</p> : null}
+        <FieldMap
+          label={format(t.maps.farmerFields, { name: farmer.fullName })}
+          labels={{ loading: t.maps.loading, failed: t.maps.failed }}
+          pins={fields.map((field) => ({
+            id: field.id,
+            label: field.name,
+            detail: `${field.cropName} · ${format(t.fields.acres, { area: areaFormat.format(field.areaAcres) })}`,
+            latitude: field.latitude,
+            longitude: field.longitude,
+            boundary: field.boundary,
+          }))}
+        />
         <ul className="space-y-2">
           {fields.map((field) => (
             <li key={field.id} className="rounded border p-3">
@@ -168,7 +182,15 @@ async function FarmerDetailContent({
             className={inputClass}
           />
         </label>
-        <p className="text-sm text-gray-600 sm:col-span-2">{t.fields.pinHint}</p>
+        <div className="sm:col-span-2">
+          <PinPicker
+            latitudeName="latitude"
+            longitudeName="longitude"
+            center={farmer.villageLocation}
+            label={t.maps.picker}
+            labels={{ hint: t.maps.pickHint, loading: t.maps.loading, failed: t.maps.failed }}
+          />
+        </div>
         <div className="sm:col-span-2">
           <UseLocationButton
             latitudeName="latitude"
