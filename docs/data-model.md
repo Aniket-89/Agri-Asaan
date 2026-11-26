@@ -143,16 +143,16 @@ erDiagram
 
 ## Access summary
 
-| Table                   | Read                                                                            | Write                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `profiles`              | Self and members of a shared tenant (name only). Phone via `get_profile_phone`. | Self: `full_name` only.                                                                                              |
-| `organizations`         | Members; platform owner/system admin.                                           | Org admin: name. Platform staff: everything. Trigger blocks tenant changes to type, status, slug, and audit columns. |
-| `organization_members`  | Self; org/regional admins of the tenant; platform owner/system admin.           | `add_organization_member` RPC. Org admin updates/deletes others. Regional admin: operational roles only.             |
-| `organization_settings` | Members; platform owner/system admin.                                           | Org admin and platform staff: update.                                                                                |
-| `organization_features` | Members; platform owner/system admin.                                           | Org admin; platform staff.                                                                                           |
-| `organization_domains`  | Members; platform owner/system admin.                                           | Org admin: insert unverified, delete. Platform staff: everything.                                                    |
-| `platform_staff`        | Self; platform owner/system admin.                                              | `manage_platform_staff` RPC. Only an owner can grant or modify `platform_owner`.                                     |
-| `platform_audit_log`    | Platform owner/system admin.                                                    | Nobody directly. Written only by audit triggers and `log_platform_tenant_access`.                                    |
+| Table                   | Read                                                                                                                                     | Write                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `profiles`              | Self and members of a shared tenant (name only); farmers see only staff on their own bookings (ADR 0018). Phone via `get_profile_phone`. | Self: `full_name` only.                                                                                              |
+| `organizations`         | Members; platform owner/system admin.                                                                                                    | Org admin: name. Platform staff: everything. Trigger blocks tenant changes to type, status, slug, and audit columns. |
+| `organization_members`  | Self; org/regional admins of the tenant; platform owner/system admin.                                                                    | `add_organization_member` RPC. Org admin updates/deletes others. Regional admin: operational roles only.             |
+| `organization_settings` | Members; platform owner/system admin.                                                                                                    | Org admin and platform staff: update.                                                                                |
+| `organization_features` | Members; platform owner/system admin.                                                                                                    | Org admin; platform staff.                                                                                           |
+| `organization_domains`  | Members; platform owner/system admin.                                                                                                    | Org admin: insert unverified, delete. Platform staff: everything.                                                    |
+| `platform_staff`        | Self; platform owner/system admin.                                                                                                       | `manage_platform_staff` RPC. Only an owner can grant or modify `platform_owner`.                                     |
+| `platform_audit_log`    | Platform owner/system admin.                                                                                                             | Nobody directly. Written only by audit triggers and `log_platform_tenant_access`.                                    |
 
 ## Functions
 

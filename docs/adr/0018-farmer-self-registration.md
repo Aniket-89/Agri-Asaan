@@ -67,3 +67,8 @@ created by administrators.
   local and the demo).
 - Admins may see two records for one farmer when both a mitra and the farmer
   registered; merging is future work if it happens in practice.
+- **Security review follow-up:** with public sign-up, any stranger could join
+  as a farmer and list every member's name, because members could see each
+  other's names (ADR 0004). Farmers now see only their own name and the
+  staff who acted on, or are assigned to, their own bookings
+  (`profiles_share_organization`). Staff visibility is unchanged.
