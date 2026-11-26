@@ -11,6 +11,7 @@ import {
   createRegion,
   createVillage,
   mitraInviteInputSchema,
+  regionalAdminInviteInputSchema,
   regionAssignmentSchema,
   regionInputSchema,
   removeMitra,
@@ -21,6 +22,7 @@ import {
   type TerritoryResult,
 } from "@/modules/villages";
 import { inviteMitra } from "@/modules/villages/mitra-invite.service";
+import { inviteRegionalAdmin } from "@/modules/villages/regional-admin-invite.service";
 
 const TERRITORY_PATH = "/dashboard/territory";
 
@@ -120,6 +122,31 @@ export async function inviteMitraAction(formData: FormData) {
     await localizedPath(
       result.ok
         ? `${TERRITORY_PATH}?status=invited`
+        : `${TERRITORY_PATH}?inviteError=${result.error}`
+    )
+  );
+}
+
+export async function inviteRegionalAdminAction(formData: FormData) {
+  const context = await getActiveMembershipContext();
+  if (!context) {
+    redirect(await localizedPath("/login"));
+  }
+
+  const parsed = regionalAdminInviteInputSchema.safeParse({
+    fullName: formData.get("fullName"),
+    email: formData.get("email"),
+    regionId: formData.get("regionId"),
+  });
+  if (!parsed.success) {
+    redirect(await localizedPath(`${TERRITORY_PATH}?inviteError=invalid`));
+  }
+
+  const result = await inviteRegionalAdmin(context, parsed.data);
+  redirect(
+    await localizedPath(
+      result.ok
+        ? `${TERRITORY_PATH}?status=invitedAdmin`
         : `${TERRITORY_PATH}?inviteError=${result.error}`
     )
   );

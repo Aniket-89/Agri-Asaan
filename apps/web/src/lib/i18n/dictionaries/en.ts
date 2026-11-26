@@ -424,8 +424,15 @@ export const en = {
     inviteSubmit: "Send invite",
     invited:
       "Invite sent. The mitra appears under their village and can sign in after setting a password.",
+    inviteRegionalAdmin: "Invite a regional admin",
+    inviteRegionalAdminIntro:
+      "The regional admin gets an email with a link to set their own password. They start with the region you choose; you can assign more regions below.",
+    inviteRegion: "Region",
+    chooseRegion: "Choose a region",
+    invitedAdmin:
+      "Invite sent. The regional admin appears under their region and can sign in after setting a password.",
     inviteErrors: {
-      forbidden: "Only a regional admin can invite mitras into villages of their own regions.",
+      forbidden: "You can't send this invite. Check the region or village and try again.",
       email_in_use: "That email already has an account or a pending invite. Use a different email.",
       rate_limited: "Too many invites in the last hour. Please try again later.",
       invalid: "Please check the details and try again.",

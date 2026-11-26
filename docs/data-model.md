@@ -343,6 +343,16 @@ an hour (`staff_invite_attempts_last_hour`).
 
 The fresh-orphan clean-up reuses `delete_orphaned_pilot_invite`.
 
+## Regional admin invites (ADR 0020)
+
+`regional_admin_invites` follows the same pattern with a `region_id`. Only
+organization admins can invite (`can_invite_regional_admin(region)`, active
+regions of their organization) and read the records. `claim_regional_admin_invite`,
+`provision_invited_regional_admin` (creates the `regional_admin` membership and
+`regional_admin_regions` row) and `fail_regional_admin_invite` are
+service_role only. The shared lock, open-claim check and rate limit now cover
+pilot, mitra and regional admin invites.
+
 ## Spraying slots and capacity (ADR 0013)
 
 | Table / function                              | Notes                                                                                                                                                                                |
