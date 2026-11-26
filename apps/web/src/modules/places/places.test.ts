@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { districtsByState, listPlaces } from "./places.service";
+import { listPlaces } from "./places.service";
 
 // Districts come back in one request; tehsils page by 1,000.
 function supabaseWith(tehsilCount: number) {
@@ -45,7 +45,7 @@ describe("listPlaces", () => {
   it("orders districts by state, then name", async () => {
     const { client } = supabaseWith(1);
     const places = await listPlaces(client as never);
-    expect(districtsByState(places.districts).map(([state]) => state)).toEqual([
+    expect(places.districts.map((district) => district.stateName)).toEqual([
       "Himachal Pradesh",
       "Uttar Pradesh",
     ]);

@@ -88,8 +88,11 @@ export function FarmerSignupFields({
       <PlacePicker
         districts={places.districts}
         tehsils={places.tehsils}
+        level="tehsil"
         className={controlClass}
         labels={{
+          state: t.state,
+          chooseState: t.chooseState,
           district: t.district,
           chooseDistrict: t.chooseDistrict,
           tehsil: t.tehsil,
