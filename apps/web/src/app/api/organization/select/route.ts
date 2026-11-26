@@ -8,6 +8,8 @@ const selectSchema = z.object({
   organizationId: z.uuid(),
 });
 
+// 303 (not the default 307) so the browser follows the redirect with GET;
+// a 307 would re-send the POST to a page and fail with 405.
 export async function POST(request: Request) {
   const body = await request.formData();
   const parsed = selectSchema.safeParse({
@@ -16,18 +18,23 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.redirect(
-      new URL(await localizedPath("/dashboard?error=invalid_organization"), request.url)
+      new URL(await localizedPath("/dashboard?error=invalid_organization"), request.url),
+      303
     );
   }
 
   const membership = await verifyOrganizationMembership(parsed.data.organizationId);
   if (!membership) {
     return NextResponse.redirect(
-      new URL(await localizedPath("/dashboard?error=organization_not_allowed"), request.url)
+      new URL(await localizedPath("/dashboard?error=organization_not_allowed"), request.url),
+      303
     );
   }
 
-  const response = NextResponse.redirect(new URL(await localizedPath("/dashboard"), request.url));
+  const response = NextResponse.redirect(
+    new URL(await localizedPath("/dashboard"), request.url),
+    303
+  );
   response.cookies.set("agri_active_organization", membership.organization_id, {
     httpOnly: true,
     sameSite: "lax",
