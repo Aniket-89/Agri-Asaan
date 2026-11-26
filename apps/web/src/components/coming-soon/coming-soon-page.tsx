@@ -1,6 +1,5 @@
 import Image from "next/image";
 
-import { isSupabaseConfigured } from "@/lib/env";
 import type { Branding } from "@/modules/branding";
 
 function AgriAsaanMark() {
@@ -128,7 +127,13 @@ const features = [
   },
 ];
 
-export function ComingSoonPage({ branding }: { branding: Branding }) {
+export function ComingSoonPage({
+  branding,
+  signIn,
+}: {
+  branding: Branding;
+  signIn: { href: string; label: string };
+}) {
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-[#f8eddb] text-[#103d25]">
       <Image
@@ -207,15 +212,13 @@ export function ComingSoonPage({ branding }: { branding: Branding }) {
           </span>
         </div>
 
-        <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-[#1d5f45]/15 bg-white/45 px-4 py-2 text-xs font-semibold text-[#173f27] shadow-sm backdrop-blur-sm sm:text-sm">
-          <span
-            className={`inline-block h-2.5 w-2.5 rounded-full ${
-              isSupabaseConfigured ? "bg-emerald-500" : "bg-amber-500"
-            }`}
-            aria-hidden="true"
-          />
-          {isSupabaseConfigured ? "Supabase connected" : "Add Supabase env vars to connect"}
-        </div>
+        <a
+          href={signIn.href}
+          className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full px-8 text-base font-bold text-white shadow-[0_8px_24px_rgba(16,61,37,0.25)] transition hover:brightness-110 focus-visible:ring-4 focus-visible:ring-[#75B82A]/60 focus-visible:outline-none sm:text-lg"
+          style={{ backgroundColor: branding.primaryColor }}
+        >
+          {signIn.label}
+        </a>
       </div>
     </main>
   );
