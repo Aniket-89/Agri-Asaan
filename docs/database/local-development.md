@@ -80,7 +80,7 @@ Do not edit migrations that have already been applied. PostGIS is enabled by `su
 - fleet: four demo drones (UA-DEMO-N01/N02/S01 for AgriAsaan, GF-DEMO-01 for Greenfield). `pilot@agriasaan.test` is the North pilot and `pilot2@agriasaan.test` the South pilot. New pilots are created by a regional admin with **Invite a pilot**.
 - bookings: Ramesh has a **requested** booking (both his fields, so My farm shows nothing bookable until it is cancelled), Mohan a **confirmed** one, and Kavita (South) a requested one that the North regional admin cannot see. Sunita has no booking, so she's a good farmer to book for as the mitra.
 
-All seeded users sign in with `demo-password-123`. Open `http://greenfield.localhost:3000` to see tenant branding, and `http://localhost:3000` for the platform default. Both redirect to a language prefix (`/en` or `/hi`).
+All seeded users sign in with `demo-password-123`. `http://localhost:3000` (and the hosted demo, `agri-asaan.vercel.app`) is AgriAsaan's site, where `/register` lets a farmer sign up and join AgriAsaan (ADR 0018). Open `http://greenfield.localhost:3000` for Greenfield's branding; it does not accept farmer sign-ups. Both redirect to a language prefix (`/en` or `/hi`).
 
 Never seed real farmer, customer, or production information.
 

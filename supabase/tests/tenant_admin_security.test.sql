@@ -206,8 +206,8 @@ select throws_ok(
 );
 select is(
   (select count(*)::integer from public.profiles where id = 'a1111111-1111-4111-8111-111111111111'),
-  1,
-  'farmer can still see names of members in their tenant'
+  0,
+  'farmer cannot see names of members unrelated to their bookings (ADR 0018 review)'
 );
 select is(public.get_profile_phone('a1111111-1111-4111-8111-111111111111'), null, 'farmer cannot read another member''s phone');
 select is(public.get_profile_phone(auth.uid()), '910000000003', 'farmer can read their own phone');

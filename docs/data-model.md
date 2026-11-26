@@ -143,16 +143,16 @@ erDiagram
 
 ## Access summary
 
-| Table                   | Read                                                                            | Write                                                                                                                |
-| ----------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `profiles`              | Self and members of a shared tenant (name only). Phone via `get_profile_phone`. | Self: `full_name` only.                                                                                              |
-| `organizations`         | Members; platform owner/system admin.                                           | Org admin: name. Platform staff: everything. Trigger blocks tenant changes to type, status, slug, and audit columns. |
-| `organization_members`  | Self; org/regional admins of the tenant; platform owner/system admin.           | `add_organization_member` RPC. Org admin updates/deletes others. Regional admin: operational roles only.             |
-| `organization_settings` | Members; platform owner/system admin.                                           | Org admin and platform staff: update.                                                                                |
-| `organization_features` | Members; platform owner/system admin.                                           | Org admin; platform staff.                                                                                           |
-| `organization_domains`  | Members; platform owner/system admin.                                           | Org admin: insert unverified, delete. Platform staff: everything.                                                    |
-| `platform_staff`        | Self; platform owner/system admin.                                              | `manage_platform_staff` RPC. Only an owner can grant or modify `platform_owner`.                                     |
-| `platform_audit_log`    | Platform owner/system admin.                                                    | Nobody directly. Written only by audit triggers and `log_platform_tenant_access`.                                    |
+| Table                   | Read                                                                                                                                     | Write                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `profiles`              | Self and members of a shared tenant (name only); farmers see only staff on their own bookings (ADR 0018). Phone via `get_profile_phone`. | Self: `full_name` only.                                                                                              |
+| `organizations`         | Members; platform owner/system admin.                                                                                                    | Org admin: name. Platform staff: everything. Trigger blocks tenant changes to type, status, slug, and audit columns. |
+| `organization_members`  | Self; org/regional admins of the tenant; platform owner/system admin.                                                                    | `add_organization_member` RPC. Org admin updates/deletes others. Regional admin: operational roles only.             |
+| `organization_settings` | Members; platform owner/system admin.                                                                                                    | Org admin and platform staff: update.                                                                                |
+| `organization_features` | Members; platform owner/system admin.                                                                                                    | Org admin; platform staff.                                                                                           |
+| `organization_domains`  | Members; platform owner/system admin.                                                                                                    | Org admin: insert unverified, delete. Platform staff: everything.                                                    |
+| `platform_staff`        | Self; platform owner/system admin.                                                                                                       | `manage_platform_staff` RPC. Only an owner can grant or modify `platform_owner`.                                     |
+| `platform_audit_log`    | Platform owner/system admin.                                                                                                             | Nobody directly. Written only by audit triggers and `log_platform_tenant_access`.                                    |
 
 ## Functions
 
@@ -217,11 +217,11 @@ erDiagram
   }
 ```
 
-| Table          | Read                                                                                                | Write                                                                   |
-| -------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `tenant_crops` | All tenant members.                                                                                 | Org admin.                                                              |
-| `farmers`      | Org admin (tenant); regional admin (their regions); mitra (their villages); a linked farmer (self). | Insert/update: the same managers within their scope. Delete: org admin. |
-| `fields`       | Anyone who can view the farmer (`can_view_farmer`).                                                 | Farmer managers (`can_manage_farmer`).                                  |
+| Table          | Read                                                                                                | Write                                                                                                                                           |
+| -------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tenant_crops` | All tenant members.                                                                                 | Org admin.                                                                                                                                      |
+| `farmers`      | Org admin (tenant); regional admin (their regions); mitra (their villages); a linked farmer (self). | Insert/update: the same managers within their scope. Delete: org admin. Self-registration inserts through `register_self_as_farmer` (ADR 0018). |
+| `fields`       | Anyone who can view the farmer (`can_view_farmer`).                                                 | Farmer managers (`can_manage_farmer`).                                                                                                          |
 
 Column grants keep `tenant_id`, `profile_id`, `registered_by`, `boundary`,
 and generated columns out of client writes. `consent_recorded_at` and
@@ -325,6 +325,23 @@ email. It's readable by org admins (their tenant) and by each regional admin
 `add_organization_member` refuses the `pilot` role, members can't be
 updated to `pilot`, and clients can't insert `pilot_profiles`. The invite
 flow is the only way to create a pilot.
+
+## Mitra invites (ADR 0019)
+
+`mitra_invites` mirrors `pilot_invites` (same statuses, visibility and
+no-API-writes rule) but records a `village_id` instead of a home region.
+Pilot and mitra invites share the per-email advisory lock, the open-claim
+check (`staff_invite_email_taken`) and the per-inviter limit of 20 attempts
+an hour (`staff_invite_attempts_last_hour`).
+
+| Function                                | Executable by     | Purpose                                                                                                           |
+| --------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `can_invite_mitra(village)`             | authenticated     | Is the caller a regional admin of the (active) village's region?                                                  |
+| `claim_mitra_invite(...)`               | service_role only | Same claim rules as pilots, recorded in `mitra_invites`.                                                          |
+| `provision_invited_mitra(invite, user)` | service_role only | Requires the open claim and a matching fresh account, then creates the mitra membership and `mitra_villages` row. |
+| `fail_mitra_invite(invite, reason)`     | service_role only | Releases a claim after a failure.                                                                                 |
+
+The fresh-orphan clean-up reuses `delete_orphaned_pilot_invite`.
 
 ## Spraying slots and capacity (ADR 0013)
 

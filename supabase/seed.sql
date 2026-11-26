@@ -12,9 +12,10 @@
 --   admin@greenfield.test     Greenfield Agri organization_admin (white-label demo)
 --   pilot2@agriasaan.test     AgriAsaan       pilot (South)
 --
+-- Domains: http://localhost:3000 and the hosted demo (agri-asaan.vercel.app)
+-- are AgriAsaan's site, where farmers can register themselves (ADR 0018).
 -- White-label branding demo: http://greenfield.localhost:3000 resolves to the
--- Greenfield brand through its verified domain; http://localhost:3000 shows
--- the platform default brand.
+-- Greenfield brand, which does not accept farmer sign-ups.
 
 with seed_users (id, email, full_name, phone) as (
   values
@@ -78,12 +79,16 @@ values
   ('e0000000-0000-4000-8000-000000000002', 'en', 'Asia/Kolkata', 'Greenfield Agri', '#1d4ed8', '#f59e0b', 'Fake demo tenant · Spraying services', null);
 
 insert into public.organization_domains (tenant_id, hostname, is_primary, is_verified)
-values ('e0000000-0000-4000-8000-000000000002', 'greenfield.localhost', true, true);
+values
+  ('e0000000-0000-4000-8000-000000000001', 'agri-asaan.vercel.app', true, true),
+  ('e0000000-0000-4000-8000-000000000001', 'localhost', false, true),
+  ('e0000000-0000-4000-8000-000000000002', 'greenfield.localhost', true, true);
 
 insert into public.organization_features (tenant_id, feature_key, enabled)
 values
   ('e0000000-0000-4000-8000-000000000001', 'drone_spraying', true),
   ('e0000000-0000-4000-8000-000000000001', 'crop_monitoring', true),
+  ('e0000000-0000-4000-8000-000000000001', 'farmer_self_registration', true),
   ('e0000000-0000-4000-8000-000000000002', 'drone_spraying', true);
 
 insert into public.organization_members (tenant_id, organization_id, user_id, role)

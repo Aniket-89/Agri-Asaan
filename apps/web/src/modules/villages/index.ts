@@ -3,6 +3,8 @@ export {
   regionInputSchema,
   villageAssignmentSchema,
   villageInputSchema,
+  mitraInviteInputSchema,
+  type MitraInviteInput,
 } from "./territory.schema";
 export { canViewTerritoryAdmin } from "./territory.permissions";
 export {

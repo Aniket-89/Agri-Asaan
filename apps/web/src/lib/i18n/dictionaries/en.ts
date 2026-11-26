@@ -26,22 +26,38 @@ export const en = {
     },
   },
   register: {
-    title: "Create an account",
+    title: "Register as a farmer",
+    intro: "Create your account to book drone spraying for your fields.",
     fullName: "Full name",
+    phone: "Mobile number",
+    phoneHint: "10-digit mobile number. The team calls this number about your bookings.",
+    village: "Village",
+    chooseVillage: "Choose your village",
     email: "Email",
     password: "Password",
     passwordHint: "At least 6 characters.",
+    consent:
+      "I agree to {brand} storing my name, mobile number, and field details to provide spraying services.",
     submit: "Create account",
     haveAccount: "Already have an account? Sign in",
     errors: {
       invalid_registration:
-        "Check the details: name, a valid email and a password of 6 or more characters.",
+        "Check the details: your name, a 10-digit mobile number, a village, a valid email, a password of 6 or more characters, and the consent box.",
+      invalid: "Check your name, 10-digit mobile number, village, and the consent box.",
       registration_failed: "The account could not be created. Try again in a moment.",
+      email_in_use: "That email already has an account. Sign in instead.",
+      closed: "This site does not take farmer registrations.",
+      already_member: "Your account is already registered here. Sign in to continue.",
     },
     checkEmailTitle: "Verify your email",
     checkEmailBody: "Check your inbox and follow the link to verify your email address.",
-    checkEmailNext:
-      "After verification, an organization administrator must add you before you can sign in.",
+    checkEmailNext: "After verifying, sign in to finish registering as a farmer.",
+    closedTitle: "Registration is not open",
+    closedBody:
+      "This site does not take farmer registrations. Staff accounts are created by an administrator.",
+    joinTitle: "Finish registering",
+    joinIntro: "Add your mobile number and village to join {brand} as a farmer.",
+    joinSubmit: "Join as a farmer",
     pendingTitle: "Access pending",
     pendingBody:
       "Your account is ready, but it is not connected to an organization yet. Ask an organization administrator to add you.",
@@ -78,9 +94,6 @@ export const en = {
     roleIn: "{role} at {organization}",
     switchOrganization: "Switch organization",
     switch: "Switch",
-    noOrganization: "You are not a member of an organization yet.",
-    noOrganizationHint:
-      "Ask your organization administrator to add you. Your organization will appear here once access is granted.",
     shortcuts: "Go to",
     territoryLink: "Manage territory",
     farmersLink: "Farmers",
@@ -401,6 +414,23 @@ export const en = {
     chooseMitra: "Choose a mitra",
     assign: "Assign",
     remove: "Remove",
+    inviteMitra: "Invite a new mitra",
+    inviteMitraIntro:
+      "The mitra gets an email with a link to set their own password. They start with the village you choose; you can assign more villages below.",
+    inviteName: "Full name",
+    inviteEmail: "Email",
+    inviteVillage: "Village",
+    chooseVillage: "Choose a village",
+    inviteSubmit: "Send invite",
+    invited:
+      "Invite sent. The mitra appears under their village and can sign in after setting a password.",
+    inviteErrors: {
+      forbidden: "Only a regional admin can invite mitras into villages of their own regions.",
+      email_in_use: "That email already has an account or a pending invite. Use a different email.",
+      rate_limited: "Too many invites in the last hour. Please try again later.",
+      invalid: "Please check the details and try again.",
+      invite_failed: "The invite could not be sent. Try again.",
+    },
     errors: {
       forbidden: "You don't have permission to do that.",
       duplicate: "That name or code is already in use.",
