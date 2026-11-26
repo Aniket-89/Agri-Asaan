@@ -18,7 +18,7 @@ import {
   Field,
 } from "@/components/ui";
 import { format, type Dictionary } from "@/lib/i18n";
-import { districtsByState, type Places } from "@/modules/places";
+import type { Places } from "@/modules/places";
 import { PlacePicker } from "@/modules/places/components/place-picker";
 
 import type { TerritoryOverview, TerritoryRegion } from "../territory.service";
@@ -316,22 +316,19 @@ export function TerritoryRegionCard({ region, overview, places, actions, t }: Pr
           <div className="grid gap-3 sm:grid-cols-2">
             <form action={actions.addDistrict} className="space-y-2 rounded-xl bg-canvas p-3">
               <input type="hidden" name="regionId" value={region.id} />
-              <Field label={t.addDistrict}>
-                <select name="districtCode" required defaultValue="" className={controlOnTintClass}>
-                  <option value="" disabled>
-                    {t.chooseDistrict}
-                  </option>
-                  {districtsByState(places.districts).map(([stateName, districts]) => (
-                    <optgroup key={stateName} label={stateName}>
-                      {districts.map((district) => (
-                        <option key={district.code} value={district.code}>
-                          {district.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </Field>
+              {/* Remounts after each change so the picker starts empty again. */}
+              <PlacePicker
+                key={region.districts.map((district) => district.code).join(",")}
+                districts={places.districts}
+                level="district"
+                className={controlOnTintClass}
+                labels={{
+                  state: t.state,
+                  chooseState: t.chooseState,
+                  district: t.district,
+                  chooseDistrict: t.chooseDistrict,
+                }}
+              />
               <Button variant="secondary" block>
                 {t.addDistrict}
               </Button>
@@ -343,8 +340,11 @@ export function TerritoryRegionCard({ region, overview, places, actions, t }: Pr
                 key={region.tehsils.map((tehsil) => tehsil.code).join(",")}
                 districts={places.districts}
                 tehsils={places.tehsils}
+                level="tehsil"
                 className={controlOnTintClass}
                 labels={{
+                  state: t.state,
+                  chooseState: t.chooseState,
                   district: t.district,
                   chooseDistrict: t.chooseDistrict,
                   tehsil: t.addTehsil,

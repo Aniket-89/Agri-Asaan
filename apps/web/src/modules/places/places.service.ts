@@ -54,12 +54,3 @@ export async function listPlaces(supabase: SupabaseClient<Database>): Promise<Pl
     })),
   };
 }
-
-// Districts grouped by state, in display order, for <optgroup> lists.
-export function districtsByState(districts: DistrictOption[]): [string, DistrictOption[]][] {
-  const groups = new Map<string, DistrictOption[]>();
-  for (const district of districts) {
-    groups.set(district.stateName, [...(groups.get(district.stateName) ?? []), district]);
-  }
-  return [...groups];
-}
