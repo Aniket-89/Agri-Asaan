@@ -54,3 +54,11 @@ export const mitraInviteInputSchema = z.object({
 });
 
 export type MitraInviteInput = z.infer<typeof mitraInviteInputSchema>;
+
+export const regionalAdminInviteInputSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  email: z.string().trim().toLowerCase().pipe(z.email().max(320)),
+  regionId: z.uuid(),
+});
+
+export type RegionalAdminInviteInput = z.infer<typeof regionalAdminInviteInputSchema>;

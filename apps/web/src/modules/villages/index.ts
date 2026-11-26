@@ -5,6 +5,8 @@ export {
   villageInputSchema,
   mitraInviteInputSchema,
   type MitraInviteInput,
+  regionalAdminInviteInputSchema,
+  type RegionalAdminInviteInput,
 } from "./territory.schema";
 export { canViewTerritoryAdmin } from "./territory.permissions";
 export {

@@ -29,6 +29,7 @@ import {
   createRegionAction,
   createVillageAction,
   inviteMitraAction,
+  inviteRegionalAdminAction,
   removeMitraAction,
   removeRegionalAdminAction,
 } from "./actions";
@@ -36,7 +37,7 @@ import {
 export const instant = false;
 
 const searchSchema = z.object({
-  status: z.enum(["saved", "invited"]).optional().catch(undefined),
+  status: z.enum(["saved", "invited", "invitedAdmin"]).optional().catch(undefined),
   error: z.enum(["forbidden", "duplicate", "invalid", "not_found"]).optional().catch(undefined),
   inviteError: z
     .enum(["forbidden", "email_in_use", "rate_limited", "invalid", "invite_failed"])
@@ -68,7 +69,67 @@ function StatusMessage({
   if (search.status === "invited") {
     return <StatusBanner kind="success" text={t.invited} />;
   }
+  if (search.status === "invitedAdmin") {
+    return <StatusBanner kind="success" text={t.invitedAdmin} />;
+  }
   return null;
+}
+
+// Organization admins create regional admin accounts by email invite
+// (ADR 0020); the database re-checks the region belongs to their organization.
+function InviteRegionalAdminForm({
+  regions,
+  t,
+}: {
+  regions: TerritoryOverview["regionalAdminInviteRegions"];
+  t: Dictionary["territory"];
+}) {
+  return (
+    <section className="rounded-2xl bg-surface p-3 shadow-soft">
+      <Disclosure summary={t.inviteRegionalAdmin}>
+        <form action={inviteRegionalAdminAction} className="grid gap-4 sm:grid-cols-2">
+          <p className="flex gap-2 text-sm text-ink-muted sm:col-span-2">
+            <EnvelopeSimpleIcon weight="duotone" className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {t.inviteRegionalAdminIntro}
+          </p>
+          <Field label={t.inviteName}>
+            <input
+              name="fullName"
+              required
+              minLength={2}
+              maxLength={120}
+              className={controlOnTintClass}
+            />
+          </Field>
+          <Field label={t.inviteEmail}>
+            <input
+              name="email"
+              type="email"
+              required
+              maxLength={320}
+              autoComplete="off"
+              className={controlOnTintClass}
+            />
+          </Field>
+          <Field label={t.inviteRegion} className="sm:col-span-2">
+            <select name="regionId" required defaultValue="" className={controlOnTintClass}>
+              <option value="" disabled>
+                {t.chooseRegion}
+              </option>
+              {regions.map((region) => (
+                <option key={region.id} value={region.id}>
+                  {region.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Button className="sm:col-span-2" block>
+            {t.inviteSubmit}
+          </Button>
+        </form>
+      </Disclosure>
+    </section>
+  );
 }
 
 // Regional admins create mitra accounts by email invite (ADR 0019); the
@@ -194,6 +255,10 @@ async function TerritoryContent({
             {t.addRegion}
           </Button>
         </form>
+      ) : null}
+
+      {overview.regionalAdminInviteRegions.length > 0 ? (
+        <InviteRegionalAdminForm regions={overview.regionalAdminInviteRegions} t={t} />
       ) : null}
 
       {overview.mitraInviteVillages.length > 0 ? (

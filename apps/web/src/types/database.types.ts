@@ -535,6 +535,44 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"regional_admin_invites": {
+                  Row: {
+                    "created_at": string,"email": string,"failure_reason": string | null,"id": string,"inviter_id": string | null,"region_id": string,"status": Database["public"]['Enums']["pilot_invite_status"],"tenant_id": string,"updated_at": string,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"email": string,"failure_reason"?: string | null,"id"?: string,"inviter_id"?: string | null,"region_id": string,"status": Database["public"]['Enums']["pilot_invite_status"],"tenant_id": string,"updated_at"?: string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"email"?: string,"failure_reason"?: string | null,"id"?: string,"inviter_id"?: string | null,"region_id"?: string,"status"?: Database["public"]['Enums']["pilot_invite_status"],"tenant_id"?: string,"updated_at"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "regional_admin_invites_inviter_id_fkey"
+      columns: ["inviter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "regional_admin_invites_region_same_tenant"
+      columns: ["tenant_id","region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "regional_admin_invites_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "regional_admin_invites_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"regional_admin_regions": {
                   Row: {
                     "created_at": string,"region_id": string,"tenant_id": string,"user_id": string
@@ -671,6 +709,9 @@ isOneToOne: false
 "can_invite_pilot":
 { Args: { "p_home_region_id": string }; Returns: boolean
                            },
+"can_invite_regional_admin":
+{ Args: { "p_region_id": string }; Returns: boolean
+                           },
 "can_manage_farmer":
 { Args: { "p_farmer_id": string }; Returns: boolean
                            },
@@ -705,6 +746,11 @@ isOneToOne: false
               "invite_id": string,"outcome": Database["public"]['Enums']["pilot_invite_status"]
             }[]
                            },
+"claim_regional_admin_invite":
+{ Args: { "p_email": string,"p_inviter_id": string,"p_region_id": string }; Returns: {
+              "invite_id": string,"outcome": Database["public"]['Enums']["pilot_invite_status"]
+            }[]
+                           },
 "complete_job":
 { Args: { "p_acres": (number)[],"p_booking_id": string,"p_field_ids": (string)[],"p_notes"?: string }; Returns: undefined
                            },
@@ -721,6 +767,9 @@ isOneToOne: false
 { Args: { "p_invite_id": string,"p_reason": string }; Returns: undefined
                            },
 "fail_pilot_invite":
+{ Args: { "p_invite_id": string,"p_reason": string }; Returns: undefined
+                           },
+"fail_regional_admin_invite":
 { Args: { "p_invite_id": string,"p_reason": string }; Returns: undefined
                            },
 "farmer_registration_tenant":
@@ -801,6 +850,12 @@ isOneToOne: false
                            },
 "provision_invited_pilot":
 { Args: { "p_invite_id": string,"p_license_number"?: string,"p_user_id": string }; Returns: string
+                           },
+"provision_invited_regional_admin":
+{ Args: { "p_invite_id": string,"p_user_id": string }; Returns: string
+                           },
+"regional_admin_inviter_tenant":
+{ Args: { "p_inviter_id": string,"p_region_id": string }; Returns: string
                            },
 "register_self_as_farmer":
 { Args: { "p_full_name": string,"p_hostname": string,"p_phone": string,"p_village_id": string }; Returns: string

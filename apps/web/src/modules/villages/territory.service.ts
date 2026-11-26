@@ -51,6 +51,8 @@ export type TerritoryOverview = {
   mitraCandidates: TerritoryPerson[];
   // Active villages a regional admin may invite a new mitra into (ADR 0019).
   mitraInviteVillages: { id: string; name: string; regionName: string }[];
+  // Active regions an organization admin may invite a regional admin into (ADR 0020).
+  regionalAdminInviteRegions: { id: string; name: string }[];
 };
 
 // Maps expected database rejections to user-facing outcomes. Anything else is
@@ -117,6 +119,11 @@ export async function getTerritoryOverview(
   const regionNameOf = new Map(regions.map((region) => [region.id, region.name]));
 
   return {
+    regionalAdminInviteRegions: canManageRegions(context.role)
+      ? regions
+          .filter((region) => region.is_active)
+          .map((region) => ({ id: region.id, name: region.name }))
+      : [],
     mitraInviteVillages:
       context.role === "regional_admin"
         ? villages
