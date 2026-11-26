@@ -40,6 +40,11 @@ export const farmerSignupSchema = z.object({
   ),
   fullName: z.string().trim().min(2).max(120),
   phone: indianMobileSchema,
+  // LGD tehsil code; decides the region (ADR 0023).
+  subdistrictCode: z.preprocess(
+    (value) => (typeof value === "string" && value !== "" ? Number(value) : value),
+    z.number().int().positive()
+  ),
   pincode: pincodeSchema,
   locality: z.string().trim().min(2).max(120),
   addressLine: z.string().trim().min(3).max(300),

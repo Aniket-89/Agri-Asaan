@@ -179,14 +179,14 @@ isOneToOne: false
                   ]
                 },"farmers": {
                   Row: {
-                    "address_line": string | null,"consent_recorded_at": string,"created_at": string,"full_name": string,"id": string,"is_active": boolean,"locality": string | null,"phone": string,"pincode": string | null,"profile_id": string | null,"region_id": string | null,"registered_by": string | null,"tenant_id": string,"updated_at": string,"village_id": string | null
+                    "address_line": string | null,"consent_recorded_at": string,"created_at": string,"full_name": string,"id": string,"is_active": boolean,"locality": string | null,"phone": string,"pincode": string | null,"profile_id": string | null,"region_id": string | null,"registered_by": string | null,"subdistrict_code": number | null,"tenant_id": string,"updated_at": string,"village_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "address_line"?: string | null,"consent_recorded_at": string,"created_at"?: string,"full_name": string,"id"?: string,"is_active"?: boolean,"locality"?: string | null,"phone": string,"pincode"?: string | null,"profile_id"?: string | null,"region_id"?: string | null,"registered_by"?: string | null,"tenant_id": string,"updated_at"?: string,"village_id"?: string | null
+                    "address_line"?: string | null,"consent_recorded_at": string,"created_at"?: string,"full_name": string,"id"?: string,"is_active"?: boolean,"locality"?: string | null,"phone": string,"pincode"?: string | null,"profile_id"?: string | null,"region_id"?: string | null,"registered_by"?: string | null,"subdistrict_code"?: number | null,"tenant_id": string,"updated_at"?: string,"village_id"?: string | null
                   }
                   Update: {
-                    "address_line"?: string | null,"consent_recorded_at"?: string,"created_at"?: string,"full_name"?: string,"id"?: string,"is_active"?: boolean,"locality"?: string | null,"phone"?: string,"pincode"?: string | null,"profile_id"?: string | null,"region_id"?: string | null,"registered_by"?: string | null,"tenant_id"?: string,"updated_at"?: string,"village_id"?: string | null
+                    "address_line"?: string | null,"consent_recorded_at"?: string,"created_at"?: string,"full_name"?: string,"id"?: string,"is_active"?: boolean,"locality"?: string | null,"phone"?: string,"pincode"?: string | null,"profile_id"?: string | null,"region_id"?: string | null,"registered_by"?: string | null,"subdistrict_code"?: number | null,"tenant_id"?: string,"updated_at"?: string,"village_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -207,6 +207,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "farmers_subdistrict_code_fkey"
+      columns: ["subdistrict_code"]
+isOneToOne: false
+      referencedRelation: "geo_subdistricts"
+      referencedColumns: ["code"]
     },{
       foreignKeyName: "farmers_village_same_tenant"
       columns: ["tenant_id","village_id"]
@@ -239,6 +245,60 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "farmers"
       referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"geo_districts": {
+                  Row: {
+                    "code": number,"name": string,"state_code": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": number,"name": string,"state_code": number
+                  }
+                  Update: {
+                    "code"?: number,"name"?: string,"state_code"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "geo_districts_state_code_fkey"
+      columns: ["state_code"]
+isOneToOne: false
+      referencedRelation: "geo_states"
+      referencedColumns: ["code"]
+    }
+                  ]
+                },"geo_states": {
+                  Row: {
+                    "code": number,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": number,"name": string
+                  }
+                  Update: {
+                    "code"?: number,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"geo_subdistricts": {
+                  Row: {
+                    "code": number,"district_code": number,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": number,"district_code": number,"name": string
+                  }
+                  Update: {
+                    "code"?: number,"district_code"?: number,"name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "geo_subdistricts_district_code_fkey"
+      columns: ["district_code"]
+isOneToOne: false
+      referencedRelation: "geo_districts"
+      referencedColumns: ["code"]
     }
                   ]
                 },"mitra_invites": {
@@ -547,24 +607,56 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
-                },"region_pincodes": {
+                },"region_districts": {
                   Row: {
-                    "created_at": string,"pincode": string,"region_id": string,"tenant_id": string
+                    "created_at": string,"district_code": number,"region_id": string,"tenant_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"pincode": string,"region_id": string,"tenant_id": string
+                    "created_at"?: string,"district_code": number,"region_id": string,"tenant_id": string
                   }
                   Update: {
-                    "created_at"?: string,"pincode"?: string,"region_id"?: string,"tenant_id"?: string
+                    "created_at"?: string,"district_code"?: number,"region_id"?: string,"tenant_id"?: string
                   }
                   Relationships: [
                     {
-      foreignKeyName: "region_pincodes_region_same_tenant"
+      foreignKeyName: "region_districts_district_code_fkey"
+      columns: ["district_code"]
+isOneToOne: false
+      referencedRelation: "geo_districts"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "region_districts_region_same_tenant"
       columns: ["tenant_id","region_id"]
 isOneToOne: false
       referencedRelation: "regions"
       referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"region_subdistricts": {
+                  Row: {
+                    "created_at": string,"region_id": string,"subdistrict_code": number,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"region_id": string,"subdistrict_code": number,"tenant_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"region_id"?: string,"subdistrict_code"?: number,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "region_subdistricts_region_same_tenant"
+      columns: ["tenant_id","region_id"]
+isOneToOne: false
+      referencedRelation: "regions"
+      referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "region_subdistricts_subdistrict_code_fkey"
+      columns: ["subdistrict_code"]
+isOneToOne: false
+      referencedRelation: "geo_subdistricts"
+      referencedColumns: ["code"]
     }
                   ]
                 },"regional_admin_invites": {
@@ -807,6 +899,9 @@ isOneToOne: false
 "fail_regional_admin_invite":
 { Args: { "p_invite_id": string,"p_reason": string }; Returns: undefined
                            },
+"farmer_address_label":
+{ Args: { "p_farmer_id": string }; Returns: string
+                           },
 "farmer_registration_open":
 { Args: { "p_hostname": string }; Returns: boolean
                            },
@@ -906,11 +1001,14 @@ isOneToOne: false
 "record_job_payment":
 { Args: { "p_booking_id": string }; Returns: undefined
                            },
+"region_for_subdistrict":
+{ Args: { "p_subdistrict_code": number,"p_tenant_id": string }; Returns: string
+                           },
 "regional_admin_inviter_tenant":
 { Args: { "p_inviter_id": string,"p_region_id": string }; Returns: string
                            },
 "register_self_as_farmer":
-{ Args: { "p_address_line": string,"p_full_name": string,"p_hostname": string,"p_locality": string,"p_phone": string,"p_pincode": string,"p_village_id"?: string }; Returns: string
+{ Args: { "p_address_line": string,"p_full_name": string,"p_hostname": string,"p_locality": string,"p_phone": string,"p_pincode": string,"p_subdistrict_code": number,"p_village_id"?: string }; Returns: string
                            },
 "set_booking_status":
 { Args: { "p_booking_id": string,"p_reason"?: string,"p_to_status": Database["public"]['Enums']["booking_status"] }; Returns: undefined

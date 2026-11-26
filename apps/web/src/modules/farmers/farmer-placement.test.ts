@@ -50,6 +50,8 @@ function farmer(overrides: Partial<FarmerDetail> = {}): FarmerDetail {
     hasRegion: true,
     locality: "Fake Town",
     pincode: "281001",
+    tehsilName: "Mathura",
+    districtName: "Mathura",
     addressLine: "Near the fake well",
     villageLocation: null,
     isActive: true,
@@ -120,6 +122,7 @@ describe("farmer address schemas", () => {
   const signup = {
     fullName: "Fake Farmer",
     phone: "98765 00001",
+    subdistrictCode: "764",
     pincode: " 281001 ",
     locality: "Fake Town",
     addressLine: "Near the fake well",
@@ -130,6 +133,11 @@ describe("farmer address schemas", () => {
     const parsed = farmerSignupSchema.parse({ ...signup, villageId: "" });
     expect(parsed.villageId).toBeUndefined();
     expect(parsed.pincode).toBe("281001");
+  });
+
+  it("requires a tehsil and reads its LGD code as a number", () => {
+    expect(farmerSignupSchema.parse(signup).subdistrictCode).toBe(764);
+    expect(farmerSignupSchema.safeParse({ ...signup, subdistrictCode: "" }).success).toBe(false);
   });
 
   it("rejects pincodes that start with 0 or are not six digits", () => {

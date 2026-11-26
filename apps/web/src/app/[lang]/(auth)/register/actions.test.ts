@@ -36,6 +36,7 @@ function farmerForm(overrides: Record<string, string | null> = {}) {
     fullName: "Fake Farmer",
     phone: "+91 98765 00001",
     villageId: VILLAGE_ID,
+    subdistrictCode: "764",
     pincode: "281001",
     locality: "Fake Town",
     addressLine: "Near the fake well",
@@ -74,6 +75,15 @@ beforeEach(() => {
   mocks.createSupabaseServerClient.mockResolvedValue({
     auth: { signUp: mocks.signUp, getUser: mocks.getUser },
     rpc: mocks.rpc,
+    // Place lists for the tehsil picker (empty in these tests).
+    from: () => ({
+      select: () => ({
+        order: () =>
+          Object.assign(Promise.resolve({ data: [], error: null }), {
+            range: async () => ({ data: [], error: null }),
+          }),
+      }),
+    }),
   });
   mockRpc();
 });
@@ -140,9 +150,10 @@ describe("registerAction", () => {
       p_hostname: "agri-asaan.vercel.app",
       p_full_name: "Fake Farmer",
       p_phone: "9876500001",
-      p_pincode: "281001",
+      p_subdistrict_code: 764,
       p_locality: "Fake Town",
       p_address_line: "Near the fake well",
+      p_pincode: "281001",
       p_village_id: VILLAGE_ID,
     });
   });
@@ -158,7 +169,7 @@ describe("registerAction", () => {
     );
     expect(mocks.rpc).toHaveBeenCalledWith(
       "register_self_as_farmer",
-      expect.objectContaining({ p_pincode: "281001", p_village_id: undefined })
+      expect.objectContaining({ p_subdistrict_code: 764, p_village_id: undefined })
     );
   });
 

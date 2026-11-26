@@ -118,13 +118,14 @@ values
 update public.regions set rate_per_acre = 450 where id = 'e1000000-0000-4000-8000-000000000001';
 update public.regions set rate_per_acre = 500 where id = 'e1000000-0000-4000-8000-000000000002';
 
--- Pincodes each region serves (ADR 0021): farmers registering with one of
--- these join the region even when their village is not listed.
-insert into public.region_pincodes (tenant_id, region_id, pincode)
+-- Districts each region covers (ADR 0023, LGD codes): farmers registering
+-- from a tehsil in these districts join the region even when their village
+-- is not listed. North covers Mathura district, South covers Agra district;
+-- any other district shows "outside service area".
+insert into public.region_districts (tenant_id, region_id, district_code)
 values
-  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', '281001'),
-  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', '281004'),
-  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000002', '302001');
+  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', 167),
+  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000002', 118);
 
 insert into public.villages (id, tenant_id, region_id, name, lgd_code, latitude, longitude)
 values

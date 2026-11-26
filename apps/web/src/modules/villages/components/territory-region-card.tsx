@@ -1,6 +1,6 @@
 import {
   CurrencyInrIcon,
-  EnvelopeSimpleOpenIcon,
+  MapTrifoldIcon,
   HouseLineIcon,
   MapPinAreaIcon,
   ShieldCheckIcon,
@@ -18,6 +18,9 @@ import {
   Field,
 } from "@/components/ui";
 import { format, type Dictionary } from "@/lib/i18n";
+import { districtsByState, type Places } from "@/modules/places";
+import { PlacePicker } from "@/modules/places/components/place-picker";
+
 import type { TerritoryOverview, TerritoryRegion } from "../territory.service";
 
 type FormAction = (formData: FormData) => Promise<void>;
@@ -28,14 +31,17 @@ export type TerritoryActions = {
   removeRegionalAdmin: FormAction;
   assignMitra: FormAction;
   removeMitra: FormAction;
-  addPincode: FormAction;
-  removePincode: FormAction;
+  addDistrict: FormAction;
+  removeDistrict: FormAction;
+  addTehsil: FormAction;
+  removeTehsil: FormAction;
   setRate: FormAction;
 };
 
 type Props = {
   region: TerritoryRegion;
   overview: TerritoryOverview;
+  places: Places | null;
   actions: TerritoryActions;
   t: Dictionary["territory"];
 };
@@ -124,7 +130,41 @@ function Person({
   );
 }
 
-export function TerritoryRegionCard({ region, overview, actions, t }: Props) {
+// A covered district or tehsil, with a remove button for organization admins.
+function CoverageChip({
+  label,
+  remove,
+  removeLabel,
+}: {
+  label: string;
+  remove?: { action: FormAction; hidden: Record<string, string> };
+  removeLabel: string;
+}) {
+  return (
+    <li className="flex min-h-10 items-center gap-1 rounded-full bg-canvas py-1 pr-1 pl-3 text-sm font-semibold text-ink">
+      {label}
+      {remove ? (
+        <form action={remove.action}>
+          {Object.entries(remove.hidden).map(([key, value]) => (
+            <input key={key} type="hidden" name={key} value={value} />
+          ))}
+          <button
+            type="submit"
+            aria-label={`${removeLabel}: ${label}`}
+            title={removeLabel}
+            className={`${buttonClass({ variant: "quiet", size: "sm" })} size-8 px-0 text-ink-muted hover:bg-clay-soft hover:text-clay`}
+          >
+            <XIcon weight="bold" className="size-4" aria-hidden />
+          </button>
+        </form>
+      ) : (
+        <span className="pr-2" />
+      )}
+    </li>
+  );
+}
+
+export function TerritoryRegionCard({ region, overview, places, actions, t }: Props) {
   const assignedAdminIds = new Set(region.regionalAdmins.map((admin) => admin.id));
 
   return (
@@ -230,59 +270,93 @@ export function TerritoryRegionCard({ region, overview, actions, t }: Props) {
 
       <div className="space-y-2">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <EnvelopeSimpleOpenIcon weight="duotone" className="size-5 text-brand" aria-hidden />
-          {t.pincodes}
+          <MapTrifoldIcon weight="duotone" className="size-5 text-brand" aria-hidden />
+          {t.coverage}
         </h3>
         <p className="text-sm text-ink-muted">
-          {region.pincodes.length === 0 ? t.noPincodes : t.pincodesHint}
+          {region.districts.length === 0 && region.tehsils.length === 0
+            ? t.noCoverage
+            : t.coverageHint}
         </p>
-        {region.pincodes.length > 0 ? (
+        {region.districts.length + region.tehsils.length > 0 ? (
           <ul className="flex flex-wrap gap-2">
-            {region.pincodes.map((pincode) => (
-              <li
-                key={pincode}
-                className="flex min-h-10 items-center gap-1 rounded-full bg-canvas py-1 pr-1 pl-3 text-sm font-semibold text-ink tabular-nums"
-              >
-                {pincode}
-                {overview.canManageRegions ? (
-                  <form action={actions.removePincode}>
-                    <input type="hidden" name="regionId" value={region.id} />
-                    <input type="hidden" name="pincode" value={pincode} />
-                    <button
-                      type="submit"
-                      aria-label={`${t.remove}: ${pincode}`}
-                      title={t.remove}
-                      className={`${buttonClass({ variant: "quiet", size: "sm" })} size-8 px-0 text-ink-muted hover:bg-clay-soft hover:text-clay`}
-                    >
-                      <XIcon weight="bold" className="size-4" aria-hidden />
-                    </button>
-                  </form>
-                ) : (
-                  <span className="pr-2" />
-                )}
-              </li>
+            {region.districts.map((district) => (
+              <CoverageChip
+                key={`d${district.code}`}
+                label={format(t.districtChip, { name: district.name, state: district.stateName })}
+                remove={
+                  overview.canManageRegions
+                    ? {
+                        action: actions.removeDistrict,
+                        hidden: { regionId: region.id, districtCode: String(district.code) },
+                      }
+                    : undefined
+                }
+                removeLabel={t.remove}
+              />
+            ))}
+            {region.tehsils.map((tehsil) => (
+              <CoverageChip
+                key={`t${tehsil.code}`}
+                label={format(t.tehsilChip, { name: tehsil.name, district: tehsil.districtName })}
+                remove={
+                  overview.canManageRegions
+                    ? {
+                        action: actions.removeTehsil,
+                        hidden: { regionId: region.id, subdistrictCode: String(tehsil.code) },
+                      }
+                    : undefined
+                }
+                removeLabel={t.remove}
+              />
             ))}
           </ul>
         ) : null}
-        {overview.canManageRegions ? (
-          <form action={actions.addPincode} className="flex gap-2">
-            <input type="hidden" name="regionId" value={region.id} />
-            <label className="min-w-0 flex-1">
-              <span className="sr-only">{t.pincode}</span>
-              <input
-                name="pincode"
-                required
-                inputMode="numeric"
-                pattern="[1-9][0-9]{5}"
-                maxLength={6}
-                placeholder={t.pincode}
-                className={controlClass}
+        {overview.canManageRegions && places ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <form action={actions.addDistrict} className="space-y-2 rounded-xl bg-canvas p-3">
+              <input type="hidden" name="regionId" value={region.id} />
+              <Field label={t.addDistrict}>
+                <select name="districtCode" required defaultValue="" className={controlOnTintClass}>
+                  <option value="" disabled>
+                    {t.chooseDistrict}
+                  </option>
+                  {districtsByState(places.districts).map(([stateName, districts]) => (
+                    <optgroup key={stateName} label={stateName}>
+                      {districts.map((district) => (
+                        <option key={district.code} value={district.code}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </Field>
+              <Button variant="secondary" block>
+                {t.addDistrict}
+              </Button>
+            </form>
+            <form action={actions.addTehsil} className="space-y-2 rounded-xl bg-canvas p-3">
+              <input type="hidden" name="regionId" value={region.id} />
+              {/* Remounts after each change so the picker starts empty again. */}
+              <PlacePicker
+                key={region.tehsils.map((tehsil) => tehsil.code).join(",")}
+                districts={places.districts}
+                tehsils={places.tehsils}
+                className={controlOnTintClass}
+                labels={{
+                  district: t.district,
+                  chooseDistrict: t.chooseDistrict,
+                  tehsil: t.addTehsil,
+                  chooseTehsil: t.chooseTehsil,
+                  tehsilHint: t.tehsilOverrideHint,
+                }}
               />
-            </label>
-            <Button variant="secondary" className="shrink-0">
-              {t.addPincode}
-            </Button>
-          </form>
+              <Button variant="secondary" block>
+                {t.addTehsil}
+              </Button>
+            </form>
+          </div>
         ) : null}
       </div>
 

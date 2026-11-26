@@ -59,3 +59,5 @@ follows from the pincode, and pilots are hired where demand appears.
   active fields so an open sign-up cannot fill the table.
 - Hosted environments need region pincodes before address registrations land
   in a region.
+- **Superseded in part by ADR 0023:** regions now cover districts and tehsils;
+  the pincode no longer decides the region.

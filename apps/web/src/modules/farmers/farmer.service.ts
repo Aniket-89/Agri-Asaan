@@ -24,7 +24,10 @@ export type FarmerListItem = {
   // Where the farmer said they live: shown while they have no village.
   locality: string | null;
   pincode: string | null;
-  // False when the pincode is in no region yet (outside the service area).
+  // The farmer's tehsil and district (LGD names), when they gave them.
+  tehsilName: string | null;
+  districtName: string | null;
+  // False when no region covers the farmer's place yet (outside the service area).
   hasRegion: boolean;
   isActive: boolean;
 };
@@ -72,6 +75,8 @@ export async function listFarmers(
     villageName: row.village?.name ?? null,
     locality: row.locality,
     pincode: row.pincode,
+    tehsilName: row.tehsil?.name ?? null,
+    districtName: row.tehsil?.district?.name ?? null,
     hasRegion: row.region_id !== null,
     isActive: row.is_active,
   }));
@@ -104,6 +109,8 @@ export async function getFarmer(
     hasRegion: row.region_id !== null,
     locality: row.locality,
     pincode: row.pincode,
+    tehsilName: row.tehsil?.name ?? null,
+    districtName: row.tehsil?.district?.name ?? null,
     addressLine: row.address_line,
     villageLocation:
       village && village.latitude !== null && village.longitude !== null

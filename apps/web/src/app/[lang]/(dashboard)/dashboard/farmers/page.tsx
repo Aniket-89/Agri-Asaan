@@ -131,7 +131,9 @@ async function FarmerList({
                     <span className="flex items-center gap-1.5">
                       <MapPinIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />
                       {farmer.villageName ??
-                        `${farmer.locality ?? ""} ${farmer.pincode ?? ""}`.trim()}
+                        [farmer.locality, farmer.tehsilName, farmer.districtName]
+                          .filter(Boolean)
+                          .join(", ")}
                     </span>
                     <span className="flex items-center gap-1.5 tabular-nums">
                       <PhoneIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />

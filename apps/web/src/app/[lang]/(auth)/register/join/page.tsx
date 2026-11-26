@@ -63,7 +63,7 @@ async function JoinForm({
     getRequestHostname(),
     context.supabase.from("profiles").select("full_name").eq("id", context.user.id).maybeSingle(),
   ]);
-  const { open, villages } = await getSignupOptions(context.supabase, hostname);
+  const { open, villages, places } = await getSignupOptions(context.supabase, hostname);
 
   if (!open) {
     return (
@@ -91,6 +91,7 @@ async function JoinForm({
       <form action={joinAsFarmerAction} className="space-y-4">
         <FarmerSignupFields
           villages={villages}
+          places={places}
           brandName={branding.name}
           defaultName={profile.data?.full_name ?? ""}
           t={t}
