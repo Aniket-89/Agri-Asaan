@@ -8,6 +8,7 @@ import type {
   RegionAssignment,
   RegionInput,
   RegionPincode,
+  RegionRate,
   VillageAssignment,
   VillageInput,
 } from "./territory.schema";
@@ -44,6 +45,8 @@ export type TerritoryRegion = {
   regionalAdmins: TerritoryPerson[];
   // Pincodes this region serves; a farmer registering with one joins it.
   pincodes: string[];
+  // Spraying rate per acre (ADR 0022); null when not set.
+  ratePerAcre: number | null;
   villages: TerritoryVillage[];
 };
 
@@ -152,6 +155,7 @@ export async function getTerritoryOverview(
       id: region.id,
       name: region.name,
       isActive: region.is_active,
+      ratePerAcre: region.rate_per_acre,
       canManage: canManageRegion(context.role, region.id, assignedRegionIds),
       regionalAdmins: adminAssignments
         .filter((a) => a.region_id === region.id)
@@ -290,6 +294,25 @@ export async function removeRegionPincode(
     return { ok: false, error: "forbidden" };
   }
   const { error, count } = await repository.deleteRegionPincode(
+    context.supabase,
+    context.organizationId,
+    input
+  );
+  if (error) {
+    return settle(error);
+  }
+  return count ? { ok: true } : { ok: false, error: "not_found" };
+}
+
+// Prices are an organization decision: only organization admins set them.
+export async function setRegionRate(
+  context: TerritoryContext,
+  input: RegionRate
+): Promise<TerritoryResult> {
+  if (!canManageRegions(context.role)) {
+    return { ok: false, error: "forbidden" };
+  }
+  const { error, count } = await repository.updateRegionRate(
     context.supabase,
     context.organizationId,
     input

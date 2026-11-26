@@ -15,10 +15,12 @@ import {
   regionalAdminInviteInputSchema,
   regionAssignmentSchema,
   regionPincodeSchema,
+  regionRateSchema,
   regionInputSchema,
   removeMitra,
   removeRegionalAdmin,
   removeRegionPincode,
+  setRegionRate,
   villageAssignmentSchema,
   villageInputSchema,
   type TerritoryContext,
@@ -171,4 +173,8 @@ export async function removeRegionPincodeAction(formData: FormData) {
     ["regionId", "pincode"],
     removeRegionPincode
   );
+}
+
+export async function setRegionRateAction(formData: FormData) {
+  await runTerritoryAction(formData, regionRateSchema, ["regionId", "ratePerAcre"], setRegionRate);
 }

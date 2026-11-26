@@ -78,6 +78,12 @@ values
    'e0000000-0000-4000-8000-000000000001/agriasaan-leaf.png'),
   ('e0000000-0000-4000-8000-000000000002', 'en', 'Asia/Kolkata', 'Greenfield Agri', '#1d4ed8', '#f59e0b', 'Fake demo tenant · Spraying services', null);
 
+-- Payments are simulated (ADR 0022): an @example UPI handle is rejected by
+-- every payment app, so scanning the demo QR can never move real money.
+update public.organization_settings
+set upi_id = 'agriasaan.demo@example', upi_payee_name = 'AgriAsaan (demo)'
+where tenant_id = 'e0000000-0000-4000-8000-000000000001';
+
 insert into public.organization_domains (tenant_id, hostname, is_primary, is_verified)
 values
   ('e0000000-0000-4000-8000-000000000001', 'agri-asaan.vercel.app', true, true),
@@ -107,6 +113,10 @@ values
   ('e1000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'Demo North Region'),
   ('e1000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000001', 'Demo South Region'),
   ('e1000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000002', 'Greenfield Demo Region');
+
+-- Spraying rates per acre (ADR 0022), demo values.
+update public.regions set rate_per_acre = 450 where id = 'e1000000-0000-4000-8000-000000000001';
+update public.regions set rate_per_acre = 500 where id = 'e1000000-0000-4000-8000-000000000002';
 
 -- Pincodes each region serves (ADR 0021): farmers registering with one of
 -- these join the region even when their village is not listed.

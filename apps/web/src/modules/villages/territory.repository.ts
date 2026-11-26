@@ -5,6 +5,7 @@ import type {
   RegionAssignment,
   RegionInput,
   RegionPincode,
+  RegionRate,
   VillageAssignment,
   VillageInput,
 } from "./territory.schema";
@@ -17,7 +18,7 @@ type Client = SupabaseClient<Database>;
 export async function listRegions(supabase: Client, tenantId: string) {
   return supabase
     .from("regions")
-    .select("id, name, is_active")
+    .select("id, name, is_active, rate_per_acre")
     .eq("tenant_id", tenantId)
     .order("name");
 }
@@ -147,4 +148,12 @@ export async function deleteRegionPincode(
     .eq("tenant_id", tenantId)
     .eq("region_id", input.regionId)
     .eq("pincode", input.pincode);
+}
+
+export async function updateRegionRate(supabase: Client, tenantId: string, input: RegionRate) {
+  return supabase
+    .from("regions")
+    .update({ rate_per_acre: input.ratePerAcre }, { count: "exact" })
+    .eq("tenant_id", tenantId)
+    .eq("id", input.regionId);
 }

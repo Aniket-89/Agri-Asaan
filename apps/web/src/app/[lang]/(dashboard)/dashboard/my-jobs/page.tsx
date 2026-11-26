@@ -47,13 +47,17 @@ import {
 } from "@/modules/bookings/components/booking-ui";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
+import { PaymentPanel } from "@/modules/payments/components/payment-panel";
+import { getJobPayment, type JobPayment } from "@/modules/payments/payment.service";
+
+import { recordPaymentAction } from "../bookings/actions";
 import { completeJobAction, startJobAction } from "./actions";
 
 export const instant = false;
 
 const searchSchema = z.object({
   tab: z.enum(PILOT_JOB_TABS).catch("today"),
-  status: z.enum(["started", "completed"]).optional().catch(undefined),
+  status: z.enum(["started", "completed", "paid"]).optional().catch(undefined),
   error: z.enum(BOOKING_ERROR_CODES).optional().catch(undefined),
 });
 
@@ -68,28 +72,49 @@ const mapHref = (latitude: number, longitude: number) =>
 
 const icon = "size-4";
 
-function JobProgress({ job, t, locale }: { job: PilotJob; t: Dictionary; locale: Locale }) {
+function JobProgress({
+  job,
+  payment,
+  t,
+  locale,
+}: {
+  job: PilotJob;
+  payment: JobPayment | null;
+  t: Dictionary;
+  locale: Locale;
+}) {
   if (job.status === "completed" || job.status === "verified") {
     return (
-      <div className="space-y-1.5 rounded-xl bg-leaf-soft p-4 text-sm text-leaf-ink">
-        {job.fields.map((field) => (
-          <p key={field.fieldId}>
-            <span className="font-semibold">{field.fieldName}: </span>
-            {formatSprayed(field.actualAcres ?? 0, field.areaAcres, locale, t.bookings)}
-          </p>
-        ))}
-        {job.actualTotalAcres !== null ? (
-          <p className="pt-1 text-base font-bold">
-            {formatSprayed(
-              job.actualTotalAcres,
-              job.totalAcres,
-              locale,
-              t.bookings,
-              "totalSprayed"
-            )}
-          </p>
+      <div className="space-y-3">
+        <div className="space-y-1.5 rounded-xl bg-leaf-soft p-4 text-sm text-leaf-ink">
+          {job.fields.map((field) => (
+            <p key={field.fieldId}>
+              <span className="font-semibold">{field.fieldName}: </span>
+              {formatSprayed(field.actualAcres ?? 0, field.areaAcres, locale, t.bookings)}
+            </p>
+          ))}
+          {job.actualTotalAcres !== null ? (
+            <p className="pt-1 text-base font-bold">
+              {formatSprayed(
+                job.actualTotalAcres,
+                job.totalAcres,
+                locale,
+                t.bookings,
+                "totalSprayed"
+              )}
+            </p>
+          ) : null}
+          {job.status === "completed" ? <p>{t.jobs.awaitingVerification}</p> : null}
+        </div>
+        {payment ? (
+          <PaymentPanel
+            payment={payment}
+            acres={job.actualTotalAcres}
+            record={{ action: recordPaymentAction, bookingId: job.bookingId, returnTo: "jobs" }}
+            t={t.payments}
+            locale={locale}
+          />
         ) : null}
-        {job.status === "completed" ? <p>{t.jobs.awaitingVerification}</p> : null}
       </div>
     );
   }
@@ -151,7 +176,17 @@ function JobProgress({ job, t, locale }: { job: PilotJob; t: Dictionary; locale:
   );
 }
 
-function JobCard({ job, t, locale }: { job: PilotJob; t: Dictionary; locale: Locale }) {
+function JobCard({
+  job,
+  payment,
+  t,
+  locale,
+}: {
+  job: PilotJob;
+  payment: JobPayment | null;
+  t: Dictionary;
+  locale: Locale;
+}) {
   return (
     <li className="space-y-4 rounded-2xl bg-surface p-4 shadow-soft sm:p-5">
       <div className="flex items-start justify-between gap-3">
@@ -238,7 +273,7 @@ function JobCard({ job, t, locale }: { job: PilotJob; t: Dictionary; locale: Loc
         </details>
       </div>
 
-      <JobProgress job={job} t={t} locale={locale} />
+      <JobProgress job={job} payment={payment} t={t} locale={locale} />
     </li>
   );
 }
@@ -263,6 +298,17 @@ async function MyJobsContent({
   }
   const search = searchSchema.parse(await searchParams);
   const shown = jobs[search.tab];
+  // Payment details (with the QR) for finished jobs on this tab.
+  const payments = new Map(
+    await Promise.all(
+      shown
+        .filter((job) => job.status === "completed" || job.status === "verified")
+        .map(
+          async (job) =>
+            [job.bookingId, await getJobPayment(context.supabase, job.bookingId)] as const
+        )
+    )
+  );
   const empty: Record<PilotJobTab, string> = {
     today: t.jobs.noneToday,
     upcoming: t.jobs.noneUpcoming,
@@ -272,7 +318,11 @@ async function MyJobsContent({
   return (
     <>
       {search.error ? <StatusBanner kind="error" text={t.bookings.errors[search.error]} /> : null}
-      {search.status ? <StatusBanner kind="success" text={t.jobs[search.status]} /> : null}
+      {search.status === "paid" ? (
+        <StatusBanner kind="success" text={t.payments.recorded} />
+      ) : search.status ? (
+        <StatusBanner kind="success" text={t.jobs[search.status]} />
+      ) : null}
       <SegmentedTabs
         label={t.jobs.title}
         items={PILOT_JOB_TABS.map((tab) => ({
@@ -290,7 +340,13 @@ async function MyJobsContent({
       ) : (
         <ul className="space-y-4">
           {shown.map((job) => (
-            <JobCard key={job.bookingId} job={job} t={t} locale={locale} />
+            <JobCard
+              key={job.bookingId}
+              job={job}
+              payment={payments.get(job.bookingId) ?? null}
+              t={t}
+              locale={locale}
+            />
           ))}
         </ul>
       )}

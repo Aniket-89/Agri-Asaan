@@ -35,6 +35,8 @@ const BOOKING_RULE_ERRORS = [
   "invalid_slot",
   "slot_full",
   "no_service_area",
+  "no_amount",
+  "already_paid",
   "slot_passed",
   "pilot_unavailable",
   "drone_unavailable",
@@ -452,6 +454,9 @@ export type PilotJob = {
   actualTotalAcres: number | null;
   // Set while a job sent back by an admin is being corrected.
   sentBackReason: string | null;
+  // Fixed when the job is completed (region rate x acres sprayed); ADR 0022.
+  amountDue: number | null;
+  paidAt: string | null;
   canStart: boolean;
   fields: {
     fieldId: string;
@@ -510,6 +515,8 @@ export async function listMyJobs(
     notes: row.notes,
     actualTotalAcres: row.actual_total_acres,
     sentBackReason: row.sent_back_reason,
+    amountDue: row.amount_due,
+    paidAt: row.paid_at,
     canStart: canStartJob(row.status, row.preferred_date, today),
     // Built by list_my_jobs with jsonb_build_object, so the shape is fixed.
     fields: (row.fields as PilotJobFieldRow[]).map((field) => ({

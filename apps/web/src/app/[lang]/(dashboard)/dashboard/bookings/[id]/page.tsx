@@ -48,12 +48,15 @@ import {
 } from "@/modules/bookings/components/booking-ui";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
-import { assignBookingAction, changeBookingStatusAction } from "../actions";
+import { PaymentPanel } from "@/modules/payments/components/payment-panel";
+import { getJobPayment } from "@/modules/payments/payment.service";
+
+import { assignBookingAction, changeBookingStatusAction, recordPaymentAction } from "../actions";
 
 export const instant = false;
 
 const searchSchema = z.object({
-  status: z.enum(["booked", "updated", "assigned"]).optional().catch(undefined),
+  status: z.enum(["booked", "updated", "assigned", "paid"]).optional().catch(undefined),
   error: z.enum(BOOKING_ERROR_CODES).optional().catch(undefined),
 });
 
@@ -69,12 +72,14 @@ async function BookingDetailContent({
   searchParams,
   t,
   maps,
+  payments,
   locale,
 }: {
   params: PageProps<"/[lang]/dashboard/bookings/[id]">["params"];
   searchParams: PageProps<"/[lang]/dashboard/bookings/[id]">["searchParams"];
   t: Dictionary["bookings"];
   maps: Dictionary["maps"];
+  payments: Dictionary["payments"];
   locale: Locale;
 }) {
   await connection();
@@ -93,7 +98,14 @@ async function BookingDetailContent({
   if (!booking) {
     notFound();
   }
-  const options = booking.canAssign ? await getAssignmentOptions(context, booking.id) : null;
+  const isFinished = booking.status === "completed" || booking.status === "verified";
+  const [options, payment] = await Promise.all([
+    booking.canAssign ? getAssignmentOptions(context, booking.id) : null,
+    isFinished ? getJobPayment(context.supabase, booking.id) : null,
+  ]);
+  // Region managers can record a payment; the database re-checks the region.
+  const canRecordPayment =
+    context.role === "organization_admin" || context.role === "regional_admin";
 
   const backHref = withLocale(
     locale,
@@ -116,6 +128,7 @@ async function BookingDetailContent({
       {search.status === "booked" ? <StatusBanner kind="success" text={t.booked} /> : null}
       {search.status === "updated" ? <StatusBanner kind="success" text={t.updated} /> : null}
       {search.status === "assigned" ? <StatusBanner kind="success" text={t.assigned} /> : null}
+      {search.status === "paid" ? <StatusBanner kind="success" text={payments.recorded} /> : null}
 
       <section className="space-y-4 rounded-2xl bg-surface p-4 shadow-soft sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -213,6 +226,22 @@ async function BookingDetailContent({
           ) : null}
         </div>
       </Panel>
+
+      {payment ? (
+        <Panel id="payment" title={payments.heading}>
+          <PaymentPanel
+            payment={payment}
+            acres={booking.execution.actualTotalAcres}
+            record={
+              canRecordPayment
+                ? { action: recordPaymentAction, bookingId: booking.id, returnTo: "booking" }
+                : undefined
+            }
+            t={payments}
+            locale={locale}
+          />
+        </Panel>
+      ) : null}
 
       {booking.canAssign && options ? (
         <AssignmentSection
@@ -453,6 +482,7 @@ export default async function BookingDetailPage({
           searchParams={searchParams}
           t={t.bookings}
           maps={t.maps}
+          payments={t.payments}
           locale={locale}
         />
       </Suspense>

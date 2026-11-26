@@ -423,3 +423,15 @@ PostGIS is enabled (`20261118180523_enable_postgis.sql`).
 | `bookings.village_id`                   | Now nullable; `create_booking` uses the village's region, else the farmer's region, else refuses with `no_service_area`.                                      |
 | `farmer_registration_open(hostname)`    | anon: whether a site takes farmer sign-ups.                                                                                                                   |
 | `fields` insert/update                  | The farmer's managers, or the farmer's own active login (`is_own_farmer`). Delete stays with managers. At most 50 active fields per farmer (trigger).         |
+
+## Job payments (ADR 0022)
+
+| Column / function                                | Notes                                                                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `regions.rate_per_acre`                          | Spraying rate in rupees per acre; org admins update it (existing region RLS).                                      |
+| `organization_settings.upi_id`, `upi_payee_name` | Where payments go. Demo uses an `@example` handle that no payment app accepts.                                     |
+| `bookings.rate_per_acre`, `amount_due`           | Snapshot fixed by `complete_job`: rate × actual acres. Null when the region has no rate.                           |
+| `bookings.paid_at`, `paid_recorded_by`           | Set together by `record_job_payment`.                                                                              |
+| `record_job_payment(booking)`                    | Assigned pilot or region manager; completed/verified jobs with an amount; once. Hints `no_amount`, `already_paid`. |
+| `get_booking_payment(booking)`                   | Amount, rate, paid state, UPI ID and payee for whoever can see the booking or is its assigned pilot.               |
+| `list_my_jobs`                                   | Adds `amount_due` and `paid_at`.                                                                                   |

@@ -73,3 +73,19 @@ export const regionPincodeSchema = z.object({
 });
 
 export type RegionPincode = z.infer<typeof regionPincodeSchema>;
+
+// A region's spraying rate per acre (ADR 0022). Empty clears it.
+export const regionRateSchema = z.object({
+  regionId: z.uuid(),
+  ratePerAcre: z.preprocess(
+    (value) => (value === "" || value === null ? null : Number(value)),
+    z
+      .number()
+      .positive()
+      .max(100000)
+      .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6)
+      .nullable()
+  ),
+});
+
+export type RegionRate = z.infer<typeof regionRateSchema>;
