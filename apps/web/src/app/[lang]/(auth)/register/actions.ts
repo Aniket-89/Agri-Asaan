@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getRequestHostname } from "@/lib/branding/request-branding";
 import { localizedPath } from "@/lib/i18n/request-locale";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { farmerSignupSchema, listSignupVillages, registerSelfAsFarmer } from "@/modules/farmers";
+import { farmerSignupSchema, getSignupOptions, registerSelfAsFarmer } from "@/modules/farmers";
 
 // The public sign-up is for farmers only (ADR 0018). Staff accounts (mitras,
 // pilots, admins) are created by administrators.
@@ -20,6 +20,9 @@ function formValues(formData: FormData) {
     villageId: formData.get("villageId"),
     fullName: formData.get("fullName"),
     phone: formData.get("phone"),
+    pincode: formData.get("pincode"),
+    locality: formData.get("locality"),
+    addressLine: formData.get("addressLine"),
     consent: formData.get("consent"),
   };
 }
@@ -39,11 +42,12 @@ export async function registerAction(formData: FormData) {
 
   // Check the site and village before creating an account, so a closed site
   // never leaves accounts without an organization.
-  const villages = await listSignupVillages(supabase, hostname);
-  if (villages.length === 0) {
+  const options = await getSignupOptions(supabase, hostname);
+  if (!options.open) {
     redirect(await localizedPath("/register?error=closed"));
   }
-  if (!villages.some((village) => village.id === parsed.data.villageId)) {
+  const { villageId } = parsed.data;
+  if (villageId && !options.villages.some((village) => village.id === villageId)) {
     redirect(await localizedPath("/register?error=invalid_registration"));
   }
 

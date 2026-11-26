@@ -194,10 +194,10 @@ select throws_ok(
 set local "request.jwt.claim.sub" = '84444444-4444-4444-8444-444444444444';
 select is((select count(*)::integer from public.farmers), 1, 'a linked farmer sees only their own record');
 select is((select count(*)::integer from public.fields), 2, 'a linked farmer sees their own fields');
-select throws_ok(
+select lives_ok(
   $$insert into public.fields (tenant_id, farmer_id, name, crop_id, area_acres, latitude, longitude)
     values ('8a000000-0000-4000-8000-00000000000a', '8af10000-0000-4000-8000-000000000001', 'Self-added', '8ac00000-0000-4000-8000-000000000001', 1, 29, 77)$$,
-  '42501', null, 'a linked farmer cannot add fields themselves (mitra/admin flow for the MVP)'
+  'a linked farmer can add fields to their own record (ADR 0021)'
 );
 update public.farmers set full_name = 'Self-renamed' where id = '8af10000-0000-4000-8000-000000000001';
 select is(

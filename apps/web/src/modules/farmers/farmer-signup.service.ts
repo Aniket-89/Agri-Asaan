@@ -13,26 +13,32 @@ export type FarmerSignupError = "closed" | "invalid" | "already_member";
 
 export type FarmerSignupResult = { ok: true } | { ok: false; error: FarmerSignupError };
 
-// Villages offered on the sign-up form. Empty when the site does not accept
-// farmer sign-ups, which is how pages decide whether to show the form.
-export async function listSignupVillages(
+export type SignupOptions = { open: boolean; villages: SignupVillage[] };
+
+// Whether the site takes farmer sign-ups, and the villages a farmer may pick
+// (optional: farmers whose village is not listed register by address).
+export async function getSignupOptions(
   supabase: SupabaseClient<Database>,
   hostname: string | null
-): Promise<SignupVillage[]> {
+): Promise<SignupOptions> {
   if (!hostname) {
-    return [];
+    return { open: false, villages: [] };
   }
-  const { data, error } = await supabase.rpc("get_farmer_registration_villages", {
-    p_hostname: hostname,
-  });
-  if (error) {
-    throw new Error("Unable to load registration villages.");
+  const [openResult, villagesResult] = await Promise.all([
+    supabase.rpc("farmer_registration_open", { p_hostname: hostname }),
+    supabase.rpc("get_farmer_registration_villages", { p_hostname: hostname }),
+  ]);
+  if (openResult.error || villagesResult.error) {
+    throw new Error("Unable to load registration options.");
   }
-  return (data ?? []).map((row) => ({
-    id: row.village_id,
-    name: row.village_name,
-    regionName: row.region_name,
-  }));
+  return {
+    open: openResult.data === true,
+    villages: (villagesResult.data ?? []).map((row) => ({
+      id: row.village_id,
+      name: row.village_name,
+      regionName: row.region_name,
+    })),
+  };
 }
 
 function toSignupError(error: PostgrestError): FarmerSignupError {
@@ -60,9 +66,12 @@ export async function registerSelfAsFarmer(
   }
   const { error } = await supabase.rpc("register_self_as_farmer", {
     p_hostname: hostname,
-    p_village_id: input.villageId,
     p_full_name: input.fullName,
     p_phone: input.phone,
+    p_pincode: input.pincode,
+    p_locality: input.locality,
+    p_address_line: input.addressLine,
+    p_village_id: input.villageId,
   });
   return error ? { ok: false, error: toSignupError(error) } : { ok: true };
 }

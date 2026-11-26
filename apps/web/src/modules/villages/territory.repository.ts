@@ -4,6 +4,7 @@ import type { Database } from "@/types/database.types";
 import type {
   RegionAssignment,
   RegionInput,
+  RegionPincode,
   VillageAssignment,
   VillageInput,
 } from "./territory.schema";
@@ -115,4 +116,35 @@ export async function deleteMitraAssignment(
     .eq("tenant_id", tenantId)
     .eq("village_id", input.villageId)
     .eq("user_id", input.userId);
+}
+
+export async function listRegionPincodes(supabase: Client, tenantId: string) {
+  return supabase
+    .from("region_pincodes")
+    .select("region_id, pincode")
+    .eq("tenant_id", tenantId)
+    .order("pincode");
+}
+
+export async function insertRegionPincode(
+  supabase: Client,
+  tenantId: string,
+  input: RegionPincode
+) {
+  return supabase
+    .from("region_pincodes")
+    .insert({ tenant_id: tenantId, region_id: input.regionId, pincode: input.pincode });
+}
+
+export async function deleteRegionPincode(
+  supabase: Client,
+  tenantId: string,
+  input: RegionPincode
+) {
+  return supabase
+    .from("region_pincodes")
+    .delete({ count: "exact" })
+    .eq("tenant_id", tenantId)
+    .eq("region_id", input.regionId)
+    .eq("pincode", input.pincode);
 }

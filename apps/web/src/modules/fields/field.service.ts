@@ -73,8 +73,10 @@ export async function listFarmerFields(
   }));
 }
 
+// Staff add fields for farmers they manage; a farmer adds to their own record
+// (ADR 0021). RLS enforces both.
 export async function addField(context: FieldContext, input: FieldInput): Promise<FieldResult> {
-  if (!canWorkWithFarmers(context.role)) {
+  if (!canWorkWithFarmers(context.role) && context.role !== "farmer") {
     return { ok: false, error: "forbidden" };
   }
   const { error } = await repository.insertField(context.supabase, context.organizationId, input);
@@ -154,7 +156,7 @@ export async function listRegionMapPins(
       boundary: toPolygon(field.boundary_geojson),
       tone: fieldTone(statuses.get(field.id) ?? []),
       farmerName: field.farmer?.full_name ?? "",
-      villageName: field.farmer?.village?.name ?? "",
+      villageName: field.farmer?.village?.name ?? field.farmer?.locality ?? "",
       areaAcres: field.area_acres,
     })),
     truncated: fields.data.length >= repository.REGION_MAP_FIELD_LIMIT,

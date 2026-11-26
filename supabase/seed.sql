@@ -108,6 +108,14 @@ values
   ('e1000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000001', 'Demo South Region'),
   ('e1000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000002', 'Greenfield Demo Region');
 
+-- Pincodes each region serves (ADR 0021): farmers registering with one of
+-- these join the region even when their village is not listed.
+insert into public.region_pincodes (tenant_id, region_id, pincode)
+values
+  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', '281001'),
+  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', '281004'),
+  ('e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000002', '302001');
+
 insert into public.villages (id, tenant_id, region_id, name, lgd_code, latitude, longitude)
 values
   ('e2000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', 'Demo Village Alpha', '900001', 29.000000, 77.000000),

@@ -16,7 +16,7 @@ import { Badge, Button, buttonClass, EmptyState, Page, PageHeader } from "@/comp
 
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
-import { farmerSearchSchema, listFarmers } from "@/modules/farmers";
+import { canPlaceFarmers, farmerSearchSchema, listFarmers } from "@/modules/farmers";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
 export const instant = false;
@@ -45,10 +45,13 @@ async function FarmerList({
 
   const parsed = farmerSearchSchema.safeParse(await searchParams);
   const query = parsed.success ? parsed.data.q : undefined;
-  const farmers = await listFarmers(context, query || undefined);
+  const canPlace = canPlaceFarmers(context.role);
+  const unplacedOnly = canPlace && parsed.success && parsed.data.show === "unplaced";
+  const farmers = await listFarmers(context, query || undefined, unplacedOnly);
   if (!farmers) {
     notFound();
   }
+  const listPath = withLocale(locale, "/dashboard/farmers");
 
   return (
     <>
@@ -68,8 +71,28 @@ async function FarmerList({
             className="min-h-12 w-full rounded-xl bg-surface py-2.5 pr-4 pl-11 text-base text-ink shadow-soft placeholder:text-ink-faint focus:ring-3 focus:ring-leaf/70 focus:outline-none"
           />
         </label>
+        {unplacedOnly ? <input type="hidden" name="show" value="unplaced" /> : null}
         <Button variant="secondary">{t.searchSubmit}</Button>
       </form>
+
+      {canPlace ? (
+        <nav aria-label={t.filterLabel} className="flex flex-wrap gap-2">
+          <a
+            href={listPath}
+            aria-current={unplacedOnly ? undefined : "page"}
+            className={buttonClass({ variant: unplacedOnly ? "quiet" : "secondary", size: "sm" })}
+          >
+            {t.filterAll}
+          </a>
+          <a
+            href={`${listPath}?show=unplaced`}
+            aria-current={unplacedOnly ? "page" : undefined}
+            className={buttonClass({ variant: unplacedOnly ? "secondary" : "quiet", size: "sm" })}
+          >
+            {t.filterUnplaced}
+          </a>
+        </nav>
+      ) : null}
 
       {farmers.length === FARMER_LIST_LIMIT ? (
         <p className="text-sm text-ink-muted">
@@ -100,11 +123,15 @@ async function FarmerList({
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="truncate font-semibold text-ink">{farmer.fullName}</span>
                     {farmer.isActive ? null : <Badge tone="neutral">{t.inactive}</Badge>}
+                    {farmer.villageName ? null : (
+                      <Badge tone="neutral">{farmer.hasRegion ? t.notPlaced : t.outsideArea}</Badge>
+                    )}
                   </span>
                   <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
                     <span className="flex items-center gap-1.5">
                       <MapPinIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />
-                      {farmer.villageName}
+                      {farmer.villageName ??
+                        `${farmer.locality ?? ""} ${farmer.pincode ?? ""}`.trim()}
                     </span>
                     <span className="flex items-center gap-1.5 tabular-nums">
                       <PhoneIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />

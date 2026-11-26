@@ -36,6 +36,9 @@ function farmerForm(overrides: Record<string, string | null> = {}) {
     fullName: "Fake Farmer",
     phone: "+91 98765 00001",
     villageId: VILLAGE_ID,
+    pincode: "281001",
+    locality: "Fake Town",
+    addressLine: "Near the fake well",
     consent: "on",
     email: "fake-farmer@example.test",
     password: "strong-password",
@@ -50,14 +53,19 @@ function farmerForm(overrides: Record<string, string | null> = {}) {
 
 // RPC results by function name; register_self_as_farmer succeeds by default.
 function mockRpc({
+  open = true,
   villages = [{ village_id: VILLAGE_ID, village_name: "Demo Village", region_name: "North" }],
   registerError = null as { code: string } | null,
 } = {}) {
-  mocks.rpc.mockImplementation(async (fn: string) =>
-    fn === "get_farmer_registration_villages"
-      ? { data: villages, error: null }
-      : { data: registerError ? null : "farmer-id", error: registerError }
-  );
+  mocks.rpc.mockImplementation(async (fn: string) => {
+    if (fn === "farmer_registration_open") {
+      return { data: open, error: null };
+    }
+    if (fn === "get_farmer_registration_villages") {
+      return { data: villages, error: null };
+    }
+    return { data: registerError ? null : "farmer-id", error: registerError };
+  });
 }
 
 beforeEach(() => {
@@ -82,7 +90,7 @@ describe("registerAction", () => {
   });
 
   it("creates no account when the site does not take farmer sign-ups", async () => {
-    mockRpc({ villages: [] });
+    mockRpc({ open: false, villages: [] });
     await expect(registerAction(farmerForm())).rejects.toThrow(
       "redirect:/en/register?error=closed"
     );
@@ -130,10 +138,38 @@ describe("registerAction", () => {
 
     expect(mocks.rpc).toHaveBeenCalledWith("register_self_as_farmer", {
       p_hostname: "agri-asaan.vercel.app",
-      p_village_id: VILLAGE_ID,
       p_full_name: "Fake Farmer",
       p_phone: "9876500001",
+      p_pincode: "281001",
+      p_locality: "Fake Town",
+      p_address_line: "Near the fake well",
+      p_village_id: VILLAGE_ID,
     });
+  });
+
+  it("registers by address when the village is not listed", async () => {
+    mocks.signUp.mockResolvedValue({
+      data: { user: { id: "user-id" }, session: { access_token: "session" } },
+      error: null,
+    });
+    mockRpc({ villages: [] });
+    await expect(registerAction(farmerForm({ villageId: "" }))).rejects.toThrow(
+      "redirect:/en/dashboard"
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "register_self_as_farmer",
+      expect.objectContaining({ p_pincode: "281001", p_village_id: undefined })
+    );
+  });
+
+  it("requires a valid pincode and address", async () => {
+    await expect(registerAction(farmerForm({ pincode: "0123" }))).rejects.toThrow(
+      "redirect:/en/register?error=invalid_registration"
+    );
+    await expect(registerAction(farmerForm({ addressLine: "" }))).rejects.toThrow(
+      "redirect:/en/register?error=invalid_registration"
+    );
+    expect(mocks.signUp).not.toHaveBeenCalled();
   });
 
   it("sends the person to the join page when joining fails after sign-up", async () => {
@@ -171,7 +207,7 @@ describe("joinAsFarmerAction", () => {
   });
 
   it("shows a validation error for missing details", async () => {
-    await expect(joinAsFarmerAction(farmerForm({ villageId: null }))).rejects.toThrow(
+    await expect(joinAsFarmerAction(farmerForm({ locality: null }))).rejects.toThrow(
       "redirect:/en/register/join?error=invalid"
     );
   });

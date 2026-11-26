@@ -25,12 +25,30 @@ export const farmerInputSchema = z.object({
   consent: z.literal("on"),
 });
 
-// A farmer registering themselves (ADR 0018); the consent is their own.
+// Indian postal code: six digits, not starting with 0.
+export const pincodeSchema = z
+  .string()
+  .trim()
+  .regex(/^[1-9][0-9]{5}$/);
+
+// A farmer registering themselves (ADR 0018, 0021); the consent is their own.
+// The address is always required; a listed village is optional.
 export const farmerSignupSchema = z.object({
-  villageId: z.uuid(),
+  villageId: z.preprocess(
+    (value) => (value === "" || value === null ? undefined : value),
+    z.uuid().optional()
+  ),
   fullName: z.string().trim().min(2).max(120),
   phone: indianMobileSchema,
+  pincode: pincodeSchema,
+  locality: z.string().trim().min(2).max(120),
+  addressLine: z.string().trim().min(3).max(300),
   consent: z.literal("on"),
+});
+
+export const farmerPlacementSchema = z.object({
+  farmerId: z.uuid(),
+  villageId: z.uuid(),
 });
 
 export const farmerSearchSchema = z.object({
@@ -38,7 +56,10 @@ export const farmerSearchSchema = z.object({
     (value) => (typeof value === "string" ? value.trim() : undefined),
     z.string().max(60).optional()
   ),
+  // Admins can list only farmers who still need a village.
+  show: z.enum(["unplaced"]).optional().catch(undefined),
 });
 
 export type FarmerInput = z.infer<typeof farmerInputSchema>;
 export type FarmerSignupInput = z.infer<typeof farmerSignupSchema>;
+export type FarmerPlacementInput = z.infer<typeof farmerPlacementSchema>;

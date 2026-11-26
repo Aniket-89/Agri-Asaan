@@ -1,4 +1,5 @@
 import {
+  EnvelopeSimpleOpenIcon,
   HouseLineIcon,
   MapPinAreaIcon,
   ShieldCheckIcon,
@@ -26,6 +27,8 @@ export type TerritoryActions = {
   removeRegionalAdmin: FormAction;
   assignMitra: FormAction;
   removeMitra: FormAction;
+  addPincode: FormAction;
+  removePincode: FormAction;
 };
 
 type Props = {
@@ -180,6 +183,64 @@ export function TerritoryRegionCard({ region, overview, actions, t }: Props) {
             placeholder={t.chooseRegionalAdmin}
             submit={t.assign}
           />
+        ) : null}
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <EnvelopeSimpleOpenIcon weight="duotone" className="size-5 text-brand" aria-hidden />
+          {t.pincodes}
+        </h3>
+        <p className="text-sm text-ink-muted">
+          {region.pincodes.length === 0 ? t.noPincodes : t.pincodesHint}
+        </p>
+        {region.pincodes.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {region.pincodes.map((pincode) => (
+              <li
+                key={pincode}
+                className="flex min-h-10 items-center gap-1 rounded-full bg-canvas py-1 pr-1 pl-3 text-sm font-semibold text-ink tabular-nums"
+              >
+                {pincode}
+                {overview.canManageRegions ? (
+                  <form action={actions.removePincode}>
+                    <input type="hidden" name="regionId" value={region.id} />
+                    <input type="hidden" name="pincode" value={pincode} />
+                    <button
+                      type="submit"
+                      aria-label={`${t.remove}: ${pincode}`}
+                      title={t.remove}
+                      className={`${buttonClass({ variant: "quiet", size: "sm" })} size-8 px-0 text-ink-muted hover:bg-clay-soft hover:text-clay`}
+                    >
+                      <XIcon weight="bold" className="size-4" aria-hidden />
+                    </button>
+                  </form>
+                ) : (
+                  <span className="pr-2" />
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {overview.canManageRegions ? (
+          <form action={actions.addPincode} className="flex gap-2">
+            <input type="hidden" name="regionId" value={region.id} />
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">{t.pincode}</span>
+              <input
+                name="pincode"
+                required
+                inputMode="numeric"
+                pattern="[1-9][0-9]{5}"
+                maxLength={6}
+                placeholder={t.pincode}
+                className={controlClass}
+              />
+            </label>
+            <Button variant="secondary" className="shrink-0">
+              {t.addPincode}
+            </Button>
+          </form>
         ) : null}
       </div>
 

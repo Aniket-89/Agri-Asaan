@@ -4,7 +4,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { localizedPath } from "@/lib/i18n/request-locale";
-import { farmerInputSchema, registerFarmer } from "@/modules/farmers";
+import {
+  farmerInputSchema,
+  farmerPlacementSchema,
+  placeFarmer,
+  registerFarmer,
+} from "@/modules/farmers";
 import { addField, fieldInputSchema } from "@/modules/fields";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
@@ -61,6 +66,28 @@ export async function addFieldAction(formData: FormData) {
   redirect(
     await localizedPath(
       result.ok ? `${farmerPath}?status=saved` : `${farmerPath}?error=${result.error}`
+    )
+  );
+}
+
+export async function placeFarmerAction(formData: FormData) {
+  const context = await getActiveMembershipContext();
+  if (!context) {
+    redirect(await localizedPath("/login"));
+  }
+
+  const values = formValues(formData, ["farmerId", "villageId"]);
+  const farmerId = z.uuid().safeParse(values.farmerId);
+  const farmerPath = farmerId.success ? `${FARMERS_PATH}/${farmerId.data}` : FARMERS_PATH;
+  const parsed = farmerPlacementSchema.safeParse(values);
+  if (!parsed.success) {
+    redirect(await localizedPath(`${farmerPath}?error=invalid`));
+  }
+
+  const result = await placeFarmer(context, parsed.data);
+  redirect(
+    await localizedPath(
+      result.ok ? `${farmerPath}?status=placed` : `${farmerPath}?error=${result.error}`
     )
   );
 }

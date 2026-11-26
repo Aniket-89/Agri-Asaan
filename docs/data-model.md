@@ -410,3 +410,16 @@ PostGIS is enabled (`20261118180523_enable_postgis.sql`).
 
 `apps/web/src/types/database.types.ts` is generated. After any migration, run
 `npm run db:types` and commit the result. CI fails if it is out of date.
+
+## Farmer addresses and region pincodes (ADR 0021)
+
+| Table / function                        | Notes                                                                                                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `region_pincodes`                       | Tenant-owned: `(tenant_id, pincode)` primary key, region FK. Read by region managers; insert/delete by org admins. Inserting assigns waiting farmers.         |
+| `farmers.village_id`                    | Now nullable. Check `farmers_location_known`: a village, or pincode + locality + address line.                                                                |
+| `farmers.region_id`                     | Set from the village (trigger) or from the pincode at self-registration. Never written by clients.                                                            |
+| `farmers.pincode/locality/address_line` | The farmer's address; required for self-registration.                                                                                                         |
+| `can_manage_farmer_location(...)`       | Village managers and mitras when placed; region managers when only a region is known; org admins when neither. Used by farmer policies and `can_view_farmer`. |
+| `bookings.village_id`                   | Now nullable; `create_booking` uses the village's region, else the farmer's region, else refuses with `no_service_area`.                                      |
+| `farmer_registration_open(hostname)`    | anon: whether a site takes farmer sign-ups.                                                                                                                   |
+| `fields` insert/update                  | The farmer's managers, or the farmer's own active login (`is_own_farmer`). Delete stays with managers. At most 50 active fields per farmer (trigger).         |
