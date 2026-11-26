@@ -11,7 +11,7 @@ import { Button, buttonClass } from "@/components/ui";
 import { getRequestBranding, getRequestHostname } from "@/lib/branding/request-branding";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
-import { listSignupVillages } from "@/modules/farmers";
+import { getSignupOptions } from "@/modules/farmers";
 import { FarmerSignupFields } from "@/modules/farmers/components/farmer-signup-fields";
 import { resolveActiveOrganization } from "@/modules/organizations";
 
@@ -63,9 +63,9 @@ async function JoinForm({
     getRequestHostname(),
     context.supabase.from("profiles").select("full_name").eq("id", context.user.id).maybeSingle(),
   ]);
-  const villages = await listSignupVillages(context.supabase, hostname);
+  const { open, villages } = await getSignupOptions(context.supabase, hostname);
 
-  if (villages.length === 0) {
+  if (!open) {
     return (
       <>
         <IconTile>

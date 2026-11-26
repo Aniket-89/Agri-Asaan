@@ -37,7 +37,7 @@ export async function callSetBookingStatus(supabase: Client, input: BookingStatu
 }
 
 const LIST_COLUMNS =
-  "id, status, preferred_date, total_acres, created_at, farmer:farmers!bookings_farmer_same_tenant(full_name), village:villages!bookings_village_same_tenant(name)";
+  "id, status, preferred_date, total_acres, created_at, farmer:farmers!bookings_farmer_same_tenant(full_name, locality, pincode), village:villages!bookings_village_same_tenant(name)";
 
 export async function listBookings(supabase: Client, tenantId: string, status?: BookingStatus) {
   let request = supabase
@@ -76,7 +76,7 @@ export async function getBooking(supabase: Client, tenantId: string, bookingId: 
   return supabase
     .from("bookings")
     .select(
-      "id, status, preferred_date, notes, total_acres, region_id, requested_by, created_at, started_at, completed_at, actual_total_acres, completion_notes, verified_at, farmer:farmers!bookings_farmer_same_tenant(id, full_name, phone, profile_id), village:villages!bookings_village_same_tenant(name), slot:spray_slots!bookings_slot_same_tenant(name_en, name_hi, start_time, end_time)"
+      "id, status, preferred_date, notes, total_acres, region_id, requested_by, created_at, started_at, completed_at, actual_total_acres, completion_notes, verified_at, farmer:farmers!bookings_farmer_same_tenant(id, full_name, phone, profile_id, locality, pincode), village:villages!bookings_village_same_tenant(name), slot:spray_slots!bookings_slot_same_tenant(name_en, name_hi, start_time, end_time)"
     )
     .eq("tenant_id", tenantId)
     .eq("id", bookingId)
@@ -116,7 +116,7 @@ export async function listOwnRegionIds(supabase: Client, tenantId: string, userI
 export async function getOwnFarmerRecord(supabase: Client, tenantId: string, userId: string) {
   return supabase
     .from("farmers")
-    .select("id")
+    .select("id, village_id, region_id")
     .eq("tenant_id", tenantId)
     .eq("profile_id", userId)
     .maybeSingle();

@@ -12,7 +12,7 @@ import { getRequestBranding, getRequestHostname } from "@/lib/branding/request-b
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { listSignupVillages } from "@/modules/farmers";
+import { getSignupOptions } from "@/modules/farmers";
 import { FarmerSignupFields } from "@/modules/farmers/components/farmer-signup-fields";
 
 import { registerAction } from "./actions";
@@ -41,9 +41,9 @@ async function RegisterForm({
     createSupabaseServerClient(),
     getRequestHostname(),
   ]);
-  const villages = await listSignupVillages(supabase, hostname);
+  const { open, villages } = await getSignupOptions(supabase, hostname);
 
-  if (villages.length === 0) {
+  if (!open) {
     return (
       <>
         <h1 className={headingClass}>{t.closedTitle}</h1>

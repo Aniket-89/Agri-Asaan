@@ -52,17 +52,17 @@ export async function listOwnRegionIds(supabase: Client, tenantId: string, userI
     .eq("user_id", userId);
 }
 
-// Active fields of farmers whose village is in the region. RLS still decides
-// which rows the caller may read.
+// Active fields of farmers in the region (placed or not yet placed in a
+// village). RLS still decides which rows the caller may read.
 export async function listRegionFields(supabase: Client, tenantId: string, regionId: string) {
   return supabase
     .from("fields")
     .select(
-      "id, name, area_acres, latitude, longitude, boundary_geojson, farmer:farmers!fields_farmer_same_tenant!inner(full_name, village:villages!farmers_village_same_tenant!inner(name, region_id))"
+      "id, name, area_acres, latitude, longitude, boundary_geojson, farmer:farmers!fields_farmer_same_tenant!inner(full_name, region_id, locality, village:villages!farmers_village_same_tenant(name))"
     )
     .eq("tenant_id", tenantId)
     .eq("is_active", true)
-    .eq("farmer.village.region_id", regionId)
+    .eq("farmer.region_id", regionId)
     .order("name")
     .limit(REGION_MAP_FIELD_LIMIT);
 }

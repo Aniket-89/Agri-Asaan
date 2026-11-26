@@ -72,3 +72,5 @@ created by administrators.
   other's names (ADR 0004). Farmers now see only their own name and the
   staff who acted on, or are assigned to, their own bookings
   (`profiles_share_organization`). Staff visibility is unchanged.
+- **Superseded in part by ADR 0021:** the village is now optional; farmers
+  register with an address and the pincode decides the region.

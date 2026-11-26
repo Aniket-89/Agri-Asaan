@@ -10,13 +10,10 @@ import {
   MapPinIcon,
   PhoneIcon,
   PlantIcon,
-  PlusIcon,
 } from "@phosphor-icons/react/dist/ssr";
 
 import { FieldMap } from "@/components/maps/field-map";
-import { PinPicker } from "@/components/maps/pin-picker";
 import { StatusBanner } from "@/components/shared/status-banner";
-import { UseLocationButton } from "@/components/shared/use-location-button";
 import {
   BackLink,
   Badge,
@@ -37,17 +34,18 @@ import {
   listOpenBookedFieldIds,
 } from "@/modules/bookings";
 import { BookingForm, BookingList } from "@/modules/bookings/components/booking-ui";
-import { getFarmer } from "@/modules/farmers";
+import { getFarmer, listPlacementVillages } from "@/modules/farmers";
 import { listCropOptions, listFarmerFields } from "@/modules/fields";
+import { AddFieldForm } from "@/modules/fields/components/add-field-form";
 import { getActiveMembershipContext } from "@/modules/organizations";
 
 import { createBookingAction } from "../../bookings/actions";
-import { addFieldAction } from "../actions";
+import { addFieldAction, placeFarmerAction } from "../actions";
 
 export const instant = false;
 
 const searchSchema = z.object({
-  status: z.enum(["saved"]).optional().catch(undefined),
+  status: z.enum(["saved", "placed"]).optional().catch(undefined),
   error: z.enum(["forbidden", "duplicate", "invalid", "not_found"]).optional().catch(undefined),
   bookingError: z.enum(BOOKING_ERROR_CODES).optional().catch(undefined),
   slotDate: z.iso.date().optional().catch(undefined),
@@ -56,6 +54,42 @@ const searchSchema = z.object({
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getDictionary();
   return { title: t.farmers.title };
+}
+
+// A regional admin (or organization admin) puts a farmer who registered by
+// address into a village (ADR 0021). The database re-checks both scopes.
+function PlaceFarmerForm({
+  farmerId,
+  villages,
+  t,
+}: {
+  farmerId: string;
+  villages: { id: string; name: string }[];
+  t: Dictionary["farmers"];
+}) {
+  if (villages.length === 0) {
+    return <p className="text-sm text-ink-muted">{t.waitingForPlacement}</p>;
+  }
+  return (
+    <form action={placeFarmerAction} className="space-y-2 rounded-xl bg-canvas p-4">
+      <input type="hidden" name="farmerId" value={farmerId} />
+      <Field label={t.placeInVillage} hint={t.placeHint}>
+        <select name="villageId" required defaultValue="" className={controlOnTintClass}>
+          <option value="" disabled>
+            {t.chooseVillage}
+          </option>
+          {villages.map((village) => (
+            <option key={village.id} value={village.id}>
+              {village.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Button variant="secondary" block>
+        {t.placeSubmit}
+      </Button>
+    </form>
+  );
 }
 
 async function FarmerDetailContent({
@@ -85,12 +119,13 @@ async function FarmerDetailContent({
     notFound();
   }
 
-  const [fields, crops, search, bookings, bookedFieldIds] = await Promise.all([
+  const [fields, crops, search, bookings, bookedFieldIds, placementVillages] = await Promise.all([
     listFarmerFields(context, farmer.id, locale),
     listCropOptions(context, locale),
     searchParams.then((value) => searchSchema.parse(value)),
     listFarmerBookings(context, farmer.id),
     listOpenBookedFieldIds(context, farmer.id),
+    listPlacementVillages(context, farmer),
   ]);
   const dateWindow = bookingDateWindow(new Date());
   const selectedDate =
@@ -123,10 +158,16 @@ async function FarmerDetailContent({
             <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold tracking-tight text-ink">
               {farmer.fullName}
               {farmer.isActive ? null : <Badge tone="neutral">{t.farmers.inactive}</Badge>}
+              {farmer.villageName ? null : (
+                <Badge tone="neutral">
+                  {farmer.hasRegion ? t.farmers.notPlaced : t.farmers.outsideArea}
+                </Badge>
+              )}
             </h1>
             <p className="mt-0.5 flex items-center gap-1.5 text-ink-muted">
               <MapPinIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />
-              {farmer.villageName}
+              {farmer.villageName ?? farmer.locality}
+              {farmer.regionName ? `, ${farmer.regionName}` : null}
             </p>
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-muted">
               <CalendarCheckIcon weight="fill" className="size-4 text-ink-faint" aria-hidden />
@@ -140,10 +181,22 @@ async function FarmerDetailContent({
           <PhoneIcon weight="fill" className="size-5 text-brand" aria-hidden />
           <span className="tabular-nums">{farmer.phone}</span>
         </a>
+        {farmer.addressLine ? (
+          <div className="rounded-xl bg-canvas px-4 py-3 text-sm">
+            <p className="font-semibold text-ink">{t.farmers.address}</p>
+            <p className="text-ink-muted">
+              {[farmer.addressLine, farmer.locality, farmer.pincode].filter(Boolean).join(", ")}
+            </p>
+          </div>
+        ) : null}
+        {farmer.villageId ? null : (
+          <PlaceFarmerForm farmerId={farmer.id} villages={placementVillages} t={t.farmers} />
+        )}
       </section>
 
       {search.error ? <StatusBanner kind="error" text={t.farmers.errors[search.error]} /> : null}
       {search.status === "saved" ? <StatusBanner kind="success" text={t.fields.saved} /> : null}
+      {search.status === "placed" ? <StatusBanner kind="success" text={t.farmers.placed} /> : null}
 
       <Panel
         id="fields"
@@ -178,90 +231,14 @@ async function FarmerDetailContent({
             ))}
           </ul>
 
-          {/* Collapsed by default: adding a field is occasional, the list is the main content. */}
-          <details className="group rounded-xl bg-canvas" open={fields.length === 0}>
-            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 font-semibold text-brand [&::-webkit-details-marker]:hidden">
-              <PlusIcon weight="bold" className="size-5" aria-hidden />
-              {t.fields.add}
-            </summary>
-            <form action={addFieldAction} className="grid gap-4 p-4 pt-1 sm:grid-cols-2">
-              <input type="hidden" name="farmerId" value={farmer.id} />
-              <Field label={t.fields.name} className="sm:col-span-2">
-                <input name="name" required maxLength={120} className={controlOnTintClass} />
-              </Field>
-              <Field label={t.fields.crop}>
-                <select name="cropId" required defaultValue="" className={controlOnTintClass}>
-                  <option value="" disabled>
-                    {t.fields.chooseCrop}
-                  </option>
-                  {crops.map((crop) => (
-                    <option key={crop.id} value={crop.id}>
-                      {crop.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label={t.fields.area}>
-                <input
-                  name="areaAcres"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.01"
-                  min="0.01"
-                  max="10000"
-                  required
-                  className={controlOnTintClass}
-                />
-              </Field>
-              <div className="sm:col-span-2">
-                <PinPicker
-                  latitudeName="latitude"
-                  longitudeName="longitude"
-                  center={farmer.villageLocation}
-                  label={t.maps.picker}
-                  labels={{ hint: t.maps.pickHint, loading: t.maps.loading, failed: t.maps.failed }}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <UseLocationButton
-                  latitudeName="latitude"
-                  longitudeName="longitude"
-                  labels={{
-                    idle: t.fields.useMyLocation,
-                    locating: t.fields.locating,
-                    unavailable: t.fields.locationUnavailable,
-                  }}
-                />
-              </div>
-              <Field label={t.fields.latitude}>
-                <input
-                  name="latitude"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.000001"
-                  min="-90"
-                  max="90"
-                  required
-                  className={controlOnTintClass}
-                />
-              </Field>
-              <Field label={t.fields.longitude}>
-                <input
-                  name="longitude"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.000001"
-                  min="-180"
-                  max="180"
-                  required
-                  className={controlOnTintClass}
-                />
-              </Field>
-              <Button className="sm:col-span-2" block>
-                {t.fields.submit}
-              </Button>
-            </form>
-          </details>
+          <AddFieldForm
+            action={addFieldAction}
+            farmerId={farmer.id}
+            crops={crops}
+            center={farmer.villageLocation}
+            open={fields.length === 0}
+            t={t}
+          />
         </div>
       </Panel>
 

@@ -24,6 +24,7 @@ import { getTerritoryOverview, type TerritoryOverview } from "@/modules/villages
 import { TerritoryRegionCard } from "@/modules/villages/components/territory-region-card";
 
 import {
+  addRegionPincodeAction,
   assignMitraAction,
   assignRegionalAdminAction,
   createRegionAction,
@@ -32,6 +33,7 @@ import {
   inviteRegionalAdminAction,
   removeMitraAction,
   removeRegionalAdminAction,
+  removeRegionPincodeAction,
 } from "./actions";
 
 export const instant = false;
@@ -284,6 +286,8 @@ async function TerritoryContent({
             removeRegionalAdmin: removeRegionalAdminAction,
             assignMitra: assignMitraAction,
             removeMitra: removeMitraAction,
+            addPincode: addRegionPincodeAction,
+            removePincode: removeRegionPincodeAction,
           }}
         />
       ))}

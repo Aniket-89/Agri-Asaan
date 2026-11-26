@@ -11,13 +11,24 @@ const FARMER_LIST_LIMIT = 50;
 // All queries run with the caller's session; RLS limits results to the
 // farmers the caller may see.
 
-export async function listFarmers(supabase: Client, tenantId: string, query?: string) {
+export async function listFarmers(
+  supabase: Client,
+  tenantId: string,
+  query?: string,
+  unplacedOnly = false
+) {
   let request = supabase
     .from("farmers")
-    .select("id, full_name, phone, is_active, village:villages!farmers_village_same_tenant(name)")
+    .select(
+      "id, full_name, phone, is_active, region_id, locality, pincode, village:villages!farmers_village_same_tenant(name)"
+    )
     .eq("tenant_id", tenantId)
     .order("full_name")
     .limit(FARMER_LIST_LIMIT);
+
+  if (unplacedOnly) {
+    request = request.is("village_id", null);
+  }
 
   if (query) {
     // Three or more digits (spaces, "+" and "-" ignored) search the phone
@@ -35,7 +46,7 @@ export async function getFarmer(supabase: Client, tenantId: string, farmerId: st
   return supabase
     .from("farmers")
     .select(
-      "id, full_name, phone, is_active, created_at, village:villages!farmers_village_same_tenant(id, name, latitude, longitude)"
+      "id, full_name, phone, is_active, created_at, region_id, pincode, locality, address_line, region:regions!farmers_region_same_tenant(name), village:villages!farmers_village_same_tenant(id, name, latitude, longitude)"
     )
     .eq("tenant_id", tenantId)
     .eq("id", farmerId)
@@ -77,4 +88,20 @@ export async function listOwnVillageIds(supabase: Client, tenantId: string, user
     .select("village_id")
     .eq("tenant_id", tenantId)
     .eq("user_id", userId);
+}
+
+// Places a farmer who has no village yet. RLS checks the caller may manage
+// the farmer now and in the chosen village.
+export async function setFarmerVillage(
+  supabase: Client,
+  tenantId: string,
+  farmerId: string,
+  villageId: string
+) {
+  return supabase
+    .from("farmers")
+    .update({ village_id: villageId }, { count: "exact" })
+    .eq("tenant_id", tenantId)
+    .eq("id", farmerId)
+    .is("village_id", null);
 }

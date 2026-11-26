@@ -34,6 +34,7 @@ const BOOKING_RULE_ERRORS = [
   "invalid_reason",
   "invalid_slot",
   "slot_full",
+  "no_service_area",
   "slot_passed",
   "pilot_unavailable",
   "drone_unavailable",
@@ -124,9 +125,18 @@ type ListRow = {
   status: BookingStatus;
   preferred_date: string;
   total_acres: number;
-  farmer: { full_name: string } | null;
+  farmer: { full_name: string; locality: string | null; pincode: string | null } | null;
   village: { name: string } | null;
 };
+
+// Where a booking is: its village, or the farmer's own address while they have
+// no village yet (ADR 0021).
+function bookingPlace(
+  village: { name: string } | null,
+  farmer: { locality: string | null; pincode: string | null } | null
+): string {
+  return village?.name ?? [farmer?.locality, farmer?.pincode].filter(Boolean).join(" ");
+}
 
 const toListItem = (row: ListRow): BookingListItem => ({
   id: row.id,
@@ -134,7 +144,7 @@ const toListItem = (row: ListRow): BookingListItem => ({
   preferredDate: row.preferred_date,
   totalAcres: row.total_acres,
   farmerName: row.farmer?.full_name ?? "",
-  villageName: row.village?.name ?? "",
+  villageName: bookingPlace(row.village, row.farmer),
 });
 
 // Requested first (the inbox), then by preferred date.
@@ -182,7 +192,14 @@ export async function listOpenBookedFieldIds(
   return new Set(rows.map((row) => row.field_id));
 }
 
-export async function getOwnFarmerId(context: ActiveMembershipContext): Promise<string | null> {
+export type OwnFarmer = {
+  id: string;
+  // False while the farmer's pincode is in no region and they have no village:
+  // they cannot book until the organization covers their area (ADR 0021).
+  inServiceArea: boolean;
+};
+
+export async function getOwnFarmer(context: ActiveMembershipContext): Promise<OwnFarmer | null> {
   if (context.role !== "farmer") {
     return null;
   }
@@ -194,7 +211,14 @@ export async function getOwnFarmerId(context: ActiveMembershipContext): Promise<
   if (error) {
     throw new Error("Unable to load your farmer record.");
   }
-  return data?.id ?? null;
+  if (!data) {
+    return null;
+  }
+  return { id: data.id, inServiceArea: data.village_id !== null || data.region_id !== null };
+}
+
+export async function getOwnFarmerId(context: ActiveMembershipContext): Promise<string | null> {
+  return (await getOwnFarmer(context))?.id ?? null;
 }
 
 export async function getBookingDetail(
@@ -255,7 +279,7 @@ export async function getBookingDetail(
       fullName: booking.farmer.full_name,
       phone: booking.farmer.phone,
     },
-    villageName: booking.village?.name ?? "",
+    villageName: bookingPlace(booking.village, booking.farmer),
     lines: lines.map((line) => ({
       fieldId: line.field_id,
       fieldName: line.field_name,

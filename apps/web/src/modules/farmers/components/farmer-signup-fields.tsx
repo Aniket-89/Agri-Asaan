@@ -3,8 +3,44 @@ import { format, type Dictionary } from "@/lib/i18n";
 
 import type { SignupVillage } from "../farmer-signup.service";
 
+// Optional: a farmer whose village is listed picks it and is placed at once;
+// everyone else is placed by a regional admin from their address.
+function VillageSelect({
+  regions,
+  t,
+}: {
+  regions: Map<string, SignupVillage[]>;
+  t: Dictionary["register"];
+}) {
+  return (
+    <Field label={t.village} hint={t.villageHint}>
+      <select className={controlClass} name="villageId" defaultValue="">
+        <option value="">{t.villageNotListed}</option>
+        {[...regions].map(([regionName, regionVillages]) =>
+          regions.size > 1 ? (
+            <optgroup key={regionName} label={regionName}>
+              {regionVillages.map((village) => (
+                <option key={village.id} value={village.id}>
+                  {village.name}
+                </option>
+              ))}
+            </optgroup>
+          ) : (
+            regionVillages.map((village) => (
+              <option key={village.id} value={village.id}>
+                {village.name}
+              </option>
+            ))
+          )
+        )}
+      </select>
+    </Field>
+  );
+}
+
 // The farmer details shared by the register form and the "finish
-// registering" form: name, mobile number, village, and the farmer's consent.
+// registering" form: name, mobile number, address, an optional listed village,
+// and the farmer's consent (ADR 0021).
 export function FarmerSignupFields({
   villages,
   brandName,
@@ -44,30 +80,38 @@ export function FarmerSignupFields({
           required
         />
       </Field>
-      <Field label={t.village}>
-        <select className={controlClass} name="villageId" defaultValue="" required>
-          <option value="" disabled>
-            {t.chooseVillage}
-          </option>
-          {[...regions].map(([regionName, regionVillages]) =>
-            regions.size > 1 ? (
-              <optgroup key={regionName} label={regionName}>
-                {regionVillages.map((village) => (
-                  <option key={village.id} value={village.id}>
-                    {village.name}
-                  </option>
-                ))}
-              </optgroup>
-            ) : (
-              regionVillages.map((village) => (
-                <option key={village.id} value={village.id}>
-                  {village.name}
-                </option>
-              ))
-            )
-          )}
-        </select>
+      <Field label={t.pincode} hint={t.pincodeHint}>
+        <input
+          className={controlClass}
+          name="pincode"
+          inputMode="numeric"
+          autoComplete="postal-code"
+          pattern="[1-9][0-9]{5}"
+          maxLength={6}
+          required
+        />
       </Field>
+      <Field label={t.locality}>
+        <input
+          className={controlClass}
+          name="locality"
+          autoComplete="address-level2"
+          minLength={2}
+          maxLength={120}
+          required
+        />
+      </Field>
+      <Field label={t.addressLine} hint={t.addressLineHint}>
+        <input
+          className={controlClass}
+          name="addressLine"
+          autoComplete="street-address"
+          minLength={3}
+          maxLength={300}
+          required
+        />
+      </Field>
+      {villages.length > 0 ? <VillageSelect regions={regions} t={t} /> : null}
       <label className="flex min-h-11 items-start gap-3 rounded-xl bg-canvas p-4">
         <input
           name="consent"

@@ -62,3 +62,14 @@ export const regionalAdminInviteInputSchema = z.object({
 });
 
 export type RegionalAdminInviteInput = z.infer<typeof regionalAdminInviteInputSchema>;
+
+// A pincode a region serves (ADR 0021).
+export const regionPincodeSchema = z.object({
+  regionId: z.uuid(),
+  pincode: z
+    .string()
+    .trim()
+    .regex(/^[1-9][0-9]{5}$/),
+});
+
+export type RegionPincode = z.infer<typeof regionPincodeSchema>;

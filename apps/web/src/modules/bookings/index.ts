@@ -31,6 +31,7 @@ export {
   getAssignmentOptions,
   getBookingDetail,
   getSlotAvailability,
+  getOwnFarmer,
   getOwnFarmerId,
   listBookings,
   listFarmerBookings,

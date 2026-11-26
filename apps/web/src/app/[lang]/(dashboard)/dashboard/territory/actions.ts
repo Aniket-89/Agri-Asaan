@@ -6,6 +6,7 @@ import type { z } from "zod";
 import { localizedPath } from "@/lib/i18n/request-locale";
 import { getActiveMembershipContext, resolveActiveOrganization } from "@/modules/organizations";
 import {
+  addRegionPincode,
   assignMitra,
   assignRegionalAdmin,
   createRegion,
@@ -13,9 +14,11 @@ import {
   mitraInviteInputSchema,
   regionalAdminInviteInputSchema,
   regionAssignmentSchema,
+  regionPincodeSchema,
   regionInputSchema,
   removeMitra,
   removeRegionalAdmin,
+  removeRegionPincode,
   villageAssignmentSchema,
   villageInputSchema,
   type TerritoryContext,
@@ -149,5 +152,23 @@ export async function inviteRegionalAdminAction(formData: FormData) {
         ? `${TERRITORY_PATH}?status=invitedAdmin`
         : `${TERRITORY_PATH}?inviteError=${result.error}`
     )
+  );
+}
+
+export async function addRegionPincodeAction(formData: FormData) {
+  await runTerritoryAction(
+    formData,
+    regionPincodeSchema,
+    ["regionId", "pincode"],
+    addRegionPincode
+  );
+}
+
+export async function removeRegionPincodeAction(formData: FormData) {
+  await runTerritoryAction(
+    formData,
+    regionPincodeSchema,
+    ["regionId", "pincode"],
+    removeRegionPincode
   );
 }

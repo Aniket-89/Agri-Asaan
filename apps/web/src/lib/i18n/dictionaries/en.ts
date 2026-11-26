@@ -31,19 +31,26 @@ export const en = {
     fullName: "Full name",
     phone: "Mobile number",
     phoneHint: "10-digit mobile number. The team calls this number about your bookings.",
-    village: "Village",
-    chooseVillage: "Choose your village",
+    pincode: "Pincode",
+    pincodeHint: "6-digit postal code. It tells us which team serves your area.",
+    locality: "Village or town",
+    addressLine: "House, street or landmark",
+    addressLineHint: "Enough for the team to find you.",
+    village: "Your village on our list (optional)",
+    villageHint: "Pick it if you see it. Otherwise we place you from your address.",
+    villageNotListed: "My village isn't listed",
     email: "Email",
     password: "Password",
     passwordHint: "At least 6 characters.",
     consent:
-      "I agree to {brand} storing my name, mobile number, and field details to provide spraying services.",
+      "I agree to {brand} storing my name, mobile number, address, and field details to provide spraying services.",
     submit: "Create account",
     haveAccount: "Already have an account? Sign in",
     errors: {
       invalid_registration:
-        "Check the details: your name, a 10-digit mobile number, a village, a valid email, a password of 6 or more characters, and the consent box.",
-      invalid: "Check your name, 10-digit mobile number, village, and the consent box.",
+        "Check the details: your name, a 10-digit mobile number, a 6-digit pincode, your village or town, your address, a valid email, a password of 6 or more characters, and the consent box.",
+      invalid:
+        "Check your name, 10-digit mobile number, 6-digit pincode, village or town, address, and the consent box.",
       registration_failed: "The account could not be created. Try again in a moment.",
       email_in_use: "That email already has an account. Sign in instead.",
       closed: "This site does not take farmer registrations.",
@@ -56,7 +63,7 @@ export const en = {
     closedBody:
       "This site does not take farmer registrations. Staff accounts are created by an administrator.",
     joinTitle: "Finish registering",
-    joinIntro: "Add your mobile number and village to join {brand} as a farmer.",
+    joinIntro: "Add your mobile number and address to join {brand} as a farmer.",
     joinSubmit: "Join as a farmer",
     pendingTitle: "Access pending",
     pendingBody:
@@ -216,6 +223,8 @@ export const en = {
     verify: "Verify job",
     sendBack: "Send back to pilot",
     sendBackReason: "What needs correcting (required)",
+    outsideServiceArea:
+      "We don't serve your pincode yet. Your registration is saved, and we'll contact you when spraying is available in your area.",
     myFarmTitle: "My farm",
     noFarmerRecord:
       "Your login is not linked to a farmer record yet. Ask your mitra or administrator.",
@@ -234,6 +243,7 @@ export const en = {
       invalid_reason: "The reason can be at most 500 characters.",
       invalid_slot: "Choose one of the available slots for that date.",
       slot_full: "That slot just filled up. Please choose another slot or date.",
+      no_service_area: "This farmer's area is not served yet, so no booking can be made.",
       slot_passed: "This slot has already ended.",
       pilot_unavailable: "That pilot is not available. Choose another pilot.",
       drone_unavailable: "That drone is not available. Choose another drone.",
@@ -364,6 +374,18 @@ export const en = {
     submitRegistration: "Register farmer",
     inactive: "Inactive",
     registeredOn: "Registered on {date}",
+    address: "Address",
+    notPlaced: "No village yet",
+    outsideArea: "Outside service area",
+    filterLabel: "Show farmers",
+    filterAll: "All farmers",
+    filterUnplaced: "Need a village",
+    placeInVillage: "Place in a village",
+    placeHint: "Their village's mitras will see them, and their open bookings move there.",
+    placeSubmit: "Place farmer",
+    placed: "Farmer placed in the village.",
+    waitingForPlacement:
+      "This farmer's pincode is not in any region yet. Add it to a region on the Territory page.",
     errors: {
       forbidden: "You don't have permission to do that.",
       duplicate: "That already exists.",
@@ -414,6 +436,11 @@ export const en = {
     chooseMitra: "Choose a mitra",
     assign: "Assign",
     remove: "Remove",
+    pincodes: "Pincodes served",
+    noPincodes: "No pincodes yet. Farmers registering with a pincode listed here join this region.",
+    pincodesHint: "Farmers registering with these pincodes join this region.",
+    pincode: "6-digit pincode",
+    addPincode: "Add pincode",
     inviteMitra: "Invite a new mitra",
     inviteMitraIntro:
       "The mitra gets an email with a link to set their own password. They start with the village you choose; you can assign more villages below.",

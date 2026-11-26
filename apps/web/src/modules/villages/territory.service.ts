@@ -7,6 +7,7 @@ import * as repository from "./territory.repository";
 import type {
   RegionAssignment,
   RegionInput,
+  RegionPincode,
   VillageAssignment,
   VillageInput,
 } from "./territory.schema";
@@ -41,6 +42,8 @@ export type TerritoryRegion = {
   isActive: boolean;
   canManage: boolean;
   regionalAdmins: TerritoryPerson[];
+  // Pincodes this region serves; a farmer registering with one joins it.
+  pincodes: string[];
   villages: TerritoryVillage[];
 };
 
@@ -91,19 +94,21 @@ export async function getTerritoryOverview(
   }
 
   const { supabase, organizationId } = context;
-  const [regions, villages, adminAssignments, mitraAssignments, members] = await Promise.all([
-    repository.listRegions(supabase, organizationId).then((r) => unwrap(r, "regions")),
-    repository.listVillages(supabase, organizationId).then((r) => unwrap(r, "villages")),
-    repository
-      .listRegionalAdminAssignments(supabase, organizationId)
-      .then((r) => unwrap(r, "regional admin assignments")),
-    repository
-      .listMitraAssignments(supabase, organizationId)
-      .then((r) => unwrap(r, "mitra assignments")),
-    repository
-      .listMembersWithRoles(supabase, organizationId, ["regional_admin", "mitra"])
-      .then((r) => unwrap(r, "members")),
-  ]);
+  const [regions, villages, adminAssignments, mitraAssignments, members, pincodes] =
+    await Promise.all([
+      repository.listRegions(supabase, organizationId).then((r) => unwrap(r, "regions")),
+      repository.listVillages(supabase, organizationId).then((r) => unwrap(r, "villages")),
+      repository
+        .listRegionalAdminAssignments(supabase, organizationId)
+        .then((r) => unwrap(r, "regional admin assignments")),
+      repository
+        .listMitraAssignments(supabase, organizationId)
+        .then((r) => unwrap(r, "mitra assignments")),
+      repository
+        .listMembersWithRoles(supabase, organizationId, ["regional_admin", "mitra"])
+        .then((r) => unwrap(r, "members")),
+      repository.listRegionPincodes(supabase, organizationId).then((r) => unwrap(r, "pincodes")),
+    ]);
 
   const profileIds = [...new Set(members.map((member) => member.user_id))];
   const profiles = profileIds.length
@@ -152,6 +157,7 @@ export async function getTerritoryOverview(
         .filter((a) => a.region_id === region.id)
         .map((a) => person(a.user_id))
         .sort(byName),
+      pincodes: pincodes.filter((pin) => pin.region_id === region.id).map((pin) => pin.pincode),
       villages: villages
         .filter((village) => village.region_id === region.id)
         .map((village) => ({
@@ -248,6 +254,42 @@ export async function removeMitra(
     return { ok: false, error: "forbidden" };
   }
   const { error, count } = await repository.deleteMitraAssignment(
+    context.supabase,
+    context.organizationId,
+    input
+  );
+  if (error) {
+    return settle(error);
+  }
+  return count ? { ok: true } : { ok: false, error: "not_found" };
+}
+
+// Only organization admins change which pincodes a region serves; adding one
+// also brings waiting farmers with that pincode into the region (database
+// trigger).
+export async function addRegionPincode(
+  context: TerritoryContext,
+  input: RegionPincode
+): Promise<TerritoryResult> {
+  if (!canManageRegions(context.role)) {
+    return { ok: false, error: "forbidden" };
+  }
+  const { error } = await repository.insertRegionPincode(
+    context.supabase,
+    context.organizationId,
+    input
+  );
+  return settle(error);
+}
+
+export async function removeRegionPincode(
+  context: TerritoryContext,
+  input: RegionPincode
+): Promise<TerritoryResult> {
+  if (!canManageRegions(context.role)) {
+    return { ok: false, error: "forbidden" };
+  }
+  const { error, count } = await repository.deleteRegionPincode(
     context.supabase,
     context.organizationId,
     input
