@@ -7,6 +7,7 @@ export {
   type MitraInviteInput,
   regionalAdminInviteInputSchema,
   regionPincodeSchema,
+  regionRateSchema,
   type RegionalAdminInviteInput,
 } from "./territory.schema";
 export { canViewTerritoryAdmin } from "./territory.permissions";
@@ -19,6 +20,7 @@ export {
   getTerritoryOverview,
   removeMitra,
   removeRegionPincode,
+  setRegionRate,
   removeRegionalAdmin,
   type TerritoryContext,
   type TerritoryErrorCode,

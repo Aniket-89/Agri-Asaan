@@ -13,6 +13,7 @@ import {
   createBookingSchema,
 } from "@/modules/bookings";
 import { getActiveMembershipContext } from "@/modules/organizations";
+import { recordJobPayment } from "@/modules/payments/payment.service";
 
 const returnToSchema = z.enum(["farmer", "my-farm"]);
 
@@ -107,4 +108,28 @@ export async function assignBookingAction(formData: FormData) {
       result.ok ? `${detailPath}?status=assigned` : `${detailPath}?error=${result.error}`
     )
   );
+}
+
+// "Payment received" from the pilot's job list or the booking page (ADR 0022).
+const paymentReturnSchema = z.enum(["jobs", "booking"]);
+
+export async function recordPaymentAction(formData: FormData) {
+  const context = await getActiveMembershipContext();
+  if (!context) {
+    redirect(await localizedPath("/login"));
+  }
+  const bookingId = z.uuid().safeParse(formData.get("bookingId"));
+  const returnTo = paymentReturnSchema.safeParse(formData.get("returnTo"));
+  const back =
+    returnTo.success && returnTo.data === "jobs"
+      ? "/dashboard/my-jobs?tab=completed&"
+      : bookingId.success
+        ? `/dashboard/bookings/${bookingId.data}?`
+        : "/dashboard/bookings?";
+  if (!bookingId.success) {
+    redirect(await localizedPath(`${back}error=invalid`));
+  }
+
+  const result = await recordJobPayment(context, bookingId.data);
+  redirect(await localizedPath(result.ok ? `${back}status=paid` : `${back}error=${result.error}`));
 }

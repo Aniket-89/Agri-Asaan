@@ -34,6 +34,7 @@ import {
   removeMitraAction,
   removeRegionalAdminAction,
   removeRegionPincodeAction,
+  setRegionRateAction,
 } from "./actions";
 
 export const instant = false;
@@ -288,6 +289,7 @@ async function TerritoryContent({
             removeMitra: removeMitraAction,
             addPincode: addRegionPincodeAction,
             removePincode: removeRegionPincodeAction,
+            setRate: setRegionRateAction,
           }}
         />
       ))}

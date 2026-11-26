@@ -1,4 +1,5 @@
 import {
+  CurrencyInrIcon,
   EnvelopeSimpleOpenIcon,
   HouseLineIcon,
   MapPinAreaIcon,
@@ -16,7 +17,7 @@ import {
   Disclosure,
   Field,
 } from "@/components/ui";
-import type { Dictionary } from "@/lib/i18n";
+import { format, type Dictionary } from "@/lib/i18n";
 import type { TerritoryOverview, TerritoryRegion } from "../territory.service";
 
 type FormAction = (formData: FormData) => Promise<void>;
@@ -29,6 +30,7 @@ export type TerritoryActions = {
   removeMitra: FormAction;
   addPincode: FormAction;
   removePincode: FormAction;
+  setRate: FormAction;
 };
 
 type Props = {
@@ -183,6 +185,46 @@ export function TerritoryRegionCard({ region, overview, actions, t }: Props) {
             placeholder={t.chooseRegionalAdmin}
             submit={t.assign}
           />
+        ) : null}
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <CurrencyInrIcon weight="duotone" className="size-5 text-brand" aria-hidden />
+          {t.rate}
+        </h3>
+        <p className="text-sm text-ink-muted">
+          {region.ratePerAcre !== null
+            ? format(t.ratePerAcre, {
+                rate: new Intl.NumberFormat("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                  maximumFractionDigits: 2,
+                }).format(region.ratePerAcre),
+              })
+            : t.noRateSet}
+        </p>
+        {overview.canManageRegions ? (
+          <form action={actions.setRate} className="flex gap-2">
+            <input type="hidden" name="regionId" value={region.id} />
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">{t.rateLabel}</span>
+              <input
+                name="ratePerAcre"
+                type="number"
+                inputMode="decimal"
+                min="1"
+                max="100000"
+                step="0.01"
+                defaultValue={region.ratePerAcre ?? ""}
+                placeholder={t.rateLabel}
+                className={controlClass}
+              />
+            </label>
+            <Button variant="secondary" className="shrink-0">
+              {t.saveRate}
+            </Button>
+          </form>
         ) : null}
       </div>
 

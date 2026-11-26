@@ -97,14 +97,14 @@ isOneToOne: false
                   ]
                 },"bookings": {
                   Row: {
-                    "actual_total_acres": number | null,"completed_at": string | null,"completion_notes": string | null,"created_at": string,"farmer_id": string,"id": string,"notes": string | null,"preferred_date": string,"region_id": string,"requested_by": string | null,"slot_id": string | null,"started_at": string | null,"status": Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at": string,"verified_at": string | null,"verified_by": string | null,"village_id": string | null
+                    "actual_total_acres": number | null,"amount_due": number | null,"completed_at": string | null,"completion_notes": string | null,"created_at": string,"farmer_id": string,"id": string,"notes": string | null,"paid_at": string | null,"paid_recorded_by": string | null,"preferred_date": string,"rate_per_acre": number | null,"region_id": string,"requested_by": string | null,"slot_id": string | null,"started_at": string | null,"status": Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at": string,"verified_at": string | null,"verified_by": string | null,"village_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "actual_total_acres"?: number | null,"completed_at"?: string | null,"completion_notes"?: string | null,"created_at"?: string,"farmer_id": string,"id": string,"notes"?: string | null,"preferred_date": string,"region_id": string,"requested_by"?: string | null,"slot_id"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"village_id"?: string | null
+                    "actual_total_acres"?: number | null,"amount_due"?: number | null,"completed_at"?: string | null,"completion_notes"?: string | null,"created_at"?: string,"farmer_id": string,"id": string,"notes"?: string | null,"paid_at"?: string | null,"paid_recorded_by"?: string | null,"preferred_date": string,"rate_per_acre"?: number | null,"region_id": string,"requested_by"?: string | null,"slot_id"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id": string,"total_acres": number,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"village_id"?: string | null
                   }
                   Update: {
-                    "actual_total_acres"?: number | null,"completed_at"?: string | null,"completion_notes"?: string | null,"created_at"?: string,"farmer_id"?: string,"id"?: string,"notes"?: string | null,"preferred_date"?: string,"region_id"?: string,"requested_by"?: string | null,"slot_id"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id"?: string,"total_acres"?: number,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"village_id"?: string | null
+                    "actual_total_acres"?: number | null,"amount_due"?: number | null,"completed_at"?: string | null,"completion_notes"?: string | null,"created_at"?: string,"farmer_id"?: string,"id"?: string,"notes"?: string | null,"paid_at"?: string | null,"paid_recorded_by"?: string | null,"preferred_date"?: string,"rate_per_acre"?: number | null,"region_id"?: string,"requested_by"?: string | null,"slot_id"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["booking_status"],"tenant_id"?: string,"total_acres"?: number,"updated_at"?: string,"verified_at"?: string | null,"verified_by"?: string | null,"village_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -113,6 +113,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "farmers"
       referencedColumns: ["tenant_id","id"]
+    },{
+      foreignKeyName: "bookings_paid_recorded_by_fkey"
+      columns: ["paid_recorded_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
     },{
       foreignKeyName: "bookings_region_same_tenant"
       columns: ["tenant_id","region_id"]
@@ -373,14 +379,14 @@ isOneToOne: false
                   ]
                 },"organization_settings": {
                   Row: {
-                    "brand_accent_color": string | null,"brand_logo_path": string | null,"brand_name": string | null,"brand_primary_color": string | null,"brand_tagline": string | null,"created_at": string,"default_locale": string,"tenant_id": string,"timezone": string,"updated_at": string
+                    "brand_accent_color": string | null,"brand_logo_path": string | null,"brand_name": string | null,"brand_primary_color": string | null,"brand_tagline": string | null,"created_at": string,"default_locale": string,"tenant_id": string,"timezone": string,"updated_at": string,"upi_id": string | null,"upi_payee_name": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "brand_accent_color"?: string | null,"brand_logo_path"?: string | null,"brand_name"?: string | null,"brand_primary_color"?: string | null,"brand_tagline"?: string | null,"created_at"?: string,"default_locale"?: string,"tenant_id": string,"timezone"?: string,"updated_at"?: string
+                    "brand_accent_color"?: string | null,"brand_logo_path"?: string | null,"brand_name"?: string | null,"brand_primary_color"?: string | null,"brand_tagline"?: string | null,"created_at"?: string,"default_locale"?: string,"tenant_id": string,"timezone"?: string,"updated_at"?: string,"upi_id"?: string | null,"upi_payee_name"?: string | null
                   }
                   Update: {
-                    "brand_accent_color"?: string | null,"brand_logo_path"?: string | null,"brand_name"?: string | null,"brand_primary_color"?: string | null,"brand_tagline"?: string | null,"created_at"?: string,"default_locale"?: string,"tenant_id"?: string,"timezone"?: string,"updated_at"?: string
+                    "brand_accent_color"?: string | null,"brand_logo_path"?: string | null,"brand_name"?: string | null,"brand_primary_color"?: string | null,"brand_tagline"?: string | null,"created_at"?: string,"default_locale"?: string,"tenant_id"?: string,"timezone"?: string,"updated_at"?: string,"upi_id"?: string | null,"upi_payee_name"?: string | null
                   }
                   Relationships: [
                     {
@@ -627,14 +633,14 @@ isOneToOne: false
                   ]
                 },"regions": {
                   Row: {
-                    "created_at": string,"id": string,"is_active": boolean,"name": string,"tenant_id": string,"updated_at": string
+                    "created_at": string,"id": string,"is_active": boolean,"name": string,"rate_per_acre": number | null,"tenant_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"name": string,"tenant_id": string,"updated_at"?: string
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"name": string,"rate_per_acre"?: number | null,"tenant_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"tenant_id"?: string,"updated_at"?: string
+                    "created_at"?: string,"id"?: string,"is_active"?: boolean,"name"?: string,"rate_per_acre"?: number | null,"tenant_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -810,6 +816,11 @@ isOneToOne: false
 "farmer_service_region":
 { Args: { "p_farmer_id": string }; Returns: string
                            },
+"get_booking_payment":
+{ Args: { "p_booking_id": string }; Returns: {
+              "amount_due": number,"paid_at": string,"payee_name": string,"rate_per_acre": number,"upi_id": string
+            }[]
+                           },
 "get_farmer_registration_villages":
 { Args: { "p_hostname": string }; Returns: {
               "region_name": string,"village_id": string,"village_name": string
@@ -857,7 +868,7 @@ isOneToOne: false
                            },
 "list_my_jobs":
 { Args: { "p_tenant_id": string }; Returns: {
-              "actual_total_acres": number,"booking_id": string,"drone_uid": string,"end_time": string,"farmer_name": string,"farmer_phone": string,"fields": Json,"notes": string,"preferred_date": string,"sent_back_reason": string,"slot_name_en": string,"slot_name_hi": string,"start_time": string,"status": Database["public"]['Enums']["booking_status"],"total_acres": number,"village_name": string
+              "actual_total_acres": number,"amount_due": number,"booking_id": string,"drone_uid": string,"end_time": string,"farmer_name": string,"farmer_phone": string,"fields": Json,"notes": string,"paid_at": string,"preferred_date": string,"sent_back_reason": string,"slot_name_en": string,"slot_name_hi": string,"start_time": string,"status": Database["public"]['Enums']["booking_status"],"total_acres": number,"village_name": string
             }[]
                            },
 "list_slot_availability":
@@ -891,6 +902,9 @@ isOneToOne: false
                            },
 "provision_invited_regional_admin":
 { Args: { "p_invite_id": string,"p_user_id": string }; Returns: string
+                           },
+"record_job_payment":
+{ Args: { "p_booking_id": string }; Returns: undefined
                            },
 "regional_admin_inviter_tenant":
 { Args: { "p_inviter_id": string,"p_region_id": string }; Returns: string
