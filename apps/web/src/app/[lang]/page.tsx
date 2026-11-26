@@ -2,10 +2,17 @@ import { Suspense } from "react";
 
 import { ComingSoonPage } from "@/components/coming-soon/coming-soon-page";
 import { getRequestBranding } from "@/lib/branding/request-branding";
+import { withLocale } from "@/lib/i18n";
+import { getDictionary } from "@/lib/i18n/dictionary";
 
 async function BrandedComingSoon() {
-  const branding = await getRequestBranding();
-  return <ComingSoonPage branding={branding} />;
+  const [branding, { locale, t }] = await Promise.all([getRequestBranding(), getDictionary()]);
+  return (
+    <ComingSoonPage
+      branding={branding}
+      signIn={{ href: withLocale(locale, "/login"), label: t.login.submit }}
+    />
+  );
 }
 
 export default function HomePage() {
