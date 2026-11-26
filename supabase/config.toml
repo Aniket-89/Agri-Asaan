@@ -251,10 +251,10 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Pilot invites (ADR 0012): the link goes to /api/auth/confirm, which
-# verifies the token server-side and sends the pilot to set a password.
+# Pilot and mitra invites (ADR 0012, 0019): the link goes to /api/auth/confirm, which
+# verifies the token server-side and sends the person to set a password.
 [auth.email.template.invite]
-subject = "You have been invited as a pilot"
+subject = "You have been invited to the spraying team"
 content_path = "./supabase/templates/invite.html"
 
 # Uncomment to customize notification email template

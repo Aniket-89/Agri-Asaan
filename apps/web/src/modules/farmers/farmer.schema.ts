@@ -25,6 +25,14 @@ export const farmerInputSchema = z.object({
   consent: z.literal("on"),
 });
 
+// A farmer registering themselves (ADR 0018); the consent is their own.
+export const farmerSignupSchema = z.object({
+  villageId: z.uuid(),
+  fullName: z.string().trim().min(2).max(120),
+  phone: indianMobileSchema,
+  consent: z.literal("on"),
+});
+
 export const farmerSearchSchema = z.object({
   q: z.preprocess(
     (value) => (typeof value === "string" ? value.trim() : undefined),
@@ -33,3 +41,4 @@ export const farmerSearchSchema = z.object({
 });
 
 export type FarmerInput = z.infer<typeof farmerInputSchema>;
+export type FarmerSignupInput = z.infer<typeof farmerSignupSchema>;

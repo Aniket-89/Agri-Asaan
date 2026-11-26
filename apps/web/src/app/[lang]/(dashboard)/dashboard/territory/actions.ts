@@ -4,12 +4,13 @@ import { redirect } from "next/navigation";
 import type { z } from "zod";
 
 import { localizedPath } from "@/lib/i18n/request-locale";
-import { resolveActiveOrganization } from "@/modules/organizations";
+import { getActiveMembershipContext, resolveActiveOrganization } from "@/modules/organizations";
 import {
   assignMitra,
   assignRegionalAdmin,
   createRegion,
   createVillage,
+  mitraInviteInputSchema,
   regionAssignmentSchema,
   regionInputSchema,
   removeMitra,
@@ -19,6 +20,7 @@ import {
   type TerritoryContext,
   type TerritoryResult,
 } from "@/modules/villages";
+import { inviteMitra } from "@/modules/villages/mitra-invite.service";
 
 const TERRITORY_PATH = "/dashboard/territory";
 
@@ -96,4 +98,29 @@ export async function assignMitraAction(formData: FormData) {
 
 export async function removeMitraAction(formData: FormData) {
   await runTerritoryAction(formData, villageAssignmentSchema, ["villageId", "userId"], removeMitra);
+}
+
+export async function inviteMitraAction(formData: FormData) {
+  const context = await getActiveMembershipContext();
+  if (!context) {
+    redirect(await localizedPath("/login"));
+  }
+
+  const parsed = mitraInviteInputSchema.safeParse({
+    fullName: formData.get("fullName"),
+    email: formData.get("email"),
+    villageId: formData.get("villageId"),
+  });
+  if (!parsed.success) {
+    redirect(await localizedPath(`${TERRITORY_PATH}?inviteError=invalid`));
+  }
+
+  const result = await inviteMitra(context, parsed.data);
+  redirect(
+    await localizedPath(
+      result.ok
+        ? `${TERRITORY_PATH}?status=invited`
+        : `${TERRITORY_PATH}?inviteError=${result.error}`
+    )
+  );
 }

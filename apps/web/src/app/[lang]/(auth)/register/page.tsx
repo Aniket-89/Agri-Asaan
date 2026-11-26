@@ -2,28 +2,94 @@ import { Suspense } from "react";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/ssr";
 import { z } from "zod";
 
+import { BrandMark } from "@/components/brand/brand-mark";
 import { AuthScreen } from "@/components/layout/auth-screen";
+import { BrandTokens } from "@/components/layout/brand-tokens";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { StatusBanner } from "@/components/shared/status-banner";
 import { Button, buttonClass, controlClass, Field } from "@/components/ui";
-import { withLocale, type Dictionary } from "@/lib/i18n";
+import { getRequestBranding, getRequestHostname } from "@/lib/branding/request-branding";
+import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { listSignupVillages } from "@/modules/farmers";
+import { FarmerSignupFields } from "@/modules/farmers/components/farmer-signup-fields";
 
 import { registerAction } from "./actions";
 
 const searchSchema = z.object({
-  error: z.enum(["invalid_registration", "registration_failed"]).optional().catch(undefined),
+  error: z
+    .enum(["invalid_registration", "registration_failed", "email_in_use", "closed"])
+    .optional()
+    .catch(undefined),
 });
 
-async function RegisterError({
+const headingClass = "text-2xl font-bold tracking-tight text-ink";
+
+async function RegisterForm({
   searchParams,
+  locale,
   t,
 }: {
   searchParams: PageProps<"/[lang]/register">["searchParams"];
+  locale: Locale;
   t: Dictionary["register"];
 }) {
-  const { error } = searchSchema.parse(await searchParams);
-  return error ? <StatusBanner kind="error" text={t.errors[error]} /> : null;
+  const [{ error }, branding, supabase, hostname] = await Promise.all([
+    searchParams.then((params) => searchSchema.parse(params)),
+    getRequestBranding(),
+    createSupabaseServerClient(),
+    getRequestHostname(),
+  ]);
+  const villages = await listSignupVillages(supabase, hostname);
+
+  if (villages.length === 0) {
+    return (
+      <>
+        <h1 className={headingClass}>{t.closedTitle}</h1>
+        <p className="text-ink-muted">{t.closedBody}</p>
+        <a
+          className={buttonClass({ variant: "secondary", block: true })}
+          href={withLocale(locale, "/login")}
+        >
+          {t.backToSignIn}
+        </a>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        <BrandTokens branding={branding} />
+        <BrandMark branding={branding} className="size-14" />
+        <div className="space-y-1">
+          <h1 className={headingClass}>{t.title}</h1>
+          <p className="text-ink-muted">{t.intro}</p>
+        </div>
+      </div>
+      {error ? <StatusBanner kind="error" text={t.errors[error]} /> : null}
+      <form action={registerAction} className="space-y-4">
+        <FarmerSignupFields villages={villages} brandName={branding.name} t={t} />
+        <Field label={t.email}>
+          <input className={controlClass} name="email" type="email" autoComplete="email" required />
+        </Field>
+        <Field label={t.password} hint={t.passwordHint}>
+          <input
+            className={controlClass}
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={6}
+            required
+          />
+        </Field>
+        <Button block icon={<UserPlusIcon weight="bold" className="size-5" aria-hidden />}>
+          {t.submit}
+        </Button>
+      </form>
+    </>
+  );
 }
 
 export default async function RegisterPage({ searchParams }: PageProps<"/[lang]/register">) {
@@ -39,31 +105,10 @@ export default async function RegisterPage({ searchParams }: PageProps<"/[lang]/
         />
       }
     >
-      <h1 className="text-2xl font-bold tracking-tight text-ink">{t.register.title}</h1>
-      <Suspense fallback={null}>
-        <RegisterError searchParams={searchParams} t={t.register} />
+      {/* Brand-neutral fallback so a white-label domain never flashes another brand. */}
+      <Suspense fallback={<h1 className={`${headingClass} pt-18`}>{t.register.title}</h1>}>
+        <RegisterForm searchParams={searchParams} locale={locale} t={t.register} />
       </Suspense>
-      <form action={registerAction} className="space-y-4">
-        <Field label={t.register.fullName}>
-          <input className={controlClass} name="fullName" autoComplete="name" required />
-        </Field>
-        <Field label={t.register.email}>
-          <input className={controlClass} name="email" type="email" autoComplete="email" required />
-        </Field>
-        <Field label={t.register.password} hint={t.register.passwordHint}>
-          <input
-            className={controlClass}
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            minLength={6}
-            required
-          />
-        </Field>
-        <Button block icon={<UserPlusIcon weight="bold" className="size-5" aria-hidden />}>
-          {t.register.submit}
-        </Button>
-      </form>
       <a
         className={buttonClass({ variant: "quiet", block: true })}
         href={withLocale(locale, "/login")}

@@ -46,3 +46,11 @@ export type RegionInput = z.infer<typeof regionInputSchema>;
 export type VillageInput = z.infer<typeof villageInputSchema>;
 export type RegionAssignment = z.infer<typeof regionAssignmentSchema>;
 export type VillageAssignment = z.infer<typeof villageAssignmentSchema>;
+
+export const mitraInviteInputSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  email: z.string().trim().toLowerCase().pipe(z.email().max(320)),
+  villageId: z.uuid(),
+});
+
+export type MitraInviteInput = z.infer<typeof mitraInviteInputSchema>;

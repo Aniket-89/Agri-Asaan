@@ -229,6 +229,44 @@ isOneToOne: false
       referencedColumns: ["tenant_id","id"]
     }
                   ]
+                },"mitra_invites": {
+                  Row: {
+                    "created_at": string,"email": string,"failure_reason": string | null,"id": string,"inviter_id": string | null,"status": Database["public"]['Enums']["pilot_invite_status"],"tenant_id": string,"updated_at": string,"user_id": string | null,"village_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"email": string,"failure_reason"?: string | null,"id"?: string,"inviter_id"?: string | null,"status": Database["public"]['Enums']["pilot_invite_status"],"tenant_id": string,"updated_at"?: string,"user_id"?: string | null,"village_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"email"?: string,"failure_reason"?: string | null,"id"?: string,"inviter_id"?: string | null,"status"?: Database["public"]['Enums']["pilot_invite_status"],"tenant_id"?: string,"updated_at"?: string,"user_id"?: string | null,"village_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mitra_invites_inviter_id_fkey"
+      columns: ["inviter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mitra_invites_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mitra_invites_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mitra_invites_village_same_tenant"
+      columns: ["tenant_id","village_id"]
+isOneToOne: false
+      referencedRelation: "villages"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
                 },"mitra_villages": {
                   Row: {
                     "created_at": string,"tenant_id": string,"user_id": string,"village_id": string
@@ -627,6 +665,9 @@ isOneToOne: false
 "can_book_for_farmer":
 { Args: { "p_farmer_id": string }; Returns: boolean
                            },
+"can_invite_mitra":
+{ Args: { "p_village_id": string }; Returns: boolean
+                           },
 "can_invite_pilot":
 { Args: { "p_home_region_id": string }; Returns: boolean
                            },
@@ -654,6 +695,11 @@ isOneToOne: false
 "can_view_fleet":
 { Args: { "p_tenant_id": string }; Returns: boolean
                            },
+"claim_mitra_invite":
+{ Args: { "p_email": string,"p_inviter_id": string,"p_village_id": string }; Returns: {
+              "invite_id": string,"outcome": Database["public"]['Enums']["pilot_invite_status"]
+            }[]
+                           },
 "claim_pilot_invite":
 { Args: { "p_email": string,"p_home_region_id": string,"p_inviter_id": string }; Returns: {
               "invite_id": string,"outcome": Database["public"]['Enums']["pilot_invite_status"]
@@ -668,8 +714,22 @@ isOneToOne: false
 "delete_orphaned_pilot_invite":
 { Args: { "p_not_before": string,"p_user_id": string }; Returns: boolean
                            },
+"expire_stale_staff_invites":
+{ Args: { "p_email": string }; Returns: undefined
+                           },
+"fail_mitra_invite":
+{ Args: { "p_invite_id": string,"p_reason": string }; Returns: undefined
+                           },
 "fail_pilot_invite":
 { Args: { "p_invite_id": string,"p_reason": string }; Returns: undefined
+                           },
+"farmer_registration_tenant":
+{ Args: { "p_hostname": string }; Returns: string
+                           },
+"get_farmer_registration_villages":
+{ Args: { "p_hostname": string }; Returns: {
+              "region_name": string,"village_id": string,"village_name": string
+            }[]
                            },
 "get_profile_phone":
 { Args: { "p_profile_id": string }; Returns: string
@@ -724,6 +784,9 @@ isOneToOne: false
 "manage_platform_staff":
 { Args: { "p_role": Database["public"]['Enums']["platform_role"],"p_status"?: Database["public"]['Enums']["platform_staff_status"],"p_user_id": string }; Returns: undefined
                            },
+"mitra_inviter_tenant":
+{ Args: { "p_inviter_id": string,"p_village_id": string }; Returns: string
+                           },
 "pilot_inviter_tenant":
 { Args: { "p_home_region_id": string,"p_inviter_id": string }; Returns: string
                            },
@@ -733,14 +796,26 @@ isOneToOne: false
 "provision_customer_organization":
 { Args: { "p_brand_name"?: string,"p_brand_primary_color"?: string,"p_enabled_features"?: (string)[],"p_initial_admin_email": string,"p_name": string,"p_organization_type": Database["public"]['Enums']["organization_type"],"p_slug": string }; Returns: string
                            },
+"provision_invited_mitra":
+{ Args: { "p_invite_id": string,"p_user_id": string }; Returns: string
+                           },
 "provision_invited_pilot":
 { Args: { "p_invite_id": string,"p_license_number"?: string,"p_user_id": string }; Returns: string
+                           },
+"register_self_as_farmer":
+{ Args: { "p_full_name": string,"p_hostname": string,"p_phone": string,"p_village_id": string }; Returns: string
                            },
 "set_booking_status":
 { Args: { "p_booking_id": string,"p_reason"?: string,"p_to_status": Database["public"]['Enums']["booking_status"] }; Returns: undefined
                            },
 "slot_remaining_capacity":
 { Args: { "p_date": string,"p_region_id": string,"p_slot_id": string }; Returns: number
+                           },
+"staff_invite_attempts_last_hour":
+{ Args: { "p_inviter_id": string }; Returns: number
+                           },
+"staff_invite_email_taken":
+{ Args: { "p_email": string }; Returns: boolean
                            },
 "start_job":
 { Args: { "p_booking_id": string }; Returns: undefined

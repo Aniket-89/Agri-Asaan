@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import {
-  BuildingsIcon,
   ClipboardTextIcon,
   ClockIcon,
   DroneIcon,
@@ -15,7 +14,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 
 import { navItemsForRole, type NavLabel } from "@/components/layout/nav-items";
-import { Button, buttonClass, controlClass, EmptyState, Field, Page, Panel } from "@/components/ui";
+import { Button, buttonClass, controlClass, Field, Page, Panel } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import {
@@ -196,17 +195,9 @@ async function DashboardContent() {
   const active = context.membership;
 
   if (!active) {
-    return (
-      <EmptyState
-        icon={<BuildingsIcon weight="duotone" className="size-7" />}
-        text={
-          <>
-            <span className="block font-semibold text-ink">{t.dashboard.noOrganization}</span>
-            {t.dashboard.noOrganizationHint}
-          </>
-        }
-      />
-    );
+    // Not in an organization yet: join this site's organization as a farmer,
+    // or see that an administrator must add them (ADR 0018).
+    redirect(withLocale(locale, "/register/join"));
   }
 
   const stats = await loadStats(

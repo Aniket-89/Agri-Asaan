@@ -4,14 +4,23 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { z } from "zod";
 
-import { MapPinAreaIcon, PlusIcon } from "@phosphor-icons/react/dist/ssr";
+import { EnvelopeSimpleIcon, MapPinAreaIcon, PlusIcon } from "@phosphor-icons/react/dist/ssr";
 
 import { StatusBanner } from "@/components/shared/status-banner";
-import { Button, controlClass, EmptyState, Page, PageHeader } from "@/components/ui";
+import {
+  Button,
+  controlClass,
+  controlOnTintClass,
+  Disclosure,
+  EmptyState,
+  Field,
+  Page,
+  PageHeader,
+} from "@/components/ui";
 import { withLocale, type Dictionary } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { resolveActiveOrganization } from "@/modules/organizations";
-import { getTerritoryOverview } from "@/modules/villages";
+import { getTerritoryOverview, type TerritoryOverview } from "@/modules/villages";
 import { TerritoryRegionCard } from "@/modules/villages/components/territory-region-card";
 
 import {
@@ -19,6 +28,7 @@ import {
   assignRegionalAdminAction,
   createRegionAction,
   createVillageAction,
+  inviteMitraAction,
   removeMitraAction,
   removeRegionalAdminAction,
 } from "./actions";
@@ -26,8 +36,12 @@ import {
 export const instant = false;
 
 const searchSchema = z.object({
-  status: z.enum(["saved"]).optional().catch(undefined),
+  status: z.enum(["saved", "invited"]).optional().catch(undefined),
   error: z.enum(["forbidden", "duplicate", "invalid", "not_found"]).optional().catch(undefined),
+  inviteError: z
+    .enum(["forbidden", "email_in_use", "rate_limited", "invalid", "invite_failed"])
+    .optional()
+    .catch(undefined),
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -45,10 +59,83 @@ function StatusMessage({
   if (search.error) {
     return <StatusBanner kind="error" text={t.errors[search.error]} />;
   }
+  if (search.inviteError) {
+    return <StatusBanner kind="error" text={t.inviteErrors[search.inviteError]} />;
+  }
   if (search.status === "saved") {
     return <StatusBanner kind="success" text={t.saved} />;
   }
+  if (search.status === "invited") {
+    return <StatusBanner kind="success" text={t.invited} />;
+  }
   return null;
+}
+
+// Regional admins create mitra accounts by email invite (ADR 0019); the
+// database re-checks that the village is in one of their regions.
+function InviteMitraForm({
+  villages,
+  t,
+}: {
+  villages: TerritoryOverview["mitraInviteVillages"];
+  t: Dictionary["territory"];
+}) {
+  const regionNames = [...new Set(villages.map((village) => village.regionName))];
+  const options = (list: typeof villages) =>
+    list.map((village) => (
+      <option key={village.id} value={village.id}>
+        {village.name}
+      </option>
+    ));
+
+  return (
+    <section className="rounded-2xl bg-surface p-3 shadow-soft">
+      <Disclosure summary={t.inviteMitra}>
+        <form action={inviteMitraAction} className="grid gap-4 sm:grid-cols-2">
+          <p className="flex gap-2 text-sm text-ink-muted sm:col-span-2">
+            <EnvelopeSimpleIcon weight="duotone" className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {t.inviteMitraIntro}
+          </p>
+          <Field label={t.inviteName}>
+            <input
+              name="fullName"
+              required
+              minLength={2}
+              maxLength={120}
+              className={controlOnTintClass}
+            />
+          </Field>
+          <Field label={t.inviteEmail}>
+            <input
+              name="email"
+              type="email"
+              required
+              maxLength={320}
+              autoComplete="off"
+              className={controlOnTintClass}
+            />
+          </Field>
+          <Field label={t.inviteVillage} className="sm:col-span-2">
+            <select name="villageId" required defaultValue="" className={controlOnTintClass}>
+              <option value="" disabled>
+                {t.chooseVillage}
+              </option>
+              {regionNames.length > 1
+                ? regionNames.map((regionName) => (
+                    <optgroup key={regionName} label={regionName}>
+                      {options(villages.filter((village) => village.regionName === regionName))}
+                    </optgroup>
+                  ))
+                : options(villages)}
+            </select>
+          </Field>
+          <Button className="sm:col-span-2" block>
+            {t.inviteSubmit}
+          </Button>
+        </form>
+      </Disclosure>
+    </section>
+  );
 }
 
 async function TerritoryContent({
@@ -107,6 +194,10 @@ async function TerritoryContent({
             {t.addRegion}
           </Button>
         </form>
+      ) : null}
+
+      {overview.mitraInviteVillages.length > 0 ? (
+        <InviteMitraForm villages={overview.mitraInviteVillages} t={t} />
       ) : null}
 
       {overview.regions.length === 0 ? (
