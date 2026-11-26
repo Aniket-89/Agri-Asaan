@@ -4,8 +4,9 @@ import type { Database } from "@/types/database.types";
 import type {
   RegionAssignment,
   RegionInput,
-  RegionPincode,
+  RegionDistrict,
   RegionRate,
+  RegionTehsil,
   VillageAssignment,
   VillageInput,
 } from "./territory.schema";
@@ -119,35 +120,62 @@ export async function deleteMitraAssignment(
     .eq("user_id", input.userId);
 }
 
-export async function listRegionPincodes(supabase: Client, tenantId: string) {
+export async function listRegionDistricts(supabase: Client, tenantId: string) {
   return supabase
-    .from("region_pincodes")
-    .select("region_id, pincode")
-    .eq("tenant_id", tenantId)
-    .order("pincode");
+    .from("region_districts")
+    .select(
+      "region_id, district_code, district:geo_districts!region_districts_district_code_fkey(name, state:geo_states!geo_districts_state_code_fkey(name))"
+    )
+    .eq("tenant_id", tenantId);
 }
 
-export async function insertRegionPincode(
-  supabase: Client,
-  tenantId: string,
-  input: RegionPincode
-) {
+export async function listRegionTehsils(supabase: Client, tenantId: string) {
   return supabase
-    .from("region_pincodes")
-    .insert({ tenant_id: tenantId, region_id: input.regionId, pincode: input.pincode });
+    .from("region_subdistricts")
+    .select(
+      "region_id, subdistrict_code, tehsil:geo_subdistricts!region_subdistricts_subdistrict_code_fkey(name, district:geo_districts!geo_subdistricts_district_code_fkey(name))"
+    )
+    .eq("tenant_id", tenantId);
 }
 
-export async function deleteRegionPincode(
+export async function insertRegionDistrict(
   supabase: Client,
   tenantId: string,
-  input: RegionPincode
+  input: RegionDistrict
 ) {
   return supabase
-    .from("region_pincodes")
+    .from("region_districts")
+    .insert({ tenant_id: tenantId, region_id: input.regionId, district_code: input.districtCode });
+}
+
+export async function deleteRegionDistrict(
+  supabase: Client,
+  tenantId: string,
+  input: RegionDistrict
+) {
+  return supabase
+    .from("region_districts")
     .delete({ count: "exact" })
     .eq("tenant_id", tenantId)
     .eq("region_id", input.regionId)
-    .eq("pincode", input.pincode);
+    .eq("district_code", input.districtCode);
+}
+
+export async function insertRegionTehsil(supabase: Client, tenantId: string, input: RegionTehsil) {
+  return supabase.from("region_subdistricts").insert({
+    tenant_id: tenantId,
+    region_id: input.regionId,
+    subdistrict_code: input.subdistrictCode,
+  });
+}
+
+export async function deleteRegionTehsil(supabase: Client, tenantId: string, input: RegionTehsil) {
+  return supabase
+    .from("region_subdistricts")
+    .delete({ count: "exact" })
+    .eq("tenant_id", tenantId)
+    .eq("region_id", input.regionId)
+    .eq("subdistrict_code", input.subdistrictCode);
 }
 
 export async function updateRegionRate(supabase: Client, tenantId: string, input: RegionRate) {

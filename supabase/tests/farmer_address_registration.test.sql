@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(29);
+select plan(32);
 
 -- Fixtures (fake data only). One tenant open for farmer sign-ups on
 -- ar.example.test: org admin, North and South regional admins, a mitra for
@@ -62,24 +62,30 @@ values ('d3c00000-0000-4000-8000-000000000001', 'd3a00000-0000-4000-8000-0000000
 
 set local role authenticated;
 
--- ── Region pincodes ────────────────────────────────────────────────────────
+-- ── Region coverage (LGD codes: district 167 Mathura with tehsils 764
+-- Mathura and 761 Chhata; district 118 Agra with tehsil 766 Agra; tehsil 304
+-- Dehradun) ───────────────────────────────────────────────────────────────
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000001';
 select lives_ok(
-  $$insert into public.region_pincodes (tenant_id, region_id, pincode) values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000001', '281001')$$,
-  'an organization admin adds a pincode to a region'
+  $$insert into public.region_districts (tenant_id, region_id, district_code) values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000001', 167)$$,
+  'an organization admin adds a district to a region'
 );
 select throws_ok(
-  $$insert into public.region_pincodes (tenant_id, region_id, pincode) values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000001', '12345')$$,
-  '23514', null, 'pincodes must be six digits'
+  $$insert into public.region_districts (tenant_id, region_id, district_code) values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000002', 167)$$,
+  '23505', null, 'a district belongs to one region per organization'
+);
+select lives_ok(
+  $$insert into public.region_subdistricts (tenant_id, region_id, subdistrict_code) values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000002', 761)$$,
+  'a single tehsil can go to another region'
 );
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000002';
 select throws_ok(
-  $$insert into public.region_pincodes (tenant_id, region_id, pincode) values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000001', '281002')$$,
-  '42501', null, 'regional admins cannot change region pincodes'
+  $$insert into public.region_districts (tenant_id, region_id, district_code) values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000001', 118)$$,
+  '42501', null, 'regional admins cannot change region coverage'
 );
-select is((select count(*)::integer from public.region_pincodes), 1, 'a regional admin sees their region''s pincodes');
+select is((select count(*)::integer from public.region_districts), 1, 'a regional admin sees their region''s districts');
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000004';
-select is((select count(*)::integer from public.region_pincodes), 0, 'mitras see no region pincodes');
+select is((select count(*)::integer from public.region_districts), 0, 'mitras see no region coverage');
 
 -- ── Self-registration with an address ──────────────────────────────────────
 reset role;
@@ -91,23 +97,23 @@ set local role authenticated;
 
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000011';
 select lives_ok(
-  $$select public.register_self_as_farmer('ar.example.test', 'AR Farmer One', '9876500011', '281001', 'Fake Town', 'Near the fake well')$$,
-  'a farmer registers with a pincode and address and no village'
+  $$select public.register_self_as_farmer('ar.example.test', 'AR Farmer One', '9876500011', 764, 'Fake Town', 'Near the fake well', '281001')$$,
+  'a farmer registers with a tehsil and address and no village'
 );
 select is(
   (select coalesce(region_id::text, 'none') || '|' || coalesce(village_id::text, 'none') from public.farmers where profile_id = auth.uid()),
-  'd3100000-0000-4000-8000-000000000001|none', 'the pincode places the farmer in its region, without a village'
+  'd3100000-0000-4000-8000-000000000001|none', 'the tehsil''s district places the farmer in its region, without a village'
 );
 
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000012';
-select public.register_self_as_farmer('ar.example.test', 'AR Farmer Two', '9876500012', '999999', 'Far Town', 'Fake road 2');
+select public.register_self_as_farmer('ar.example.test', 'AR Farmer Two', '9876500012', 766, 'Far Town', 'Fake road 2', '282001');
 select is(
   (select region_id from public.farmers where profile_id = auth.uid()),
-  null, 'a pincode outside every region leaves the farmer without a region'
+  null, 'a tehsil outside every region leaves the farmer without a region'
 );
 
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000013';
-select public.register_self_as_farmer('ar.example.test', 'AR Farmer Three', '9876500013', '281001', 'North Village', 'Fake lane 3', 'd3200000-0000-4000-8000-000000000001');
+select public.register_self_as_farmer('ar.example.test', 'AR Farmer Three', '9876500013', 764, 'North Village', 'Fake lane 3', '281001', 'd3200000-0000-4000-8000-000000000001');
 select is(
   (select region_id::text || '|' || village_id::text from public.farmers where profile_id = auth.uid()),
   'd3100000-0000-4000-8000-000000000001|d3200000-0000-4000-8000-000000000001', 'a listed village places the farmer directly'
@@ -115,21 +121,38 @@ select is(
 
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000014';
 select throws_ok(
-  $$select public.register_self_as_farmer('ar.example.test', 'AR Farmer Four', '9876500014', '281001', '  ', 'Fake road 4')$$,
+  $$select public.register_self_as_farmer('ar.example.test', 'AR Farmer Four', '9876500014', 764, '  ', 'Fake road 4', '281001')$$,
   '23514', null, 'the village or town name is required'
 );
 select throws_ok(
-  $$select public.register_self_as_farmer('ar.example.test', 'AR Farmer Four', '9876500014', '2810', 'Fake Town', 'Fake road 4')$$,
+  $$select public.register_self_as_farmer('ar.example.test', 'AR Farmer Four', '9876500014', 764, 'Fake Town', 'Fake road 4', '2810')$$,
   '23514', null, 'an invalid pincode is refused'
 );
+select throws_ok(
+  $$select public.register_self_as_farmer('ar.example.test', 'AR Farmer Four', '9876500014', 999999, 'Fake Town', 'Fake road 4', '281001')$$,
+  '22023', 'choose your tehsil', 'an unknown tehsil is refused'
+);
 select is((select count(*)::integer from public.organization_members where user_id = auth.uid()), 0, 'a refused registration leaves no membership');
-select public.register_self_as_farmer('ar.example.test', 'AR Farmer Four', '9876500014', '888888', 'Lost Town', 'Fake road 4');
+select public.register_self_as_farmer('ar.example.test', 'AR Farmer Four', '9876500014', 304, 'Lost Town', 'Fake road 4', '248001');
+
+-- A tehsil entry wins over its district: Chhata (761) is in Mathura district
+-- (North) but listed for South.
+reset role;
+insert into auth.users (id, aud, role, email, created_at)
+values ('d3000000-0000-4000-8000-000000000015', 'authenticated', 'authenticated', 'ar-f5@example.test', now());
+set local role authenticated;
+set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000015';
+select public.register_self_as_farmer('ar.example.test', 'AR Farmer Five', '9876500015', 761, 'Chhata', 'Fake road 5', '281401');
+select is(
+  (select region_id from public.farmers where profile_id = auth.uid()),
+  'd3100000-0000-4000-8000-000000000002'::uuid, 'a tehsil listed for another region overrides its district'
+);
 
 -- ── Who sees farmers not placed yet ────────────────────────────────────────
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000002';
 select is(
   (select count(*)::integer from public.farmers where profile_id = 'd3000000-0000-4000-8000-000000000011'),
-  1, 'the region''s admin sees a farmer placed in their region by pincode'
+  1, 'the region''s admin sees a farmer placed in their region by tehsil'
 );
 select is(
   (select count(*)::integer from public.farmers where profile_id in ('d3000000-0000-4000-8000-000000000012', 'd3000000-0000-4000-8000-000000000014')),
@@ -151,12 +174,12 @@ select is(
   2, 'the organization admin sees farmers outside every region'
 );
 
--- Covering a pincode brings its waiting farmers into the region.
-insert into public.region_pincodes (tenant_id, region_id, pincode)
-values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000002', '999999');
+-- Covering a district brings its waiting farmers into the region.
+insert into public.region_districts (tenant_id, region_id, district_code)
+values ('d3a00000-0000-4000-8000-00000000000a', 'd3100000-0000-4000-8000-000000000002', 118);
 select is(
   (select region_id from public.farmers where profile_id = 'd3000000-0000-4000-8000-000000000012'),
-  'd3100000-0000-4000-8000-000000000002'::uuid, 'adding a pincode to a region assigns waiting farmers to it'
+  'd3100000-0000-4000-8000-000000000002'::uuid, 'adding a district to a region assigns waiting farmers to it'
 );
 
 -- ── Booking by region ──────────────────────────────────────────────────────
@@ -206,7 +229,7 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = 'd3000000-0000-4000-8000-000000000005';
 select is(
   (select village_name from public.list_my_jobs('d3a00000-0000-4000-8000-00000000000a')),
-  'Fake Town, Near the fake well, 281001', 'the pilot''s job shows the address when there is no village'
+  'Fake Town, Near the fake well, Mathura, Mathura, 281001', 'the pilot''s job shows the address when there is no village'
 );
 
 -- ── Placing a farmer in a village ──────────────────────────────────────────

@@ -20,11 +20,13 @@ import {
 import { withLocale, type Dictionary } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { resolveActiveOrganization } from "@/modules/organizations";
+import { listPlaces } from "@/modules/places";
 import { getTerritoryOverview, type TerritoryOverview } from "@/modules/villages";
 import { TerritoryRegionCard } from "@/modules/villages/components/territory-region-card";
 
 import {
-  addRegionPincodeAction,
+  addRegionDistrictAction,
+  addRegionTehsilAction,
   assignMitraAction,
   assignRegionalAdminAction,
   createRegionAction,
@@ -33,7 +35,8 @@ import {
   inviteRegionalAdminAction,
   removeMitraAction,
   removeRegionalAdminAction,
-  removeRegionPincodeAction,
+  removeRegionDistrictAction,
+  removeRegionTehsilAction,
   setRegionRateAction,
 } from "./actions";
 
@@ -230,6 +233,8 @@ async function TerritoryContent({
     notFound();
   }
 
+  // The full place list is only needed by organization admins editing coverage.
+  const places = overview.canManageRegions ? await listPlaces(active.supabase) : null;
   const search = searchSchema.parse(await searchParams);
 
   return (
@@ -280,6 +285,7 @@ async function TerritoryContent({
           key={region.id}
           region={region}
           overview={overview}
+          places={places}
           t={t}
           actions={{
             createVillage: createVillageAction,
@@ -287,8 +293,10 @@ async function TerritoryContent({
             removeRegionalAdmin: removeRegionalAdminAction,
             assignMitra: assignMitraAction,
             removeMitra: removeMitraAction,
-            addPincode: addRegionPincodeAction,
-            removePincode: removeRegionPincodeAction,
+            addDistrict: addRegionDistrictAction,
+            removeDistrict: removeRegionDistrictAction,
+            addTehsil: addRegionTehsilAction,
+            removeTehsil: removeRegionTehsilAction,
             setRate: setRegionRateAction,
           }}
         />

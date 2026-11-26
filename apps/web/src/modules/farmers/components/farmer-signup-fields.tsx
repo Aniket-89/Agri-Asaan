@@ -1,6 +1,9 @@
 import { controlClass, Field } from "@/components/ui";
 import { format, type Dictionary } from "@/lib/i18n";
 
+import type { Places } from "@/modules/places";
+import { PlacePicker } from "@/modules/places/components/place-picker";
+
 import type { SignupVillage } from "../farmer-signup.service";
 
 // Optional: a farmer whose village is listed picks it and is placed at once;
@@ -43,11 +46,13 @@ function VillageSelect({
 // and the farmer's consent (ADR 0021).
 export function FarmerSignupFields({
   villages,
+  places,
   brandName,
   defaultName = "",
   t,
 }: {
   villages: SignupVillage[];
+  places: Places;
   brandName: string;
   defaultName?: string;
   t: Dictionary["register"];
@@ -80,6 +85,18 @@ export function FarmerSignupFields({
           required
         />
       </Field>
+      <PlacePicker
+        districts={places.districts}
+        tehsils={places.tehsils}
+        className={controlClass}
+        labels={{
+          district: t.district,
+          chooseDistrict: t.chooseDistrict,
+          tehsil: t.tehsil,
+          chooseTehsil: t.chooseTehsil,
+          tehsilHint: t.tehsilHint,
+        }}
+      />
       <Field label={t.pincode} hint={t.pincodeHint}>
         <input
           className={controlClass}

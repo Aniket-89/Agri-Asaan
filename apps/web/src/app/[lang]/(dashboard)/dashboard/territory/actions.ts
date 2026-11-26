@@ -6,7 +6,8 @@ import type { z } from "zod";
 import { localizedPath } from "@/lib/i18n/request-locale";
 import { getActiveMembershipContext, resolveActiveOrganization } from "@/modules/organizations";
 import {
-  addRegionPincode,
+  addRegionDistrict,
+  addRegionTehsil,
   assignMitra,
   assignRegionalAdmin,
   createRegion,
@@ -14,12 +15,14 @@ import {
   mitraInviteInputSchema,
   regionalAdminInviteInputSchema,
   regionAssignmentSchema,
-  regionPincodeSchema,
+  regionDistrictSchema,
+  regionTehsilSchema,
   regionRateSchema,
   regionInputSchema,
   removeMitra,
   removeRegionalAdmin,
-  removeRegionPincode,
+  removeRegionDistrict,
+  removeRegionTehsil,
   setRegionRate,
   villageAssignmentSchema,
   villageInputSchema,
@@ -157,21 +160,39 @@ export async function inviteRegionalAdminAction(formData: FormData) {
   );
 }
 
-export async function addRegionPincodeAction(formData: FormData) {
+export async function addRegionDistrictAction(formData: FormData) {
   await runTerritoryAction(
     formData,
-    regionPincodeSchema,
-    ["regionId", "pincode"],
-    addRegionPincode
+    regionDistrictSchema,
+    ["regionId", "districtCode"],
+    addRegionDistrict
   );
 }
 
-export async function removeRegionPincodeAction(formData: FormData) {
+export async function removeRegionDistrictAction(formData: FormData) {
   await runTerritoryAction(
     formData,
-    regionPincodeSchema,
-    ["regionId", "pincode"],
-    removeRegionPincode
+    regionDistrictSchema,
+    ["regionId", "districtCode"],
+    removeRegionDistrict
+  );
+}
+
+export async function addRegionTehsilAction(formData: FormData) {
+  await runTerritoryAction(
+    formData,
+    regionTehsilSchema,
+    ["regionId", "subdistrictCode"],
+    addRegionTehsil
+  );
+}
+
+export async function removeRegionTehsilAction(formData: FormData) {
+  await runTerritoryAction(
+    formData,
+    regionTehsilSchema,
+    ["regionId", "subdistrictCode"],
+    removeRegionTehsil
   );
 }
 

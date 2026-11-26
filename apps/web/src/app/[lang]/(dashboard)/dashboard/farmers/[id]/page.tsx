@@ -185,7 +185,15 @@ async function FarmerDetailContent({
           <div className="rounded-xl bg-canvas px-4 py-3 text-sm">
             <p className="font-semibold text-ink">{t.farmers.address}</p>
             <p className="text-ink-muted">
-              {[farmer.addressLine, farmer.locality, farmer.pincode].filter(Boolean).join(", ")}
+              {[
+                farmer.addressLine,
+                farmer.locality,
+                farmer.tehsilName,
+                farmer.districtName,
+                farmer.pincode,
+              ]
+                .filter(Boolean)
+                .join(", ")}
             </p>
           </div>
         ) : null}

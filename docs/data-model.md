@@ -435,3 +435,17 @@ PostGIS is enabled (`20261118180523_enable_postgis.sql`).
 | `record_job_payment(booking)`                    | Assigned pilot or region manager; completed/verified jobs with an amount; once. Hints `no_amount`, `already_paid`. |
 | `get_booking_payment(booking)`                   | Amount, rate, paid state, UPI ID and payee for whoever can see the booking or is its assigned pilot.               |
 | `list_my_jobs`                                   | Adds `amount_due` and `paid_at`.                                                                                   |
+
+## Places and region coverage (ADR 0023)
+
+`geo_states`, `geo_districts` and `geo_subdistricts` are **global** lookup
+tables (LGD codes and names, not tenant-owned): readable by anon and
+authenticated, written only by migrations. `region_pincodes` from ADR 0021 was
+removed.
+
+| Table / function                          | Notes                                                                                                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `region_districts`, `region_subdistricts` | Tenant-owned coverage, one region per district/tehsil per tenant. Read by region managers; insert/delete by org admins. Inserting assigns waiting farmers. |
+| `farmers.subdistrict_code`                | The farmer's LGD tehsil; required for self-registration.                                                                                                   |
+| `region_for_subdistrict(tenant, tehsil)`  | Internal: the tehsil's own coverage first, else its district's; active regions only.                                                                       |
+| `register_self_as_farmer(...)`            | Now takes the tehsil code; the pincode is address only.                                                                                                    |

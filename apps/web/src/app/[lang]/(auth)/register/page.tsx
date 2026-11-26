@@ -41,7 +41,7 @@ async function RegisterForm({
     createSupabaseServerClient(),
     getRequestHostname(),
   ]);
-  const { open, villages } = await getSignupOptions(supabase, hostname);
+  const { open, villages, places } = await getSignupOptions(supabase, hostname);
 
   if (!open) {
     return (
@@ -70,7 +70,7 @@ async function RegisterForm({
       </div>
       {error ? <StatusBanner kind="error" text={t.errors[error]} /> : null}
       <form action={registerAction} className="space-y-4">
-        <FarmerSignupFields villages={villages} brandName={branding.name} t={t} />
+        <FarmerSignupFields villages={villages} places={places} brandName={branding.name} t={t} />
         <Field label={t.email}>
           <input className={controlClass} name="email" type="email" autoComplete="email" required />
         </Field>

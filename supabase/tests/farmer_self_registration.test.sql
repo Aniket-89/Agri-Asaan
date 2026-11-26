@@ -72,7 +72,7 @@ select is(
 );
 
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', 'Anon', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', 'Anon', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000001')$$,
   '42501',
   null,
   'anon cannot call register_self_as_farmer'
@@ -90,37 +90,37 @@ set local role authenticated;
 set local "request.jwt.claim.sub" = '91111111-1111-4111-8111-111111111111';
 
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-b.example.test', 'Fake Farmer', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9b200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-b.example.test', 'Fake Farmer', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9b200000-0000-4000-8000-000000000001')$$,
   '42501',
   'this site does not accept farmer registrations',
   'cannot join a tenant with farmer sign-up switched off'
 );
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a-unverified.example.test', 'Fake Farmer', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-a-unverified.example.test', 'Fake Farmer', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000001')$$,
   '42501',
   'this site does not accept farmer registrations',
   'cannot join through an unverified domain'
 );
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9b200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9b200000-0000-4000-8000-000000000001')$$,
   '22023',
   'village not available for registration',
   'cannot pick a village of another tenant'
 );
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000002')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000002')$$,
   '22023',
   'village not available for registration',
   'cannot pick an inactive village'
 );
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000003')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000003')$$,
   '22023',
   'village not available for registration',
   'cannot pick a village in an inactive region'
 );
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '12345', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '12345', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000001')$$,
   '23514',
   null,
   'an invalid phone is rejected and nothing is created'
@@ -132,7 +132,7 @@ select is(
 );
 
 select lives_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', '  Fake Farmer  ', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', '  Fake Farmer  ', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000001')$$,
   'a signed-in account can register as a farmer'
 );
 
@@ -166,7 +166,7 @@ select is(
   'the new farmer sees their own farmer record through RLS'
 );
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Farmer', '9876500001', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000001')$$,
   '23505',
   'already a member of this organization',
   'registering twice is rejected'
@@ -176,7 +176,7 @@ select throws_ok(
 set local "request.jwt.claim.sub" = '92222222-2222-4222-8222-222222222222';
 
 select throws_ok(
-  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Staff', '9876500002', '281001', 'Fake Town', 'Fake address 1', '9a200000-0000-4000-8000-000000000001')$$,
+  $$select public.register_self_as_farmer('sr-a.example.test', 'Fake Staff', '9876500002', 764, 'Fake Town', 'Fake address 1', '281001', '9a200000-0000-4000-8000-000000000001')$$,
   '23505',
   'already a member of this organization',
   'an existing member (mitra) cannot self-register'

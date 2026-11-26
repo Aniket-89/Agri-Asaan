@@ -31,8 +31,13 @@ export const en = {
     fullName: "Full name",
     phone: "Mobile number",
     phoneHint: "10-digit mobile number. The team calls this number about your bookings.",
+    district: "District",
+    chooseDistrict: "Choose your district",
+    tehsil: "Tehsil",
+    chooseTehsil: "Choose your tehsil",
+    tehsilHint: "Your tehsil tells us which team serves your area.",
     pincode: "Pincode",
-    pincodeHint: "6-digit postal code. It tells us which team serves your area.",
+    pincodeHint: "6-digit postal code, part of your address.",
     locality: "Village or town",
     addressLine: "House, street or landmark",
     addressLineHint: "Enough for the team to find you.",
@@ -224,7 +229,7 @@ export const en = {
     sendBack: "Send back to pilot",
     sendBackReason: "What needs correcting (required)",
     outsideServiceArea:
-      "We don't serve your pincode yet. Your registration is saved, and we'll contact you when spraying is available in your area.",
+      "We don't serve your area yet. Your registration is saved, and we'll contact you when spraying is available in your tehsil.",
     myFarmTitle: "My farm",
     noFarmerRecord:
       "Your login is not linked to a farmer record yet. Ask your mitra or administrator.",
@@ -387,7 +392,7 @@ export const en = {
     placeSubmit: "Place farmer",
     placed: "Farmer placed in the village.",
     waitingForPlacement:
-      "This farmer's pincode is not in any region yet. Add it to a region on the Territory page.",
+      "No region covers this farmer's tehsil yet. Add their district or tehsil to a region on the Territory page.",
     errors: {
       forbidden: "You don't have permission to do that.",
       duplicate: "That already exists.",
@@ -458,11 +463,19 @@ export const en = {
     noRateSet: "No rate set. Jobs here have no amount to collect.",
     rateLabel: "Rate per acre (₹)",
     saveRate: "Save rate",
-    pincodes: "Pincodes served",
-    noPincodes: "No pincodes yet. Farmers registering with a pincode listed here join this region.",
-    pincodesHint: "Farmers registering with these pincodes join this region.",
-    pincode: "6-digit pincode",
-    addPincode: "Add pincode",
+    coverage: "Districts and tehsils covered",
+    noCoverage:
+      "Nothing covered yet. Farmers registering from a district or tehsil listed here join this region.",
+    coverageHint:
+      "Farmers registering from these places join this region. A tehsil listed here wins over its district's region.",
+    districtChip: "{name} district, {state}",
+    tehsilChip: "{name} tehsil, {district}",
+    district: "District",
+    addDistrict: "Add a whole district",
+    chooseDistrict: "Choose a district",
+    addTehsil: "Add a single tehsil",
+    chooseTehsil: "Choose a tehsil",
+    tehsilOverrideHint: "Use this when one tehsil belongs to a different region than its district.",
     inviteMitra: "Invite a new mitra",
     inviteMitraIntro:
       "The mitra gets an email with a link to set their own password. They start with the village you choose; you can assign more villages below.",

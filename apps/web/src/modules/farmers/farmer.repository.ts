@@ -20,7 +20,7 @@ export async function listFarmers(
   let request = supabase
     .from("farmers")
     .select(
-      "id, full_name, phone, is_active, region_id, locality, pincode, village:villages!farmers_village_same_tenant(name)"
+      "id, full_name, phone, is_active, region_id, locality, pincode, village:villages!farmers_village_same_tenant(name), tehsil:geo_subdistricts!farmers_subdistrict_code_fkey(name, district:geo_districts!geo_subdistricts_district_code_fkey(name))"
     )
     .eq("tenant_id", tenantId)
     .order("full_name")
@@ -46,7 +46,7 @@ export async function getFarmer(supabase: Client, tenantId: string, farmerId: st
   return supabase
     .from("farmers")
     .select(
-      "id, full_name, phone, is_active, created_at, region_id, pincode, locality, address_line, region:regions!farmers_region_same_tenant(name), village:villages!farmers_village_same_tenant(id, name, latitude, longitude)"
+      "id, full_name, phone, is_active, created_at, region_id, pincode, locality, address_line, region:regions!farmers_region_same_tenant(name), village:villages!farmers_village_same_tenant(id, name, latitude, longitude), tehsil:geo_subdistricts!farmers_subdistrict_code_fkey(name, district:geo_districts!geo_subdistricts_district_code_fkey(name))"
     )
     .eq("tenant_id", tenantId)
     .eq("id", farmerId)

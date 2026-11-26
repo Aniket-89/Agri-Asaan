@@ -7,8 +7,9 @@ import * as repository from "./territory.repository";
 import type {
   RegionAssignment,
   RegionInput,
-  RegionPincode,
+  RegionDistrict,
   RegionRate,
+  RegionTehsil,
   VillageAssignment,
   VillageInput,
 } from "./territory.schema";
@@ -43,8 +44,10 @@ export type TerritoryRegion = {
   isActive: boolean;
   canManage: boolean;
   regionalAdmins: TerritoryPerson[];
-  // Pincodes this region serves; a farmer registering with one joins it.
-  pincodes: string[];
+  // Districts and single tehsils this region covers (ADR 0023); a farmer
+  // registering from a covered tehsil joins it.
+  districts: { code: number; name: string; stateName: string }[];
+  tehsils: { code: number; name: string; districtName: string }[];
   // Spraying rate per acre (ADR 0022); null when not set.
   ratePerAcre: number | null;
   villages: TerritoryVillage[];
@@ -97,7 +100,7 @@ export async function getTerritoryOverview(
   }
 
   const { supabase, organizationId } = context;
-  const [regions, villages, adminAssignments, mitraAssignments, members, pincodes] =
+  const [regions, villages, adminAssignments, mitraAssignments, members, districts, tehsils] =
     await Promise.all([
       repository.listRegions(supabase, organizationId).then((r) => unwrap(r, "regions")),
       repository.listVillages(supabase, organizationId).then((r) => unwrap(r, "villages")),
@@ -110,7 +113,12 @@ export async function getTerritoryOverview(
       repository
         .listMembersWithRoles(supabase, organizationId, ["regional_admin", "mitra"])
         .then((r) => unwrap(r, "members")),
-      repository.listRegionPincodes(supabase, organizationId).then((r) => unwrap(r, "pincodes")),
+      repository
+        .listRegionDistricts(supabase, organizationId)
+        .then((r) => unwrap(r, "region districts")),
+      repository
+        .listRegionTehsils(supabase, organizationId)
+        .then((r) => unwrap(r, "region tehsils")),
     ]);
 
   const profileIds = [...new Set(members.map((member) => member.user_id))];
@@ -161,7 +169,22 @@ export async function getTerritoryOverview(
         .filter((a) => a.region_id === region.id)
         .map((a) => person(a.user_id))
         .sort(byName),
-      pincodes: pincodes.filter((pin) => pin.region_id === region.id).map((pin) => pin.pincode),
+      districts: districts
+        .filter((row) => row.region_id === region.id)
+        .map((row) => ({
+          code: row.district_code,
+          name: row.district?.name ?? String(row.district_code),
+          stateName: row.district?.state?.name ?? "",
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+      tehsils: tehsils
+        .filter((row) => row.region_id === region.id)
+        .map((row) => ({
+          code: row.subdistrict_code,
+          name: row.tehsil?.name ?? String(row.subdistrict_code),
+          districtName: row.tehsil?.district?.name ?? "",
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
       villages: villages
         .filter((village) => village.region_id === region.id)
         .map((village) => ({
@@ -268,17 +291,18 @@ export async function removeMitra(
   return count ? { ok: true } : { ok: false, error: "not_found" };
 }
 
-// Only organization admins change which pincodes a region serves; adding one
-// also brings waiting farmers with that pincode into the region (database
-// trigger).
-export async function addRegionPincode(
+// Only organization admins change which districts and tehsils a region
+// covers; adding one also brings waiting farmers there into the region
+// (database trigger). A district already covered by another region is
+// refused as a duplicate.
+export async function addRegionDistrict(
   context: TerritoryContext,
-  input: RegionPincode
+  input: RegionDistrict
 ): Promise<TerritoryResult> {
   if (!canManageRegions(context.role)) {
     return { ok: false, error: "forbidden" };
   }
-  const { error } = await repository.insertRegionPincode(
+  const { error } = await repository.insertRegionDistrict(
     context.supabase,
     context.organizationId,
     input
@@ -286,14 +310,47 @@ export async function addRegionPincode(
   return settle(error);
 }
 
-export async function removeRegionPincode(
+export async function removeRegionDistrict(
   context: TerritoryContext,
-  input: RegionPincode
+  input: RegionDistrict
 ): Promise<TerritoryResult> {
   if (!canManageRegions(context.role)) {
     return { ok: false, error: "forbidden" };
   }
-  const { error, count } = await repository.deleteRegionPincode(
+  const { error, count } = await repository.deleteRegionDistrict(
+    context.supabase,
+    context.organizationId,
+    input
+  );
+  if (error) {
+    return settle(error);
+  }
+  return count ? { ok: true } : { ok: false, error: "not_found" };
+}
+
+export async function addRegionTehsil(
+  context: TerritoryContext,
+  input: RegionTehsil
+): Promise<TerritoryResult> {
+  if (!canManageRegions(context.role)) {
+    return { ok: false, error: "forbidden" };
+  }
+  const { error } = await repository.insertRegionTehsil(
+    context.supabase,
+    context.organizationId,
+    input
+  );
+  return settle(error);
+}
+
+export async function removeRegionTehsil(
+  context: TerritoryContext,
+  input: RegionTehsil
+): Promise<TerritoryResult> {
+  if (!canManageRegions(context.role)) {
+    return { ok: false, error: "forbidden" };
+  }
+  const { error, count } = await repository.deleteRegionTehsil(
     context.supabase,
     context.organizationId,
     input
