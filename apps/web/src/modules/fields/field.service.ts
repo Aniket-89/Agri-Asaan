@@ -83,6 +83,56 @@ export async function addField(context: FieldContext, input: FieldInput): Promis
   return error ? { ok: false, error: toDomainError(error) } : { ok: true };
 }
 
+export type FieldDetail = FieldItem & { farmerId: string };
+
+// One field the caller can read (RLS), or null.
+export async function getField(
+  context: FieldContext,
+  fieldId: string,
+  locale: Locale
+): Promise<FieldDetail | null> {
+  const { data, error } = await repository.getField(
+    context.supabase,
+    context.organizationId,
+    fieldId
+  );
+  if (error) {
+    throw new Error("Unable to load the field.");
+  }
+  if (!data) {
+    return null;
+  }
+  return {
+    id: data.id,
+    farmerId: data.farmer_id,
+    name: data.name,
+    cropName: data.crop ? cropName(data.crop, locale) : "",
+    areaAcres: data.area_acres,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    boundary: toPolygon(data.boundary_geojson),
+    isActive: data.is_active,
+  };
+}
+
+// The farmer or staff who manage them draw a field's boundary (ADR 0025).
+// The database checks the shape and RLS decides who may edit the field.
+export function canDrawBoundary(role: OrganizationRole): boolean {
+  return role === "farmer" || canWorkWithFarmers(role);
+}
+
+export async function setFieldBoundary(
+  context: FieldContext,
+  fieldId: string,
+  boundary: GeoPolygon | null
+): Promise<FieldResult> {
+  if (!canDrawBoundary(context.role)) {
+    return { ok: false, error: "forbidden" };
+  }
+  const { error } = await repository.setFieldBoundary(context.supabase, fieldId, boundary);
+  return error ? { ok: false, error: toDomainError(error) } : { ok: true };
+}
+
 // Organization admins see every region; regional admins see theirs.
 export function canViewFieldMap(role: OrganizationRole): boolean {
   return role === "organization_admin" || role === "regional_admin";

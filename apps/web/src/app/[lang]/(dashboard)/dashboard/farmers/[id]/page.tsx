@@ -227,14 +227,30 @@ async function FarmerDetailContent({
           />
           <ul className="space-y-2">
             {fields.map((field) => (
-              <li key={field.id} className="rounded-xl bg-canvas px-4 py-3">
-                <p className="font-semibold text-ink">{field.name}</p>
-                <p className="text-sm text-ink-muted">
-                  {field.cropName}, {acres(field.areaAcres)}
-                </p>
-                <p className="text-xs text-ink-faint tabular-nums">
-                  {field.latitude}, {field.longitude}
-                </p>
+              <li
+                key={field.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-canvas px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-ink">{field.name}</p>
+                  <p className="text-sm text-ink-muted">
+                    {field.cropName}, {acres(field.areaAcres)}
+                  </p>
+                  <p className="text-xs text-ink-faint tabular-nums">
+                    {field.latitude}, {field.longitude}
+                  </p>
+                </div>
+                <a
+                  href={withLocale(
+                    locale,
+                    field.boundary
+                      ? `/dashboard/fields/${field.id}`
+                      : `/dashboard/fields/${field.id}/boundary`
+                  )}
+                  className={buttonClass({ variant: "quiet", size: "sm" })}
+                >
+                  {field.boundary ? t.cropHealth.view : t.cropHealth.addBoundary}
+                </a>
               </li>
             ))}
           </ul>

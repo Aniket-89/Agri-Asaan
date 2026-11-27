@@ -122,11 +122,22 @@ async function MyFarmContent({
                 >
                   <PlantIcon weight="fill" className="size-5" />
                 </span>
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className="block font-semibold text-ink">{field.name}</span>
                   <span className="block text-sm text-ink-muted">
                     {field.cropName}, {formatAcres(field.areaAcres, locale, t.bookings)}
                   </span>
+                  <a
+                    href={withLocale(
+                      locale,
+                      field.boundary
+                        ? `/dashboard/fields/${field.id}`
+                        : `/dashboard/fields/${field.id}/boundary`
+                    )}
+                    className="text-sm font-semibold text-brand underline-offset-2 hover:underline"
+                  >
+                    {field.boundary ? t.cropHealth.view : t.cropHealth.addBoundary}
+                  </a>
                 </span>
               </li>
             ))}

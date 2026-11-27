@@ -177,8 +177,8 @@ select throws_ok(
   '42501', null, 'mitra cannot add fields for farmers outside their villages'
 );
 select throws_ok(
-  $$update public.fields set boundary = 'SRID=4326;POLYGON((77 29,77.01 29,77.01 29.01,77 29))' where id = '8aff0000-0000-4000-8000-000000000001'$$,
-  '42501', null, 'field boundaries cannot be written through the API'
+  $$update public.fields set boundary = 'SRID=4326;POLYGON((77.1 29,77.11 29,77.11 29.01,77.1 29))' where id = '8aff0000-0000-4000-8000-000000000001'$$,
+  '23514', null, 'boundaries written through the API are validated (ADR 0025)'
 );
 delete from public.farmers where id = '8af10000-0000-4000-8000-000000000001';
 select is(

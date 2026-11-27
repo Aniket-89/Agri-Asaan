@@ -221,6 +221,26 @@ isOneToOne: false
       referencedColumns: ["tenant_id","id"]
     }
                   ]
+                },"field_observations": {
+                  Row: {
+                    "cloud_cover_pct": number,"created_at": string,"field_id": string,"id": string,"ndmi_mean": number | null,"ndre_mean": number | null,"ndvi_mean": number | null,"observed_at": string,"processing_version": string,"quality": string,"source": string,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cloud_cover_pct": number,"created_at"?: string,"field_id": string,"id"?: string,"ndmi_mean"?: number | null,"ndre_mean"?: number | null,"ndvi_mean"?: number | null,"observed_at": string,"processing_version": string,"quality": string,"source": string,"tenant_id": string
+                  }
+                  Update: {
+                    "cloud_cover_pct"?: number,"created_at"?: string,"field_id"?: string,"id"?: string,"ndmi_mean"?: number | null,"ndre_mean"?: number | null,"ndvi_mean"?: number | null,"observed_at"?: string,"processing_version"?: string,"quality"?: string,"source"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "field_observations_field_same_tenant"
+      columns: ["tenant_id","field_id"]
+isOneToOne: false
+      referencedRelation: "fields"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
                 },"fields": {
                   Row: {
                     "area_acres": number,"boundary": unknown,"created_at": string,"crop_id": string,"farmer_id": string,"id": string,"is_active": boolean,"latitude": number,"location": unknown,"longitude": number,"name": string,"tenant_id": string,"updated_at": string,"boundary_geojson": Json | null
@@ -1012,6 +1032,9 @@ isOneToOne: false
                            },
 "set_booking_status":
 { Args: { "p_booking_id": string,"p_reason"?: string,"p_to_status": Database["public"]['Enums']["booking_status"] }; Returns: undefined
+                           },
+"set_field_boundary":
+{ Args: { "p_boundary": Json,"p_field_id": string }; Returns: undefined
                            },
 "slot_remaining_capacity":
 { Args: { "p_date": string,"p_region_id": string,"p_slot_id": string }; Returns: number
