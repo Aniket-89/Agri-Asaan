@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -6,8 +7,9 @@ import { z } from "zod";
 
 import { ClipboardTextIcon, PlantIcon, UserCircleIcon } from "@phosphor-icons/react/dist/ssr";
 
+import { ScrollToHash } from "@/components/shared/scroll-to-hash";
 import { StatusBanner } from "@/components/shared/status-banner";
-import { EmptyState, Page, PageHeader, Panel } from "@/components/ui";
+import { EmptyState, Page, PageHeader, Panel, PageSkeleton } from "@/components/ui";
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import {
@@ -127,7 +129,7 @@ async function MyFarmContent({
                   <span className="block text-sm text-ink-muted">
                     {field.cropName}, {formatAcres(field.areaAcres, locale, t.bookings)}
                   </span>
-                  <a
+                  <Link
                     href={withLocale(
                       locale,
                       field.boundary
@@ -137,7 +139,7 @@ async function MyFarmContent({
                     className="text-sm font-semibold text-brand underline-offset-2 hover:underline"
                   >
                     {field.boundary ? t.cropHealth.view : t.cropHealth.addBoundary}
-                  </a>
+                  </Link>
                 </span>
               </li>
             ))}
@@ -185,6 +187,7 @@ async function MyFarmContent({
           <BookingList bookings={bookings} locale={locale} t={t.bookings} showFarmer={false} />
         </section>
       ) : null}
+      <ScrollToHash />
     </>
   );
 }
@@ -195,7 +198,7 @@ export default async function MyFarmPage({ searchParams }: PageProps<"/[lang]/da
   return (
     <Page>
       <PageHeader title={t.bookings.myFarmTitle} />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <MyFarmContent searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </Page>

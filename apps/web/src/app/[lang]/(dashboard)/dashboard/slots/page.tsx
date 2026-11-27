@@ -16,6 +16,7 @@ import {
   Field,
   Page,
   PageHeader,
+  PageSkeleton,
 } from "@/components/ui";
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -141,7 +142,7 @@ export default async function SlotsPage({ searchParams }: PageProps<"/[lang]/das
   return (
     <Page width="narrow">
       <PageHeader title={t.slots.title} description={t.slots.intro} />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <SlotsContent searchParams={searchParams} t={t.slots} locale={locale} />
       </Suspense>
     </Page>

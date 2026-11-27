@@ -15,6 +15,7 @@ import {
   Field,
   Page,
   PageHeader,
+  PageSkeleton,
 } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -152,7 +153,7 @@ export default async function RegisterFarmerPage({
         </BackLink>
         <PageHeader title={t.farmers.registerTitle} />
       </div>
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <RegistrationForm searchParams={searchParams} t={t.farmers} locale={locale} />
       </Suspense>
     </Page>

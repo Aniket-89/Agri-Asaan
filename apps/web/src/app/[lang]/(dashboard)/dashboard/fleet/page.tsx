@@ -23,6 +23,7 @@ import {
   PageHeader,
   Panel,
   type BadgeTone,
+  PageSkeleton,
 } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -326,7 +327,7 @@ export default async function FleetPage({ searchParams }: PageProps<"/[lang]/das
   return (
     <Page>
       <PageHeader title={t.fleet.title} />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <FleetContent searchParams={searchParams} t={t.fleet} locale={locale} />
       </Suspense>
     </Page>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { SignInIcon } from "@phosphor-icons/react/dist/ssr";
 import { z } from "zod";
@@ -87,12 +88,12 @@ export default async function LoginPage({ searchParams }: PageProps<"/[lang]/log
           {t.login.submit}
         </Button>
       </form>
-      <a
+      <Link
         className={buttonClass({ variant: "quiet", block: true })}
         href={withLocale(locale, "/register")}
       >
         {t.login.createAccount}
-      </a>
+      </Link>
     </AuthScreen>
   );
 }

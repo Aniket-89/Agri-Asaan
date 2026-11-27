@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { buttonClass } from "@/components/ui";
@@ -28,9 +29,9 @@ export function AuthNotice({
       </span>
       <h1 className="text-2xl font-bold tracking-tight text-ink">{title}</h1>
       <div className="space-y-3 text-ink-muted">{children}</div>
-      <a className={buttonClass({ variant: "secondary", block: true })} href={backHref}>
+      <Link className={buttonClass({ variant: "secondary", block: true })} href={backHref}>
         {backLabel}
-      </a>
+      </Link>
     </AuthScreen>
   );
 }

@@ -8,7 +8,7 @@ import { KeyIcon } from "@phosphor-icons/react/dist/ssr";
 
 import { AuthScreen } from "@/components/layout/auth-screen";
 import { StatusBanner } from "@/components/shared/status-banner";
-import { Button, controlClass, Field } from "@/components/ui";
+import { Button, controlClass, Field, PageSkeleton } from "@/components/ui";
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -99,7 +99,7 @@ export default async function SetPasswordPage({
 
   return (
     <AuthScreen>
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <SetPasswordForm searchParams={searchParams} t={t.account} locale={locale} />
       </Suspense>
     </AuthScreen>

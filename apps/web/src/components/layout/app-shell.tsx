@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DotsThreeOutlineIcon, SignOutIcon } from "@phosphor-icons/react/dist/ssr";
 
 import { BrandMark } from "@/components/brand/brand-mark";
@@ -123,12 +124,12 @@ export function AppShell({
 
       {/* Phones and tablets: top bar. */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 bg-surface/95 px-4 shadow-soft backdrop-blur lg:hidden">
-        <a href={href("/dashboard")} className="flex min-w-0 items-center gap-2.5">
+        <Link href={href("/dashboard")} className="flex min-w-0 items-center gap-2.5">
           <BrandMark branding={branding} className="size-9" />
           <span className="truncate text-lg font-extrabold tracking-tight text-brand">
             {branding.name}
           </span>
-        </a>
+        </Link>
         <div className="flex items-center gap-1">
           {languages(true)}
           <SignOutButton label={t.shell.signOut} compact />

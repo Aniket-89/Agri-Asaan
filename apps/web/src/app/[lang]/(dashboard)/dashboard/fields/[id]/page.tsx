@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -14,6 +15,7 @@ import {
   PageHeader,
   Panel,
   SegmentedTabs,
+  PageSkeleton,
 } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -109,10 +111,10 @@ async function FieldHealthContent({
         description={`${field.cropName}, ${format(t.fields.acres, { area: acres })}`}
         action={
           field.boundary && canDrawBoundary(context.role) ? (
-            <a href={drawHref} className={buttonClass({ variant: "secondary", size: "sm" })}>
+            <Link href={drawHref} className={buttonClass({ variant: "secondary", size: "sm" })}>
               <PolygonIcon weight="bold" className="size-4" aria-hidden />
               {c.editBoundary}
-            </a>
+            </Link>
           ) : null
         }
       />
@@ -132,10 +134,10 @@ async function FieldHealthContent({
             <h2 className="text-lg font-bold text-ink">{c.addBoundaryTitle}</h2>
             <p className="text-ink-muted">{format(c.addBoundaryText, { field: field.name })}</p>
             {canDrawBoundary(context.role) ? (
-              <a href={drawHref} className={buttonClass()}>
+              <Link href={drawHref} className={buttonClass()}>
                 <PolygonIcon weight="bold" className="size-5" aria-hidden />
                 {c.addBoundary}
-              </a>
+              </Link>
             ) : null}
           </div>
         </Panel>
@@ -359,7 +361,7 @@ export default async function FieldHealthPage({
   const { locale, t } = await getDictionary();
   return (
     <Page>
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <FieldHealthContent params={params} searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </Page>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 // Filter links: one scrolling row on phones, wrapping on wider screens.
 export function FilterChips({
   label,
@@ -14,8 +15,9 @@ export function FilterChips({
       <ul className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
         {items.map((item) => (
           <li key={item.key}>
-            <a
+            <Link
               href={item.href}
+              scroll={false}
               aria-current={item.active ? "page" : undefined}
               className={`flex min-h-10 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap transition ${
                 item.active
@@ -24,7 +26,7 @@ export function FilterChips({
               }`}
             >
               {item.label}
-            </a>
+            </Link>
           </li>
         ))}
       </ul>

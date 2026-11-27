@@ -1,3 +1,4 @@
+import Form from "next/form";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -7,7 +8,7 @@ import { z } from "zod";
 import { MapTrifoldIcon, WarningIcon } from "@phosphor-icons/react/dist/ssr";
 
 import { FieldMap } from "@/components/maps/field-map";
-import { Button, controlClass, EmptyState, Page, PageHeader } from "@/components/ui";
+import { Button, controlClass, EmptyState, Page, PageHeader, PageSkeleton } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { bookingDateWindow } from "@/modules/bookings";
@@ -70,7 +71,7 @@ async function FieldMapContent({
   return (
     <>
       <div className="space-y-3 rounded-2xl bg-surface p-3 shadow-soft sm:p-4">
-        <form method="get" className="flex gap-2">
+        <Form action={withLocale(locale, "/dashboard/map")} className="flex gap-2">
           <label className="min-w-0 flex-1">
             <span className="sr-only">{t.maps.region}</span>
             <select name="region" defaultValue={region.id} className={controlClass}>
@@ -84,7 +85,7 @@ async function FieldMapContent({
           <Button variant="secondary" className="shrink-0">
             {t.maps.show}
           </Button>
-        </form>
+        </Form>
 
         <ul
           className="flex flex-wrap gap-x-4 gap-y-1 px-1 text-sm text-ink-muted"
@@ -132,7 +133,7 @@ export default async function FieldMapPage({ searchParams }: PageProps<"/[lang]/
   return (
     <Page width="wide">
       <PageHeader title={t.maps.overviewTitle} description={t.maps.overviewIntro} />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <FieldMapContent searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </Page>

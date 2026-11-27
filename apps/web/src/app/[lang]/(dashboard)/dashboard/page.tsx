@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -14,7 +15,15 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 
 import { navItemsForRole, type NavLabel } from "@/components/layout/nav-items";
-import { Button, buttonClass, controlClass, Field, Page, Panel } from "@/components/ui";
+import {
+  Button,
+  buttonClass,
+  controlClass,
+  Field,
+  Page,
+  Panel,
+  PageSkeleton,
+} from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import {
@@ -157,12 +166,12 @@ async function CropHealthSection({
       {fields.length === 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-leaf/60 p-4">
           <p className="text-ink-muted">{c.noFields}</p>
-          <a
+          <Link
             href={withLocale(locale, "/dashboard/my-farm#my-fields")}
             className={buttonClass({ variant: "secondary", size: "sm" })}
           >
             {c.addField}
-          </a>
+          </Link>
         </div>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -225,7 +234,7 @@ function Hero({
           <ul className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
             {stats.map((stat) => (
               <li key={stat.label}>
-                <a
+                <Link
                   href={stat.href}
                   className="block h-full rounded-2xl bg-white/10 px-3 py-3 transition hover:bg-white/15 sm:px-4"
                 >
@@ -235,7 +244,7 @@ function Hero({
                   <span className="mt-1.5 block text-sm leading-tight text-white/80">
                     {stat.label}
                   </span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -299,13 +308,13 @@ async function DashboardContent() {
         summaryLabel={t.dashboard.summary}
         action={
           active.role === "farmer" ? (
-            <a
+            <Link
               href={withLocale(locale, "/dashboard/my-farm#book")}
               className={buttonClass({ variant: "accent" })}
             >
               <PlusIcon weight="bold" className="size-5" aria-hidden />
               {t.dashboard.bookSpray}
-            </a>
+            </Link>
           ) : null
         }
       />
@@ -323,7 +332,7 @@ async function DashboardContent() {
             const { icon: Icon, tone } = SHORTCUTS[item.label];
             return (
               <li key={item.path}>
-                <a
+                <Link
                   href={withLocale(locale, item.path)}
                   className="flex h-full flex-col gap-3 rounded-2xl bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-raised"
                 >
@@ -338,7 +347,7 @@ async function DashboardContent() {
                       {t.dashboard.hints[item.label]}
                     </span>
                   </span>
-                </a>
+                </Link>
               </li>
             );
           })}
@@ -376,7 +385,7 @@ async function DashboardContent() {
 export default function DashboardPage() {
   return (
     <Page>
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <DashboardContent />
       </Suspense>
     </Page>
