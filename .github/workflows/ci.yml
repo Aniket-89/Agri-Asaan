@@ -52,3 +52,20 @@ jobs:
         run: |
           npx supabase gen types typescript --local --schema public > /tmp/database.types.ts
           diff -u apps/web/src/types/database.types.ts /tmp/database.types.ts
+
+  worker:
+    name: Worker lint, types, tests, image
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: services/worker
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: pipx install uv==0.10.12
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src tests
+      - run: uv run pytest -q
+      - name: Build the worker image
+        run: docker build -t agri-worker:ci .

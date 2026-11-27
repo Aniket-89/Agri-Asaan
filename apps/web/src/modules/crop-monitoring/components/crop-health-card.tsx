@@ -5,9 +5,9 @@ import { Badge, buttonClass, type BadgeTone } from "@/components/ui";
 import { format, type Dictionary, type Locale } from "@/lib/i18n";
 import type { GeoPolygon } from "@/lib/maps/geo";
 
-import type { FieldHealth, Observation } from "../crop-health.service";
-import { hashSeed, simulatedIndexGrid } from "../index-grid";
-import { ageInDays, healthStatus, type HealthStatus, type IndexKind } from "../indices";
+import type { FieldHealth } from "../crop-health.service";
+import { ageInDays, healthStatus, type HealthStatus } from "../indices";
+import { cellsFor, type PixelCell } from "../pixel-file";
 import { IndexHeatmap } from "./index-heatmap";
 import { TrendLine } from "./trend-line";
 
@@ -41,14 +41,6 @@ export function formatIndex(value: number, locale: Locale): string {
   }).format(value);
 }
 
-// The pattern of one pass's index map is fixed by the pass and index.
-export function passGrid(boundary: GeoPolygon, observation: Observation, kind: IndexKind) {
-  const mean = observation.values[kind];
-  return mean === null
-    ? []
-    : simulatedIndexGrid(boundary, kind, mean, hashSeed(`${observation.id}:${kind}`));
-}
-
 type CardField = { id: string; name: string; cropName: string; boundary: GeoPolygon | null };
 
 // One field on the farmer dashboard: its crop health at a glance, or an
@@ -56,6 +48,7 @@ type CardField = { id: string; name: string; cropName: string; boundary: GeoPoly
 export function CropHealthCard({
   field,
   health,
+  pixels,
   viewHref,
   drawHref,
   now,
@@ -64,6 +57,8 @@ export function CropHealthCard({
 }: {
   field: CardField;
   health: FieldHealth | undefined;
+  // Real 10 m pixels of the latest clear pass, if available.
+  pixels: PixelCell[] | null;
   viewHref: string;
   drawHref: string;
   now: Date;
@@ -109,10 +104,10 @@ export function CropHealthCard({
     <article className="flex h-full flex-col gap-3 rounded-2xl bg-surface p-4 shadow-soft">
       <div className="flex gap-3">
         <div className="w-24 shrink-0 sm:w-28">
-          {latest ? (
+          {latest && pixels ? (
             <IndexHeatmap
               boundary={field.boundary}
-              cells={passGrid(field.boundary, latest, "ndvi")}
+              cells={cellsFor("ndvi", pixels)}
               kind="ndvi"
               label={format(t.mapLabel, { index: t.indices.ndvi, field: field.name })}
               size={112}
@@ -156,11 +151,7 @@ export function CropHealthCard({
         />
       ) : null}
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
-        {latest?.source === "simulated-demo" ? (
-          <Badge tone="neutral">{t.demoBadge}</Badge>
-        ) : (
-          <span />
-        )}
+        {latest ? <Badge tone="neutral">{t.sources[latest.source]}</Badge> : <span />}
         <Link href={viewHref} className={buttonClass({ variant: "quiet", size: "sm" })}>
           {t.view}
         </Link>

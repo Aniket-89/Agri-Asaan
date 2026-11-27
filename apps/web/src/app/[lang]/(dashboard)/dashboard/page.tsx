@@ -35,7 +35,7 @@ import {
   listMyJobs,
   OPEN_BOOKING_STATUSES,
 } from "@/modules/bookings";
-import { listFieldHealth } from "@/modules/crop-monitoring";
+import { listFieldHealth, loadPixelCells } from "@/modules/crop-monitoring";
 import { CropHealthCard } from "@/modules/crop-monitoring/components/crop-health-card";
 import { listFarmerFields } from "@/modules/fields";
 import { resolveActiveOrganization, type ActiveMembershipContext } from "@/modules/organizations";
@@ -151,6 +151,18 @@ async function CropHealthSection({
     context,
     fields.filter((field) => field.boundary).map((field) => field.id)
   );
+  // Each card's thumbnail is the latest clear pass's real pixels.
+  const pixels = new Map(
+    await Promise.all(
+      [...health].map(
+        async ([fieldId, entry]) =>
+          [
+            fieldId,
+            entry.latestClear ? await loadPixelCells(context, entry.latestClear) : null,
+          ] as const
+      )
+    )
+  );
   const now = new Date();
   const c = t.cropHealth;
 
@@ -180,6 +192,7 @@ async function CropHealthSection({
               <CropHealthCard
                 field={field}
                 health={health.get(field.id)}
+                pixels={pixels.get(field.id) ?? null}
                 viewHref={withLocale(locale, `/dashboard/fields/${field.id}`)}
                 drawHref={withLocale(locale, `/dashboard/fields/${field.id}/boundary`)}
                 now={now}

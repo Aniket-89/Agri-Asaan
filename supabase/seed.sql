@@ -307,3 +307,7 @@ values
   ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000004', null, 'requested', null, 'd0000000-0000-4000-8000-000000000004'),
   ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000004', 'requested', 'confirmed', null, 'd0000000-0000-4000-8000-000000000003'),
   ('e0000000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000004', 'confirmed', 'assigned', null, 'd0000000-0000-4000-8000-000000000003');
+
+-- Local only: let the satellite worker (ADR 0026) log in with a fake local
+-- password. Hosted passwords are set by an operator and never committed.
+alter role crop_worker with login password 'local-crop-worker-password';

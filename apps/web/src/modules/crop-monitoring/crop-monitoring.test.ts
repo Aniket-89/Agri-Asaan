@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { ringAreaAcres, type LngLat } from "@/lib/maps/boundary";
 import type { GeoPolygon } from "@/lib/maps/geo";
 
-import { hashSeed, simulatedIndexGrid } from "./index-grid";
-import { ageInDays, healthStatus, indexColor } from "./indices";
+import { ageInDays, CLOUD_COLOR, healthStatus, indexColor } from "./indices";
+import { cellsFor, parsePixelFile } from "./pixel-file";
 import { svgPath, svgProjector } from "./svg-projection";
 
 const field: GeoPolygon = {
@@ -41,6 +40,10 @@ describe("indexColor", () => {
     expect(indexColor("ndvi", 1)).toBe("#1a9850");
   });
 
+  it("shows pixels without a value as cloud grey", () => {
+    expect(indexColor("ndvi", null)).toBe(CLOUD_COLOR);
+  });
+
   it("blends between stops", () => {
     expect(indexColor("ndvi", 0.5)).toBe("#fee08b");
     expect(indexColor("ndvi", 0.45)).toMatch(/^#[0-9a-f]{6}$/);
@@ -56,53 +59,49 @@ describe("ageInDays", () => {
   });
 });
 
-describe("simulatedIndexGrid", () => {
-  const cells = simulatedIndexGrid(field, "ndvi", 0.62, hashSeed("pass-1"));
-
-  it("covers the field exactly, with cells clipped to its edge", () => {
-    expect(cells.length).toBeGreaterThan(100);
-    const covered = cells.reduce((sum, cell) => sum + ringAreaAcres(cell.ring), 0);
-    expect(covered).toBeCloseTo(ringAreaAcres(field.coordinates[0]), 2);
-  });
-
-  it("clips a triangle so no cell pokes outside it", () => {
-    const triangle: GeoPolygon = {
-      type: "Polygon",
-      coordinates: [
-        [
+describe("parsePixelFile and cellsFor", () => {
+  const file = {
+    version: 1,
+    observedAt: "2026-11-20T05:30:00+00:00",
+    cells: [
+      {
+        ring: [
           [77.5995, 27.4995],
-          [77.6005, 27.4995],
-          [77.5995, 27.5005],
+          [77.5996, 27.4995],
+          [77.5996, 27.4996],
           [77.5995, 27.4995],
         ],
-      ],
-    };
-    const pieces = simulatedIndexGrid(triangle, "ndmi", 0.2, 7);
-    const covered = pieces.reduce((sum, cell) => sum + ringAreaAcres(cell.ring), 0);
-    expect(covered).toBeCloseTo(ringAreaAcres(triangle.coordinates[0]), 2);
+        ndvi: 0.61,
+        ndre: 0.38,
+        ndmi: 0.2,
+      },
+      {
+        ring: [
+          [77.5996, 27.4995],
+          [77.5997, 27.4995],
+          [77.5997, 27.4996],
+          [77.5996, 27.4995],
+        ],
+        ndvi: null,
+        ndre: null,
+        ndmi: null,
+      },
+    ],
+  };
+
+  it("reads the worker's pixel file", () => {
+    const cells = parsePixelFile(file);
+    expect(cells).toHaveLength(2);
+    expect(cellsFor("ndre", cells!)).toEqual([
+      { ring: file.cells[0].ring, value: 0.38 },
+      { ring: file.cells[1].ring, value: null },
+    ]);
   });
 
-  it("averages to the field mean and varies across the field", () => {
-    const average = cells.reduce((sum, cell) => sum + cell.value, 0) / cells.length;
-    expect(average).toBeCloseTo(0.62, 2);
-    const values = cells.map((cell) => cell.value);
-    expect(Math.max(...values) - Math.min(...values)).toBeGreaterThan(0.05);
-  });
-
-  it("repeats for the same seed and changes for another", () => {
-    expect(simulatedIndexGrid(field, "ndvi", 0.62, hashSeed("pass-1"))).toEqual(cells);
-    expect(simulatedIndexGrid(field, "ndvi", 0.62, hashSeed("pass-2"))).not.toEqual(cells);
-  });
-
-  it("uses roughly square cells on the ground", () => {
-    const square = cells.find((cell) => cell.ring.length === 5)!;
-    const lngs = square.ring.map(([lng]) => lng);
-    const lats = square.ring.map(([, lat]) => lat);
-    const widthM =
-      (Math.max(...lngs) - Math.min(...lngs)) * 111_320 * Math.cos((27.5 * Math.PI) / 180);
-    const heightM = (Math.max(...lats) - Math.min(...lats)) * 110_574;
-    expect(widthM / heightM).toBeCloseTo(1, 1);
-    expect(ringAreaAcres(square.ring as LngLat[])).toBeLessThan(0.05);
+  it("rejects files of another version or with out-of-range values", () => {
+    expect(parsePixelFile({ ...file, version: 2 })).toBeNull();
+    expect(parsePixelFile({ ...file, cells: [{ ...file.cells[0], ndvi: 3 }] })).toBeNull();
+    expect(parsePixelFile("not json")).toBeNull();
   });
 });
 

@@ -1,12 +1,15 @@
 export {
+  getScanStatus,
   listFieldHealth,
+  loadPixelCells,
   type CropHealthContext,
+  type ScanStatus,
   type FieldHealth,
   type Observation,
   type ObservationQuality,
   type ObservationSource,
 } from "./crop-health.service";
-export { hashSeed, simulatedIndexGrid, type GridCell } from "./index-grid";
+export { cellsFor, parsePixelFile, type GridCell, type PixelCell } from "./pixel-file";
 export {
   ageInDays,
   healthStatus,

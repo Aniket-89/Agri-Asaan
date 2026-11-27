@@ -1,6 +1,7 @@
 # 0025. Crop monitoring with drawn field boundaries (simulated data for the demo)
 
-- Status: Accepted (owner decision, 2026-11-27)
+- Status: Accepted (owner decision, 2026-11-27). The simulated data is
+  superseded by ADR 0026 (real Sentinel-2 imagery).
 - Date: 2026-11-27
 
 ## Context

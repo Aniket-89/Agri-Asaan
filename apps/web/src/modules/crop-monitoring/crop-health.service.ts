@@ -4,6 +4,7 @@ import type { Database } from "@/types/database.types";
 
 import type { IndexKind } from "./indices";
 import * as repository from "./observation.repository";
+import { parsePixelFile, type PixelCell } from "./pixel-file";
 
 export type CropHealthContext = {
   supabase: SupabaseClient<Database>;
@@ -11,7 +12,7 @@ export type CropHealthContext = {
 };
 
 export type ObservationQuality = "good" | "partly_cloudy" | "cloudy";
-export type ObservationSource = "simulated-demo" | "sentinel-2-l2a";
+export type ObservationSource = "sentinel-2-l2a";
 
 export type Observation = {
   id: string;
@@ -22,6 +23,8 @@ export type Observation = {
   quality: ObservationQuality;
   // Null on cloudy passes.
   values: Record<IndexKind, number | null>;
+  // Per-pixel file in Storage; null on cloudy passes.
+  rasterPath: string | null;
 };
 
 export type FieldHealth = {
@@ -32,7 +35,7 @@ export type FieldHealth = {
 };
 
 const QUALITIES: readonly ObservationQuality[] = ["good", "partly_cloudy", "cloudy"];
-const SOURCES: readonly ObservationSource[] = ["simulated-demo", "sentinel-2-l2a"];
+const SOURCES: readonly ObservationSource[] = ["sentinel-2-l2a"];
 
 const toNumber = (value: number | null) => (value === null ? null : Number(value));
 
@@ -77,6 +80,7 @@ export async function listFieldHealth(
         ndre: toNumber(row.ndre_mean),
         ndmi: toNumber(row.ndmi_mean),
       },
+      rasterPath: row.raster_path,
     };
     entry.observations.push(observation);
     if (!entry.latestClear && observation.quality !== "cloudy") {
@@ -85,4 +89,45 @@ export async function listFieldHealth(
     health.set(row.field_id, entry);
   }
   return health;
+}
+
+export type ScanStatus = { lastCheckedAt: string; lastError: string | null };
+
+// When the satellite worker last looked at the field, or null if never.
+export async function getScanStatus(
+  context: CropHealthContext,
+  fieldId: string
+): Promise<ScanStatus | null> {
+  const { data, error } = await repository.getScanStatus(
+    context.supabase,
+    context.organizationId,
+    fieldId
+  );
+  if (error) {
+    throw new Error("Unable to load the scan status.");
+  }
+  return data ? { lastCheckedAt: data.last_checked_at, lastError: data.last_error } : null;
+}
+
+// The pass's real 10 m pixels, or null when the pass has none or the file
+// cannot be read; screens then show the field averages without a map.
+export async function loadPixelCells(
+  context: CropHealthContext,
+  observation: Observation
+): Promise<PixelCell[] | null> {
+  if (!observation.rasterPath) {
+    return null;
+  }
+  const { data, error } = await repository.downloadPixelFile(
+    context.supabase,
+    observation.rasterPath
+  );
+  if (error || !data) {
+    return null;
+  }
+  try {
+    return parsePixelFile(JSON.parse(await data.text()));
+  } catch {
+    return null;
+  }
 }
