@@ -422,8 +422,6 @@ export const en = {
   cropHealth: {
     heading: "Crop health",
     intro: "How your crops look from the satellite, field by field.",
-    demoBadge: "Demo data",
-    demoNotice: "Simulated demo data. No real satellite imagery is used yet.",
     estimateNotice:
       "These are estimates from satellite readings, not a diagnosis. Walk the field before you act.",
     addBoundaryTitle: "Add a field boundary",
@@ -432,7 +430,13 @@ export const en = {
     editBoundary: "Redraw boundary",
     noFields: "Add a field first, then draw its boundary to monitor crop health.",
     addField: "Add a field",
-    waiting: "No satellite passes yet. Check back after the next pass.",
+    waiting: "Waiting for the first satellite scan. Scans run every 3 hours.",
+    lastChecked: "Last checked {time}.",
+    scanProblem: "The last scan hit a problem; it will try again.",
+    pixelNote: "Each square is one 10 m Sentinel-2 pixel.",
+    cloudPixels: "Grey squares were hidden by cloud or shadow.",
+    pixelsUnavailable:
+      "The pixel map for this pass is not available. The field averages are shown.",
     status: { good: "Healthy", watch: "Needs a look", stressed: "Stressed" },
     indices: {
       ndvi: "Vegetation (NDVI)",
@@ -450,7 +454,7 @@ export const en = {
     ageOne: "1 day ago",
     ageMany: "{days} days ago",
     stale: "This reading is {days} days old. Newer passes may have been cloudy.",
-    sources: { "simulated-demo": "Simulated (demo)", "sentinel-2-l2a": "Sentinel-2 L2A" },
+    sources: { "sentinel-2-l2a": "Sentinel-2 L2A" },
     source: "Source: {source}",
     cloud: "Cloud {pct}%",
     quality: { good: "Clear", partly_cloudy: "Partly cloudy", cloudy: "Too cloudy to use" },
@@ -479,7 +483,7 @@ export const en = {
     clear: "Start again",
     save: "Save boundary",
     remove: "Remove boundary",
-    saved: "Boundary saved. Crop health is ready.",
+    saved: "Boundary saved. Crop health appears after the next satellite scan.",
     removed: "Boundary removed.",
     problems: {
       tooFewCorners: "Add at least 3 corners.",

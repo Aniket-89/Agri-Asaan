@@ -910,8 +910,20 @@ npm run db:test
 # Production build
 npm run build --workspace=apps/web
 
-# Start worker/Redis only after those services are introduced
-docker compose up -d
+# Satellite worker (services/worker, ADR 0026): checks and tests
+cd services/worker
+uv sync
+uv run ruff check . && uv run ruff format --check .
+uv run mypy src tests
+uv run pytest
+
+# One scan against local Supabase (settings: .env.example, supabase status)
+uv run python src/main.py
+
+# Worker image (the scheduled GitHub Actions scan builds and runs this)
+docker build -t agri-worker services/worker
+
+# Redis and Docker Compose: only after a queue is introduced
 
 Worker, Playwright, Vercel, and deployment commands must be added here
 when their scripts and configuration actually exist. Never leave

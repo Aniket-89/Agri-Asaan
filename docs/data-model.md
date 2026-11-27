@@ -5,9 +5,9 @@ Current schema: the identity, tenancy, and platform foundation, territory
 append-only status history (ADR 0011), pilot invites (ADR 0012), and spraying
 slots with availability-aware booking (ADR 0013), and pilot and drone
 assignment (ADR 0014), and job execution and verification (ADR 0015).
-Crop monitoring (ADR 0025) adds drawn field boundaries and the append-only
-`field_observations` time series; until the Sentinel-2 worker exists its rows
-are simulated demo data.
+Crop monitoring (ADR 0025, 0026) adds drawn field boundaries, the
+append-only `field_observations` time series written by the Sentinel-2
+worker, and per-field scan status.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -237,29 +237,43 @@ most 100 corners, within 500 m of the pin). `consent_recorded_at` and
 ```mermaid
 erDiagram
   fields ||--o{ field_observations : "(tenant_id, field_id), cascade"
+  fields ||--o| field_scan_status : "(tenant_id, field_id), cascade"
 
   field_observations {
     uuid id PK
     uuid tenant_id FK
     uuid field_id FK
     timestamptz observed_at "satellite acquisition"
-    text source "simulated-demo or sentinel-2-l2a"
+    text source "sentinel-2-l2a"
     text processing_version
     numeric cloud_cover_pct "0 to 100"
     text quality "good, partly_cloudy, cloudy"
     numeric ndvi_mean "null when cloudy"
     numeric ndre_mean "null when cloudy"
     numeric ndmi_mean "null when cloudy"
+    text raster_path "field-rasters file; null when cloudy"
+  }
+  field_scan_status {
+    uuid field_id PK
+    uuid tenant_id FK
+    timestamptz last_checked_at
+    text last_error "up to 300 characters"
   }
 ```
 
-| Table                | Read                                                 | Write                                                                                                                                        |
-| -------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `field_observations` | Anyone who can read the field (fields RLS, invoker). | Nobody through the API. Rows come from `add_simulated_observations` (trigger on a new boundary) or, later, the worker. Updates are rejected. |
+| Table / bucket            | Read                                                                  | Write                                                                                          |
+| ------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `field_observations`      | Anyone who can read the field (fields RLS); `crop_worker`.            | `crop_worker` inserts Sentinel-2 rows for active fields with a boundary. Updates are rejected. |
+| `field_scan_status`       | Anyone who can read the field; `crop_worker`.                         | `crop_worker` (insert, update of check time and error).                                        |
+| `field-rasters` (Storage) | Anyone who can read the field named in the path `<tenant>/<field>/…`. | The worker through the Storage S3 key only; no API uploads.                                    |
+
+`crop_worker` (ADR 0026) is a login-less role enabled per hosted project. It
+reads only `id`, `tenant_id`, `boundary` and `is_active` of fields, across
+tenants, and nothing about farmers.
 
 One row per field, acquisition, source and processing version (unique).
-Per-pixel rasters are not stored; the demo heatmap is generated from the
-field mean in the browser-facing code (`simulatedIndexGrid`).
+Pixel files hold each 10 m pixel clipped to the boundary, in lng/lat, with
+NDVI, NDRE and NDMI (null where masked).
 
 ## Fleet: drones and pilot profiles
 

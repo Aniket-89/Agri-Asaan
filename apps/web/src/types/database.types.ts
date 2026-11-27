@@ -223,18 +223,38 @@ isOneToOne: false
                   ]
                 },"field_observations": {
                   Row: {
-                    "cloud_cover_pct": number,"created_at": string,"field_id": string,"id": string,"ndmi_mean": number | null,"ndre_mean": number | null,"ndvi_mean": number | null,"observed_at": string,"processing_version": string,"quality": string,"source": string,"tenant_id": string
+                    "cloud_cover_pct": number,"created_at": string,"field_id": string,"id": string,"ndmi_mean": number | null,"ndre_mean": number | null,"ndvi_mean": number | null,"observed_at": string,"processing_version": string,"quality": string,"raster_path": string | null,"source": string,"tenant_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "cloud_cover_pct": number,"created_at"?: string,"field_id": string,"id"?: string,"ndmi_mean"?: number | null,"ndre_mean"?: number | null,"ndvi_mean"?: number | null,"observed_at": string,"processing_version": string,"quality": string,"source": string,"tenant_id": string
+                    "cloud_cover_pct": number,"created_at"?: string,"field_id": string,"id"?: string,"ndmi_mean"?: number | null,"ndre_mean"?: number | null,"ndvi_mean"?: number | null,"observed_at": string,"processing_version": string,"quality": string,"raster_path"?: string | null,"source": string,"tenant_id": string
                   }
                   Update: {
-                    "cloud_cover_pct"?: number,"created_at"?: string,"field_id"?: string,"id"?: string,"ndmi_mean"?: number | null,"ndre_mean"?: number | null,"ndvi_mean"?: number | null,"observed_at"?: string,"processing_version"?: string,"quality"?: string,"source"?: string,"tenant_id"?: string
+                    "cloud_cover_pct"?: number,"created_at"?: string,"field_id"?: string,"id"?: string,"ndmi_mean"?: number | null,"ndre_mean"?: number | null,"ndvi_mean"?: number | null,"observed_at"?: string,"processing_version"?: string,"quality"?: string,"raster_path"?: string | null,"source"?: string,"tenant_id"?: string
                   }
                   Relationships: [
                     {
       foreignKeyName: "field_observations_field_same_tenant"
+      columns: ["tenant_id","field_id"]
+isOneToOne: false
+      referencedRelation: "fields"
+      referencedColumns: ["tenant_id","id"]
+    }
+                  ]
+                },"field_scan_status": {
+                  Row: {
+                    "field_id": string,"last_checked_at": string,"last_error": string | null,"tenant_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "field_id": string,"last_checked_at": string,"last_error"?: string | null,"tenant_id": string
+                  }
+                  Update: {
+                    "field_id"?: string,"last_checked_at"?: string,"last_error"?: string | null,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "field_scan_status_field_same_tenant"
       columns: ["tenant_id","field_id"]
 isOneToOne: false
       referencedRelation: "fields"

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap;
 
-select plan(20);
+select plan(19);
 
 -- Fixtures (fake data only): a tenant with a mitra and two farmers, and a
 -- second tenant with an organization admin.
@@ -55,6 +55,10 @@ insert into shapes values
   ('point', '{"type":"Point","coordinates":[77.6,27.5]}');
 grant select on shapes to authenticated, anon;
 
+-- A real-source observation for field one, as the worker would add it.
+insert into public.field_observations (tenant_id, field_id, observed_at, source, processing_version, cloud_cover_pct, quality, ndvi_mean, ndre_mean, ndmi_mean)
+values ('d5a00000-0000-4000-8000-00000000000a', 'd5e00000-0000-4000-8000-000000000001', '2026-11-20 05:30+00', 'sentinel-2-l2a', 's2-l2a-v1', 4, 'good', 0.61, 0.38, 0.22);
+
 -- ── Farmer ─────────────────────────────────────────────────────────────────
 set local role authenticated;
 set local "request.jwt.claim.sub" = 'd5000000-0000-4000-8000-000000000002';
@@ -64,14 +68,8 @@ select lives_ok(
   'a farmer draws the boundary of their own field'
 );
 select is(
-  (select count(*)::integer from public.field_observations
-   where field_id = 'd5e00000-0000-4000-8000-000000000001' and source = 'simulated-demo'),
-  8, 'the farmer sees eight simulated passes for the field'
-);
-select is(
-  (select count(*)::integer from public.field_observations
-   where field_id = 'd5e00000-0000-4000-8000-000000000001' and quality = 'cloudy' and ndvi_mean is null),
-  1, 'one pass is cloudy and has no index values'
+  (select count(*)::integer from public.field_observations where field_id = 'd5e00000-0000-4000-8000-000000000001'),
+  1, 'drawing a boundary adds no simulated passes; the farmer reads their field''s real passes'
 );
 select throws_ok(
   $$select public.set_field_boundary('d5e00000-0000-4000-8000-000000000002', (select shape from shapes where name = 'square'))$$,
@@ -101,13 +99,10 @@ select lives_ok(
   $$select public.set_field_boundary('d5e00000-0000-4000-8000-000000000001', (select shape from shapes where name = 'bigger'))$$,
   'a farmer redraws the boundary'
 );
-select is(
-  (select count(*)::integer from public.field_observations where field_id = 'd5e00000-0000-4000-8000-000000000001'),
-  8, 'redrawing keeps the history and adds no duplicate passes'
-);
+
 select throws_ok(
   $$insert into public.field_observations (tenant_id, field_id, observed_at, source, processing_version, cloud_cover_pct, quality, ndvi_mean, ndre_mean, ndmi_mean)
-    values ('d5a00000-0000-4000-8000-00000000000a', 'd5e00000-0000-4000-8000-000000000001', now(), 'simulated-demo', 'x', 0, 'good', 0.9, 0.5, 0.4)$$,
+    values ('d5a00000-0000-4000-8000-00000000000a', 'd5e00000-0000-4000-8000-000000000001', now(), 'sentinel-2-l2a', 'x', 0, 'good', 0.9, 0.5, 0.4)$$,
   '42501', null, 'users cannot write observations'
 );
 select throws_ok(
@@ -130,7 +125,7 @@ select lives_ok(
 );
 select is(
   (select count(*)::integer from public.field_observations where field_id = 'd5e00000-0000-4000-8000-000000000001'),
-  8, 'the mitra reads the observations of farmers they manage'
+  1, 'the mitra reads the observations of farmers they manage'
 );
 
 -- ── Another tenant ────────────────────────────────────────────────────────
@@ -151,8 +146,14 @@ select throws_ok(
   '42501', null, 'anonymous users cannot set boundaries'
 );
 
--- Even the table owner cannot rewrite history.
+-- Even the table owner cannot rewrite history, and simulated rows are gone
+-- for good.
 reset role;
+select throws_ok(
+  $$insert into public.field_observations (tenant_id, field_id, observed_at, source, processing_version, cloud_cover_pct, quality)
+    values ('d5a00000-0000-4000-8000-00000000000a', 'd5e00000-0000-4000-8000-000000000001', now(), 'simulated-demo', 'demo-sim-1', 90, 'cloudy')$$,
+  '23514', null, 'simulated observations are no longer accepted'
+);
 select throws_ok(
   $$update public.field_observations set ndvi_mean = 0.9 where field_id = 'd5e00000-0000-4000-8000-000000000001'$$,
   '42501', null, 'observations are append-only'

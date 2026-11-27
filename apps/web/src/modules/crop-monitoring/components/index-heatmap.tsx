@@ -1,6 +1,6 @@
 import type { GeoPolygon } from "@/lib/maps/geo";
 
-import type { GridCell } from "../index-grid";
+import type { GridCell } from "../pixel-file";
 import { INDEX_SCALES, indexColor, type IndexKind } from "../indices";
 import { svgPath, svgProjector } from "../svg-projection";
 

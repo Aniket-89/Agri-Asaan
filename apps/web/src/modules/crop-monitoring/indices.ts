@@ -45,6 +45,9 @@ export const INDEX_SCALES: Record<IndexKind, Scale> = {
   },
 };
 
+// Pixels hidden by cloud, shadow or missing data.
+export const CLOUD_COLOR = "#cfd6d1";
+
 export function healthStatus(kind: IndexKind, value: number): HealthStatus {
   const scale = INDEX_SCALES[kind];
   if (value >= scale.good) {
@@ -58,8 +61,12 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(number >> 16) & 255, (number >> 8) & 255, number & 255];
 }
 
-// Colour for a value on the index's ramp, linearly blended between stops.
-export function indexColor(kind: IndexKind, value: number): string {
+// Colour for a value on the index's ramp, linearly blended between stops;
+// grey for a pixel with no value.
+export function indexColor(kind: IndexKind, value: number | null): string {
+  if (value === null) {
+    return CLOUD_COLOR;
+  }
   const { min, max, colors } = INDEX_SCALES[kind];
   const position = Math.min(1, Math.max(0, (value - min) / (max - min))) * (colors.length - 1);
   const lower = Math.floor(position);

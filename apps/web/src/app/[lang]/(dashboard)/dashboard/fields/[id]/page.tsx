@@ -22,20 +22,23 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import type { GeoPolygon } from "@/lib/maps/geo";
 import {
   ageInDays,
+  cellsFor,
+  getScanStatus,
   healthStatus,
   indexColor,
   INDEX_KINDS,
   listFieldHealth,
+  loadPixelCells,
   STALE_AFTER_DAYS,
   type FieldHealth,
   type IndexKind,
   type Observation,
+  type PixelCell,
 } from "@/modules/crop-monitoring";
 import {
   formatAge,
   formatIndex,
   formatPassDate,
-  passGrid,
   STATUS_TONES,
 } from "@/modules/crop-monitoring/components/crop-health-card";
 import { CropHealthMap } from "@/modules/crop-monitoring/components/crop-health-map";
@@ -92,6 +95,10 @@ async function FieldHealthContent({
     : undefined;
   const latest = health?.latestClear ?? null;
   const newest = health?.observations[0] ?? null;
+  const [pixels, scanStatus] = await Promise.all([
+    latest ? loadPixelCells(context, latest) : null,
+    field.boundary && !latest ? getScanStatus(context, field.id) : null,
+  ]);
   const layer = search.layer;
   const backHref =
     context.role === "farmer"
@@ -143,17 +150,23 @@ async function FieldHealthContent({
         </Panel>
       ) : !health || !latest ? (
         <Panel>
-          <p className="flex items-center gap-2 text-ink-muted">
-            <GlobeHemisphereEastIcon weight="duotone" className="size-6" aria-hidden />
-            {c.waiting}
-          </p>
+          <div className="space-y-2">
+            <p className="flex items-center gap-2 text-ink">
+              <GlobeHemisphereEastIcon weight="duotone" className="size-6 text-brand" aria-hidden />
+              {c.waiting}
+            </p>
+            {scanStatus ? (
+              <p className="text-sm text-ink-muted">
+                {format(c.lastChecked, {
+                  time: formatCheckedTime(scanStatus.lastCheckedAt, locale),
+                })}
+                {scanStatus.lastError ? ` ${c.scanProblem}` : ""}
+              </p>
+            ) : null}
+          </div>
         </Panel>
       ) : (
         <>
-          {latest.source === "simulated-demo" ? (
-            <p className="rounded-2xl bg-sun-soft px-4 py-3 text-sm text-sun-ink">{c.demoNotice}</p>
-          ) : null}
-
           <SegmentedTabs
             label={c.layer}
             items={INDEX_KINDS.map((kind) => ({
@@ -170,6 +183,7 @@ async function FieldHealthContent({
             layer={layer}
             health={health}
             latest={latest}
+            pixels={pixels}
             newest={newest}
             now={now}
             locale={locale}
@@ -234,6 +248,16 @@ async function FieldHealthContent({
   );
 }
 
+function formatCheckedTime(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === "hi" ? "hi-IN" : "en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(iso));
+}
+
 function LayerPanel({
   fieldName,
   boundary,
@@ -241,6 +265,7 @@ function LayerPanel({
   layer,
   health,
   latest,
+  pixels,
   newest,
   now,
   locale,
@@ -252,6 +277,7 @@ function LayerPanel({
   layer: IndexKind;
   health: FieldHealth;
   latest: Observation;
+  pixels: PixelCell[] | null;
   newest: Observation | null;
   now: Date;
   locale: Locale;
@@ -260,7 +286,7 @@ function LayerPanel({
   const c = t.cropHealth;
   const value = latest.values[layer] ?? 0;
   const status = healthStatus(layer, value);
-  const cells = passGrid(boundary, latest, layer);
+  const cells = pixels ? cellsFor(layer, pixels) : [];
   const age = ageInDays(latest.observedAt, now);
   const mapLabel = format(c.mapLabel, { index: c.indices[layer], field: fieldName });
 
@@ -283,23 +309,38 @@ function LayerPanel({
           </div>
         </div>
 
-        <CropHealthMap
-          boundary={boundary}
-          cells={cells.map((cell) => ({ ring: cell.ring, color: indexColor(layer, cell.value) }))}
-          pin={pin}
-          label={mapLabel}
-          fallback={
-            <IndexHeatmap
+        {cells.length > 0 ? (
+          <>
+            <CropHealthMap
               boundary={boundary}
-              cells={cells}
-              kind={layer}
+              cells={cells.map((cell) => ({
+                ring: cell.ring,
+                color: indexColor(layer, cell.value),
+              }))}
+              pin={pin}
               label={mapLabel}
-              size={240}
-              clipId="field-heatmap"
+              fallback={
+                <IndexHeatmap
+                  boundary={boundary}
+                  cells={cells}
+                  kind={layer}
+                  label={mapLabel}
+                  size={240}
+                  clipId="field-heatmap"
+                />
+              }
             />
-          }
-        />
-        <IndexLegend kind={layer} low={c.low} high={c.high} />
+            <IndexLegend kind={layer} low={c.low} high={c.high} />
+            <p className="text-xs text-ink-muted">
+              {c.pixelNote}
+              {cells.some((cell) => cell.value === null) ? ` ${c.cloudPixels}` : ""}
+            </p>
+          </>
+        ) : (
+          <p className="rounded-xl bg-field px-3 py-2 text-sm text-ink-muted">
+            {c.pixelsUnavailable}
+          </p>
+        )}
 
         <dl className="grid gap-x-4 gap-y-1 text-sm text-ink-muted sm:grid-cols-2">
           <div>
