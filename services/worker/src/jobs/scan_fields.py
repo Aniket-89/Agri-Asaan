@@ -21,7 +21,24 @@ log = logging.getLogger(__name__)
 SOURCE = "sentinel-2-l2a"
 PROCESSING_VERSION = "s2-l2a-v1"
 PIXEL_FILE_VERSION = 1
-ERROR_MAX_LENGTH = 300
+
+# Farmers can read field_scan_status, so it stores only a fixed category.
+# The full exception (hosts, buckets, SQL) goes to the worker log.
+ERROR_CATEGORIES = (
+    (("psycopg",), "database_failed"),
+    (("botocore", "boto3", "s3transfer"), "storage_failed"),
+    (("pystac_client", "pystac", "requests", "urllib3"), "catalogue_unavailable"),
+    (("rasterio",), "imagery_read_failed"),
+)
+
+
+def error_category(error: Exception) -> str:
+    """Map an exception to a fixed, non-revealing label by the library that raised it."""
+    root = type(error).__module__.split(".")[0]
+    for modules, category in ERROR_CATEGORIES:
+        if root in modules:
+            return category
+    return "imagery_read_failed" if isinstance(error, OSError) else "internal_error"
 
 
 @dataclass(frozen=True)
@@ -160,8 +177,6 @@ def scan_all(
             repository.rollback()
             failures += 1
             log.exception("field %s failed", field.id)
-            repository.record_check(
-                field, now, f"{type(error).__name__}: {error}"[:ERROR_MAX_LENGTH]
-            )
+            repository.record_check(field, now, error_category(error))
             repository.commit()
     return ScanSummary(fields=len(fields), observations=observations, failures=failures)
