@@ -8,7 +8,14 @@ import numpy as np
 import shapely
 from shapely.geometry.base import BaseGeometry
 
-from jobs.scan_fields import FieldToScan, Observation, ReadBands, pixel_path, scan_all
+from jobs.scan_fields import (
+    FieldToScan,
+    Observation,
+    ReadBands,
+    error_category,
+    pixel_path,
+    scan_all,
+)
 from satellite.ingestion.stac import BandAsset, Scene
 from satellite.processing.field_pass import Bands, ToLngLat
 
@@ -166,6 +173,19 @@ def test_a_failing_field_is_recorded_and_others_continue() -> None:
     summary = scan_all(repository, FakeStore(), lambda *_: [scene(10)], read, NOW, 60, 50)
 
     assert summary.failures == 1 and summary.observations == 1
-    assert repository.checks[0] == (broken.id, "OSError: tile unavailable")
+    assert repository.checks[0] == (broken.id, "imagery_read_failed")
     assert repository.checks[1] == (FIELD_ID, None)
     assert [observation.field_id for observation in repository.observations] == [FIELD_ID]
+
+
+def test_error_categories_never_carry_exception_text() -> None:
+    import botocore.exceptions
+    import psycopg
+
+    secret = "db.internal.example:5432 select boundary"
+    assert error_category(psycopg.OperationalError(secret)) == "database_failed"
+    assert error_category(botocore.exceptions.EndpointConnectionError(endpoint_url=secret)) == (
+        "storage_failed"
+    )
+    assert error_category(OSError(secret)) == "imagery_read_failed"
+    assert error_category(ValueError(secret)) == "internal_error"

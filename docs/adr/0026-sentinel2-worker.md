@@ -41,8 +41,10 @@ AGENTS.md requires an ADR for worker hosting and significant dependencies.
     a pixel file: every 10 m pixel clipped to the boundary, in lng/lat, with
     its three values (null where masked). About 25 KB for a 3.5-acre field.
   - Neighbouring tiles of one acquisition are stored once. One failing field
-    is recorded in `field_scan_status` and never stops the others. Logs
-    carry field ids, never coordinates.
+    is recorded in `field_scan_status` and never stops the others. Farmers
+    can read that table, so it stores only a fixed category (such as
+    `storage_failed`); the full error stays in the worker log. Logs carry
+    field ids, never coordinates.
 - **Running:** `.github/workflows/crop-scan.yml` builds the worker image and
   runs one scan every 3 hours (minute 17) and on demand. The run is skipped
   until its secrets exist. CI checks the worker (ruff, mypy, pytest) and
