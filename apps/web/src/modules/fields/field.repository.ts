@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { FieldInput } from "./field.schema";
 
 type Client = SupabaseClient<Database>;
@@ -24,6 +24,22 @@ export async function listFieldsForFarmer(supabase: Client, tenantId: string, fa
     .eq("tenant_id", tenantId)
     .eq("farmer_id", farmerId)
     .order("name");
+}
+
+export async function getField(supabase: Client, tenantId: string, fieldId: string) {
+  return supabase
+    .from("fields")
+    .select(
+      "id, farmer_id, name, area_acres, latitude, longitude, is_active, boundary_geojson, crop:tenant_crops!fields_crop_same_tenant(name_en, name_hi)"
+    )
+    .eq("tenant_id", tenantId)
+    .eq("id", fieldId)
+    .maybeSingle();
+}
+
+// Through the set_field_boundary RPC, which runs under the caller's RLS.
+export async function setFieldBoundary(supabase: Client, fieldId: string, boundary: Json | null) {
+  return supabase.rpc("set_field_boundary", { p_field_id: fieldId, p_boundary: boundary as Json });
 }
 
 export async function insertField(supabase: Client, tenantId: string, input: FieldInput) {

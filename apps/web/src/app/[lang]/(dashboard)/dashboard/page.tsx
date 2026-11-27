@@ -26,6 +26,9 @@ import {
   listMyJobs,
   OPEN_BOOKING_STATUSES,
 } from "@/modules/bookings";
+import { listFieldHealth } from "@/modules/crop-monitoring";
+import { CropHealthCard } from "@/modules/crop-monitoring/components/crop-health-card";
+import { listFarmerFields } from "@/modules/fields";
 import { resolveActiveOrganization, type ActiveMembershipContext } from "@/modules/organizations";
 
 export const instant = false;
@@ -116,6 +119,72 @@ async function loadStats(
   return [];
 }
 
+// The farmer's fields with their crop health, beside booking as the main
+// farmer feature (ADR 0025). Fields without a boundary invite the farmer to
+// draw one.
+async function CropHealthSection({
+  context,
+  locale,
+  t,
+}: {
+  context: ActiveMembershipContext;
+  locale: Locale;
+  t: Dictionary;
+}) {
+  const farmerId = await getOwnFarmerId(context);
+  if (!farmerId) {
+    return null;
+  }
+  const fields = (await listFarmerFields(context, farmerId, locale)).filter(
+    (field) => field.isActive
+  );
+  const health = await listFieldHealth(
+    context,
+    fields.filter((field) => field.boundary).map((field) => field.id)
+  );
+  const now = new Date();
+  const c = t.cropHealth;
+
+  return (
+    <section aria-labelledby="crop-health-heading" className="space-y-3">
+      <div>
+        <h2 id="crop-health-heading" className="flex items-center gap-2 text-lg font-bold text-ink">
+          <PlantIcon weight="duotone" className="size-5 text-brand" aria-hidden />
+          {c.heading}
+        </h2>
+        <p className="text-sm text-ink-muted">{c.intro}</p>
+      </div>
+      {fields.length === 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-leaf/60 p-4">
+          <p className="text-ink-muted">{c.noFields}</p>
+          <a
+            href={withLocale(locale, "/dashboard/my-farm#my-fields")}
+            className={buttonClass({ variant: "secondary", size: "sm" })}
+          >
+            {c.addField}
+          </a>
+        </div>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {fields.map((field) => (
+            <li key={field.id}>
+              <CropHealthCard
+                field={field}
+                health={health.get(field.id)}
+                viewHref={withLocale(locale, `/dashboard/fields/${field.id}`)}
+                drawHref={withLocale(locale, `/dashboard/fields/${field.id}/boundary`)}
+                now={now}
+                locale={locale}
+                t={c}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function Hero({
   name,
   subtitle,
@@ -200,16 +269,13 @@ async function DashboardContent() {
     redirect(withLocale(locale, "/register/join"));
   }
 
-  const stats = await loadStats(
-    {
-      supabase: context.supabase,
-      organizationId: active.organization_id,
-      userId: context.user.id,
-      role: active.role,
-    },
-    locale,
-    t
-  );
+  const membershipContext: ActiveMembershipContext = {
+    supabase: context.supabase,
+    organizationId: active.organization_id,
+    userId: context.user.id,
+    role: active.role,
+  };
+  const stats = await loadStats(membershipContext, locale, t);
   const shortcuts = navItemsForRole(active.role).filter(
     (item): item is typeof item & { label: ShortcutLabel } => item.label !== "home"
   );
@@ -243,6 +309,10 @@ async function DashboardContent() {
           ) : null
         }
       />
+
+      {active.role === "farmer" ? (
+        <CropHealthSection context={membershipContext} locale={locale} t={t} />
+      ) : null}
 
       <section aria-labelledby="shortcuts-heading" className="space-y-3">
         <h2 id="shortcuts-heading" className="text-lg font-bold text-ink">

@@ -66,9 +66,9 @@ reset role;
 select is((select count(*)::integer from public.fields where id = 'd4e00000-0000-4000-8000-000000000001'), 1, 'a farmer cannot delete fields');
 set local role authenticated;
 set local "request.jwt.claim.sub" = 'd4000000-0000-4000-8000-000000000002';
-select throws_ok(
+select lives_ok(
   $$update public.fields set boundary = null where id = 'd4e00000-0000-4000-8000-000000000001'$$,
-  '42501', null, 'a farmer cannot write the field boundary'
+  'a farmer can write their own field boundary (ADR 0025)'
 );
 
 -- The 50-field cap applies to everyone.

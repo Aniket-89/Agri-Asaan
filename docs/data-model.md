@@ -5,7 +5,9 @@ Current schema: the identity, tenancy, and platform foundation, territory
 append-only status history (ADR 0011), pilot invites (ADR 0012), and spraying
 slots with availability-aware booking (ADR 0013), and pilot and drone
 assignment (ADR 0014), and job execution and verification (ADR 0015).
-Satellite observations are not built yet.
+Crop monitoring (ADR 0025) adds drawn field boundaries and the append-only
+`field_observations` time series; until the Sentinel-2 worker exists its rows
+are simulated demo data.
 
 > **Known gap (ADR 0007):** tenant admins can add existing accounts to their
 > tenant without the person's consent. Fake data only until this is fixed.
@@ -223,9 +225,41 @@ erDiagram
 | `farmers`      | Org admin (tenant); regional admin (their regions); mitra (their villages); a linked farmer (self). | Insert/update: the same managers within their scope. Delete: org admin. Self-registration inserts through `register_self_as_farmer` (ADR 0018). |
 | `fields`       | Anyone who can view the farmer (`can_view_farmer`).                                                 | Farmer managers (`can_manage_farmer`).                                                                                                          |
 
-Column grants keep `tenant_id`, `profile_id`, `registered_by`, `boundary`,
-and generated columns out of client writes. `consent_recorded_at` and
+Column grants keep `tenant_id`, `profile_id`, `registered_by` and generated
+columns out of client writes. `boundary` is writable by whoever may edit the
+field (ADR 0025), through `set_field_boundary`; the `check_field_boundary`
+trigger validates every boundary (one simple ring, 0.05 to 1,000 acres, at
+most 100 corners, within 500 m of the pin). `consent_recorded_at` and
 `registered_by` are stamped by a trigger.
+
+## Crop monitoring
+
+```mermaid
+erDiagram
+  fields ||--o{ field_observations : "(tenant_id, field_id), cascade"
+
+  field_observations {
+    uuid id PK
+    uuid tenant_id FK
+    uuid field_id FK
+    timestamptz observed_at "satellite acquisition"
+    text source "simulated-demo or sentinel-2-l2a"
+    text processing_version
+    numeric cloud_cover_pct "0 to 100"
+    text quality "good, partly_cloudy, cloudy"
+    numeric ndvi_mean "null when cloudy"
+    numeric ndre_mean "null when cloudy"
+    numeric ndmi_mean "null when cloudy"
+  }
+```
+
+| Table                | Read                                                 | Write                                                                                                                                        |
+| -------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `field_observations` | Anyone who can read the field (fields RLS, invoker). | Nobody through the API. Rows come from `add_simulated_observations` (trigger on a new boundary) or, later, the worker. Updates are rejected. |
+
+One row per field, acquisition, source and processing version (unique).
+Per-pixel rasters are not stored; the demo heatmap is generated from the
+field mean in the browser-facing code (`simulatedIndexGrid`).
 
 ## Fleet: drones and pilot profiles
 
