@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   CalendarBlankIcon,
   CaretRightIcon,
@@ -174,7 +175,7 @@ export function BookingList({
     <ul className="space-y-1 rounded-2xl bg-surface p-1.5 shadow-soft">
       {bookings.map((booking) => (
         <li key={booking.id}>
-          <a
+          <Link
             href={withLocale(locale, `/dashboard/bookings/${booking.id}`)}
             className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-canvas"
           >
@@ -212,7 +213,7 @@ export function BookingList({
               </span>
             </span>
             <CaretRightIcon className="size-5 shrink-0 text-ink-faint" aria-hidden />
-          </a>
+          </Link>
         </li>
       ))}
     </ul>

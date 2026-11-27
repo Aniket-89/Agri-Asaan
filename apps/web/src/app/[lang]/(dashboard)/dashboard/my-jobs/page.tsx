@@ -28,6 +28,7 @@ import {
   Page,
   PageHeader,
   SegmentedTabs,
+  PageSkeleton,
 } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -360,7 +361,7 @@ export default async function MyJobsPage({ searchParams }: PageProps<"/[lang]/da
   return (
     <Page width="narrow">
       <PageHeader title={t.jobs.title} description={t.jobs.intro} />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <MyJobsContent searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </Page>

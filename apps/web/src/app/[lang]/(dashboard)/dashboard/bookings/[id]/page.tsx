@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -27,6 +28,7 @@ import {
   Field,
   Page,
   Panel,
+  PageSkeleton,
 } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -119,10 +121,10 @@ async function BookingDetailContent({
 
   return (
     <>
-      <a className={`${buttonClass({ variant: "quiet", size: "sm" })} -ml-3`} href={backHref}>
+      <Link className={`${buttonClass({ variant: "quiet", size: "sm" })} -ml-3`} href={backHref}>
         <ArrowLeftIcon className="size-4" aria-hidden />
         {t.backToBookings}
-      </a>
+      </Link>
 
       {search.error ? <StatusBanner kind="error" text={t.errors[search.error]} /> : null}
       {search.status === "booked" ? <StatusBanner kind="success" text={t.booked} /> : null}
@@ -476,7 +478,7 @@ export default async function BookingDetailPage({
 
   return (
     <Page>
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <BookingDetailContent
           params={params}
           searchParams={searchParams}

@@ -9,3 +9,4 @@ export { Panel } from "./panel";
 export { SegmentedTabs } from "./segmented-tabs";
 export { FilterChips } from "./filter-chips";
 export { Page } from "./page";
+export { PageSkeleton } from "./page-skeleton";

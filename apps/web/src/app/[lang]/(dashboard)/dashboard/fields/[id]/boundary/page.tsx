@@ -5,7 +5,7 @@ import { connection } from "next/server";
 import { z } from "zod";
 
 import { StatusBanner } from "@/components/shared/status-banner";
-import { BackLink, Button, Page, PageHeader, Panel } from "@/components/ui";
+import { BackLink, Button, Page, PageHeader, Panel, PageSkeleton } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import type { LngLat } from "@/lib/maps/boundary";
@@ -116,7 +116,7 @@ export default async function BoundaryPage({
   const { locale, t } = await getDictionary();
   return (
     <Page>
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <BoundaryContent params={params} searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </Page>

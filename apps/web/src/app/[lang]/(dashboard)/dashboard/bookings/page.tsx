@@ -5,7 +5,7 @@ import { connection } from "next/server";
 
 import { TrayIcon } from "@phosphor-icons/react/dist/ssr";
 
-import { EmptyState, FilterChips, Page, PageHeader } from "@/components/ui";
+import { EmptyState, FilterChips, Page, PageHeader, PageSkeleton } from "@/components/ui";
 import { withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { bookingListFilterSchema, listBookings, type BookingStatus } from "@/modules/bookings";
@@ -85,7 +85,7 @@ export default async function BookingsPage({
   return (
     <Page>
       <PageHeader title={t.bookings.title} />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <BookingInbox searchParams={searchParams} t={t.bookings} locale={locale} />
       </Suspense>
     </Page>

@@ -1,3 +1,5 @@
+import Form from "next/form";
+import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -12,7 +14,15 @@ import {
   UsersThreeIcon,
 } from "@phosphor-icons/react/dist/ssr";
 
-import { Badge, Button, buttonClass, EmptyState, Page, PageHeader } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  buttonClass,
+  EmptyState,
+  Page,
+  PageHeader,
+  PageSkeleton,
+} from "@/components/ui";
 
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -55,7 +65,7 @@ async function FarmerList({
 
   return (
     <>
-      <form method="get" className="flex gap-2" role="search">
+      <Form action={listPath} className="flex gap-2" role="search">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">{t.searchLabel}</span>
           <MagnifyingGlassIcon
@@ -73,24 +83,24 @@ async function FarmerList({
         </label>
         {unplacedOnly ? <input type="hidden" name="show" value="unplaced" /> : null}
         <Button variant="secondary">{t.searchSubmit}</Button>
-      </form>
+      </Form>
 
       {canPlace ? (
         <nav aria-label={t.filterLabel} className="flex flex-wrap gap-2">
-          <a
+          <Link
             href={listPath}
             aria-current={unplacedOnly ? undefined : "page"}
             className={buttonClass({ variant: unplacedOnly ? "quiet" : "secondary", size: "sm" })}
           >
             {t.filterAll}
-          </a>
-          <a
+          </Link>
+          <Link
             href={`${listPath}?show=unplaced`}
             aria-current={unplacedOnly ? "page" : undefined}
             className={buttonClass({ variant: unplacedOnly ? "secondary" : "quiet", size: "sm" })}
           >
             {t.filterUnplaced}
-          </a>
+          </Link>
         </nav>
       ) : null}
 
@@ -109,7 +119,7 @@ async function FarmerList({
         <ul className="space-y-1 rounded-2xl bg-surface p-1.5 shadow-soft">
           {farmers.map((farmer) => (
             <li key={farmer.id}>
-              <a
+              <Link
                 href={withLocale(locale, `/dashboard/farmers/${farmer.id}`)}
                 className="flex min-h-16 items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-canvas"
               >
@@ -142,7 +152,7 @@ async function FarmerList({
                   </span>
                 </span>
                 <CaretRightIcon className="size-5 shrink-0 text-ink-faint" aria-hidden />
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -161,13 +171,13 @@ export default async function FarmersPage({
       <PageHeader
         title={t.farmers.title}
         action={
-          <a href={withLocale(locale, "/dashboard/farmers/new")} className={buttonClass()}>
+          <Link href={withLocale(locale, "/dashboard/farmers/new")} className={buttonClass()}>
             <UserPlusIcon weight="bold" className="size-5" aria-hidden />
             {t.farmers.register}
-          </a>
+          </Link>
         }
       />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <FarmerList searchParams={searchParams} t={t.farmers} locale={locale} />
       </Suspense>
     </Page>

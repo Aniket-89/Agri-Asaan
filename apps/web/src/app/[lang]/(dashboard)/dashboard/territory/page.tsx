@@ -16,6 +16,7 @@ import {
   Field,
   Page,
   PageHeader,
+  PageSkeleton,
 } from "@/components/ui";
 import { withLocale, type Dictionary } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -313,7 +314,7 @@ export default async function TerritoryPage({
   return (
     <Page>
       <PageHeader title={t.territory.title} description={t.territory.intro} />
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <TerritoryContent searchParams={searchParams} t={t.territory} locale={locale} />
       </Suspense>
     </Page>

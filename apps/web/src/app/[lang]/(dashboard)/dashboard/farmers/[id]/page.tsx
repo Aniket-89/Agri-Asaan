@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
@@ -13,6 +14,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 
 import { FieldMap } from "@/components/maps/field-map";
+import { ScrollToHash } from "@/components/shared/scroll-to-hash";
 import { StatusBanner } from "@/components/shared/status-banner";
 import {
   BackLink,
@@ -23,6 +25,7 @@ import {
   Field,
   Page,
   Panel,
+  PageSkeleton,
 } from "@/components/ui";
 import { format, withLocale, type Dictionary, type Locale } from "@/lib/i18n";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -240,7 +243,7 @@ async function FarmerDetailContent({
                     {field.latitude}, {field.longitude}
                   </p>
                 </div>
-                <a
+                <Link
                   href={withLocale(
                     locale,
                     field.boundary
@@ -250,7 +253,7 @@ async function FarmerDetailContent({
                   className={buttonClass({ variant: "quiet", size: "sm" })}
                 >
                   {field.boundary ? t.cropHealth.view : t.cropHealth.addBoundary}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -303,6 +306,7 @@ async function FarmerDetailContent({
           <BookingList bookings={bookings} locale={locale} t={t.bookings} showFarmer={false} />
         </section>
       ) : null}
+      <ScrollToHash />
     </>
   );
 }
@@ -316,7 +320,7 @@ export default async function FarmerDetailPage({
   return (
     <Page>
       <BackLink href={withLocale(locale, "/dashboard/farmers")}>{t.farmers.backToFarmers}</BackLink>
-      <Suspense fallback={<p aria-busy="true">…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <FarmerDetailContent params={params} searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </Page>

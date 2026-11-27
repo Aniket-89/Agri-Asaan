@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PolygonIcon, GlobeHemisphereEastIcon } from "@phosphor-icons/react/dist/ssr";
 
 import { Badge, buttonClass, type BadgeTone } from "@/components/ui";
@@ -90,13 +91,13 @@ export function CropHealthCard({
             {format(t.addBoundaryText, { field: field.name })}
           </p>
         </div>
-        <a
+        <Link
           href={drawHref}
           className={`${buttonClass({ variant: "secondary", size: "sm" })} mt-auto self-start`}
         >
           <PolygonIcon weight="bold" className="size-4" aria-hidden />
           {t.addBoundary}
-        </a>
+        </Link>
       </article>
     );
   }
@@ -160,9 +161,9 @@ export function CropHealthCard({
         ) : (
           <span />
         )}
-        <a href={viewHref} className={buttonClass({ variant: "quiet", size: "sm" })}>
+        <Link href={viewHref} className={buttonClass({ variant: "quiet", size: "sm" })}>
           {t.view}
-        </a>
+        </Link>
       </div>
     </article>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { UserPlusIcon } from "@phosphor-icons/react/dist/ssr";
 import { z } from "zod";
@@ -48,12 +49,12 @@ async function RegisterForm({
       <>
         <h1 className={headingClass}>{t.closedTitle}</h1>
         <p className="text-ink-muted">{t.closedBody}</p>
-        <a
+        <Link
           className={buttonClass({ variant: "secondary", block: true })}
           href={withLocale(locale, "/login")}
         >
           {t.backToSignIn}
-        </a>
+        </Link>
       </>
     );
   }
@@ -109,12 +110,12 @@ export default async function RegisterPage({ searchParams }: PageProps<"/[lang]/
       <Suspense fallback={<h1 className={`${headingClass} pt-18`}>{t.register.title}</h1>}>
         <RegisterForm searchParams={searchParams} locale={locale} t={t.register} />
       </Suspense>
-      <a
+      <Link
         className={buttonClass({ variant: "quiet", block: true })}
         href={withLocale(locale, "/login")}
       >
         {t.register.haveAccount}
-      </a>
+      </Link>
     </AuthScreen>
   );
 }
